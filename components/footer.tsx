@@ -103,30 +103,6 @@ export function Footer() {
             </ul>
           </div>
         </div>
-
-        {/* Official Game Credit Section */}
-        <div className="mt-12 pt-8 border-t border-border/40">
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-center sm:text-left">
-            <Image
-              src="/BOT logo.jpg"
-              alt="Battle of TalingChan Official Logo"
-              width={60}
-              height={60}
-              className="rounded-lg flex-shrink-0"
-            />
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground mb-1">
-                Fan-made decklist showcase for the Battle of TalingChan TCG
-              </p>
-              <p className="text-xs text-muted-foreground/70">
-                Not affiliated with or endorsed by the original developers
-              </p>
-              <p className="text-xs text-muted-foreground/70">
-                All game content belongs to its respective owners
-              </p>
-            </div>
-          </div>
-        </div>
       </div>
     </footer>
   )
