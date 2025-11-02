@@ -58,6 +58,12 @@ export function Header() {
           >
             About
           </Link>
+          <Link
+            href="/admin"
+            className="relative text-sm font-medium text-muted-foreground transition-colors hover:text-foreground after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-gradient-to-r after:from-primary after:to-accent after:transition-all hover:after:w-full"
+          >
+            Admin
+          </Link>
         </nav>
 
         <div className="flex items-center justify-end gap-2 sm:gap-3">
@@ -95,6 +101,9 @@ export function Header() {
             </Link>
             <Link href="/about" className="text-sm font-medium text-muted-foreground hover:text-foreground">
               About
+            </Link>
+            <Link href="/admin" className="text-sm font-medium text-muted-foreground hover:text-foreground">
+              Admin
             </Link>
             <div className="flex flex-col gap-2 pt-2">
               <Button variant="outline" className="w-full border-border/40 bg-card/50 backdrop-blur-sm">

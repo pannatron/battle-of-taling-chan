@@ -232,3 +232,69 @@ export async function incrementDeckLikes(id: string): Promise<Deck | null> {
     return null;
   }
 }
+
+// Admin Card API functions
+export async function updateCardImage(
+  id: string,
+  imageUrl: string,
+): Promise<Card | null> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/cards/${id}/image`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ imageUrl }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to update card image for card ${id}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error(`Error updating card image for card ${id}:`, error);
+    return null;
+  }
+}
+
+export async function updateCard(
+  id: string,
+  updateData: Partial<Card>,
+): Promise<Card | null> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/cards/${id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(updateData),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to update card ${id}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error(`Error updating card ${id}:`, error);
+    return null;
+  }
+}
+
+export async function getCardById(id: string): Promise<Card | null> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/cards/${id}`, {
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch card with id ${id}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error(`Error fetching card with id ${id}:`, error);
+    return null;
+  }
+}

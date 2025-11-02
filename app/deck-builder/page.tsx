@@ -16,19 +16,27 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search, Plus, Trash2, Save, X, ArrowLeft } from 'lucide-react';
+import { Search, Plus, Trash2, Save, X, ArrowLeft, Heart } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
+
+interface DeckCard extends CardType {
+  quantity: number;
+  isLifeCard?: boolean;
+}
 
 export default function DeckBuilderPage() {
   const router = useRouter();
   const [searchResults, setSearchResults] = useState<CardType[]>([]);
-  const [selectedCards, setSelectedCards] = useState<CardType[]>([]);
+  const [selectedCards, setSelectedCards] = useState<DeckCard[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
   // Search filters
   const [nameFilter, setNameFilter] = useState('');
+  const [nameSuggestions, setNameSuggestions] = useState<CardType[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [typeFilter, setTypeFilter] = useState('all');
   const [rarityFilter, setRarityFilter] = useState('all');
   const [seriesFilter, setSeriesFilter] = useState('all');
@@ -48,8 +56,16 @@ export default function DeckBuilderPage() {
 
   useEffect(() => {
     loadFilterOptions();
-    performSearch();
   }, []);
+
+  // Auto-search when filters change
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      performSearch();
+    }, 300); // Debounce for 300ms
+
+    return () => clearTimeout(timeoutId);
+  }, [nameFilter, typeFilter, rarityFilter, seriesFilter, colorFilter]);
 
   const loadFilterOptions = async () => {
     const [typesData, raritiesData, seriesData, colorsData] = await Promise.all([
@@ -63,6 +79,39 @@ export default function DeckBuilderPage() {
     setRarities(raritiesData);
     setSeries(seriesData);
     setColors(colorsData);
+  };
+
+  const loadNameSuggestions = async (searchTerm: string) => {
+    if (searchTerm.length < 1) {
+      setNameSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    const results = await searchCards({
+      name: searchTerm,
+      type: typeFilter && typeFilter !== 'all' ? typeFilter : undefined,
+      rarity: rarityFilter && rarityFilter !== 'all' ? rarityFilter : undefined,
+      series: seriesFilter && seriesFilter !== 'all' ? seriesFilter : undefined,
+      color: colorFilter && colorFilter !== 'all' ? colorFilter : undefined,
+    });
+
+    setNameSuggestions(results.slice(0, 10)); // Limit to 10 suggestions
+    setShowSuggestions(true);
+  };
+
+  const handleNameInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setNameFilter(value);
+    if (value.length > 0) {
+      loadNameSuggestions(value);
+    }
+  };
+
+  const selectSuggestion = (cardName: string) => {
+    setNameFilter(cardName);
+    setShowSuggestions(false);
+    setNameSuggestions([]);
   };
 
   const performSearch = async () => {
@@ -83,14 +132,141 @@ export default function DeckBuilderPage() {
     performSearch();
   };
 
+  const getTotalCardCount = () => {
+    return selectedCards
+      .filter((card) => !card.isLifeCard)
+      .reduce((total, card) => total + card.quantity, 0);
+  };
+
+  const getLifeCardCount = () => {
+    return selectedCards
+      .filter((card) => card.isLifeCard)
+      .reduce((total, card) => total + card.quantity, 0);
+  };
+
+  const getOnlyOneCardCount = () => {
+    return selectedCards
+      .filter((card) => card.isLifeCard === false && card.ex === 'Only #1')
+      .reduce((total, card) => total + card.quantity, 0);
+  };
+
+  const getMaxDeckSize = () => {
+    const onlyOneCount = getOnlyOneCardCount();
+    return onlyOneCount > 0 ? 49 : 50;
+  };
+
+  const getCardQuantity = (cardId: string, isLifeCard: boolean = false, isOnlyOne: boolean = false) => {
+    if (isOnlyOne) {
+      const card = selectedCards.find(
+        (c) => c._id === cardId && c.ex === 'Only #1' && !c.isLifeCard
+      );
+      return card ? card.quantity : 0;
+    }
+    const card = selectedCards.find(
+      (c) => c._id === cardId && c.isLifeCard === isLifeCard
+    );
+    return card ? card.quantity : 0;
+  };
+
   const addCardToDeck = (card: CardType) => {
-    if (!selectedCards.find((c) => c._id === card._id)) {
-      setSelectedCards([...selectedCards, card]);
+    // Auto-detect if card is a life card based on type
+    const isLifeCard = card.type === 'Life';
+    const isOnlyOne = card.ex === 'Only #1';
+    
+    if (isLifeCard) {
+      const totalLifeCards = getLifeCardCount();
+      if (totalLifeCards >= 5) {
+        alert('ไลฟ์การ์ดเต็มแล้ว! (จำกัด 5 ใบ)');
+        return;
+      }
+
+      const existingCard = selectedCards.find(
+        (c) => c._id === card._id && c.isLifeCard
+      );
+      if (existingCard) {
+        if (existingCard.quantity >= 1) {
+          alert('ใส่ไลฟ์การ์ดใบนี้ได้แค่ 1 ใบ');
+          return;
+        }
+      } else {
+        setSelectedCards([...selectedCards, { ...card, quantity: 1, isLifeCard: true }]);
+      }
+    } else if (isOnlyOne) {
+      const totalOnlyOne = getOnlyOneCardCount();
+      if (totalOnlyOne >= 1) {
+        alert('Only One การ์ดเต็มแล้ว! (จำกัด 1 ใบ)');
+        return;
+      }
+
+      const existingCard = selectedCards.find(
+        (c) => c._id === card._id && c.ex === 'Only #1'
+      );
+      if (existingCard) {
+        alert('ใส่ Only One การ์ดได้แค่ 1 ใบ');
+        return;
+      } else {
+        setSelectedCards([...selectedCards, { ...card, quantity: 1, isLifeCard: false }]);
+      }
+    } else {
+      const maxDeckSize = getMaxDeckSize();
+      const totalCards = getTotalCardCount();
+      if (totalCards >= maxDeckSize) {
+        alert(`เด็คเต็มแล้ว! (จำกัด ${maxDeckSize} ใบ)`);
+        return;
+      }
+
+      const existingCard = selectedCards.find(
+        (c) => c._id === card._id && !c.isLifeCard
+      );
+      if (existingCard) {
+        if (existingCard.quantity >= 4) {
+          alert('ใส่การ์ดใบนี้ได้สูงสุด 4 ใบ');
+          return;
+        }
+        setSelectedCards(
+          selectedCards.map((c) =>
+            c._id === card._id && !c.isLifeCard
+              ? { ...c, quantity: c.quantity + 1 }
+              : c
+          )
+        );
+      } else {
+        setSelectedCards([
+          ...selectedCards,
+          { ...card, quantity: 1, isLifeCard: false },
+        ]);
+      }
     }
   };
 
-  const removeCardFromDeck = (cardId: string) => {
-    setSelectedCards(selectedCards.filter((c) => c._id !== cardId));
+  const removeCardFromDeck = (cardId: string, isLifeCard: boolean = false, isOnlyOne: boolean = false) => {
+    if (isOnlyOne) {
+      setSelectedCards(
+        selectedCards.filter(
+          (c) => !(c._id === cardId && c.ex === 'Only #1')
+        )
+      );
+      return;
+    }
+
+    const existingCard = selectedCards.find(
+      (c) => c._id === cardId && c.isLifeCard === isLifeCard
+    );
+    if (existingCard && existingCard.quantity > 1) {
+      setSelectedCards(
+        selectedCards.map((c) =>
+          c._id === cardId && c.isLifeCard === isLifeCard
+            ? { ...c, quantity: c.quantity - 1 }
+            : c
+        )
+      );
+    } else {
+      setSelectedCards(
+        selectedCards.filter(
+          (c) => !(c._id === cardId && c.isLifeCard === isLifeCard)
+        )
+      );
+    }
   };
 
   const clearFilters = () => {
@@ -108,13 +284,29 @@ export default function DeckBuilderPage() {
       return;
     }
 
+    const lifeCardCount = getLifeCardCount();
+    if (lifeCardCount !== 5) {
+      alert('กรุณาเลือกไลฟ์การ์ดให้ครบ 5 ใบ');
+      return;
+    }
+
     setSaving(true);
+    // Expand card IDs based on quantities (only deck cards, not life cards)
+    const cardIds: string[] = [];
+    selectedCards
+      .filter((card) => !card.isLifeCard)
+      .forEach((card) => {
+        for (let i = 0; i < card.quantity; i++) {
+          cardIds.push(card._id);
+        }
+      });
+
     const deck = {
       name: deckName,
       author: deckAuthor,
       archetype: deckArchetype || 'Other',
       description: deckDescription,
-      cardIds: selectedCards.map((c) => c._id),
+      cardIds,
       wins: 0,
       views: 0,
       likes: 0,
@@ -147,10 +339,14 @@ export default function DeckBuilderPage() {
     }
   };
 
+  const lifeCards = selectedCards.filter((card) => card.isLifeCard);
+  const onlyOneCards = selectedCards.filter((card) => !card.isLifeCard && card.ex === 'Only #1');
+  const deckCards = selectedCards.filter((card) => !card.isLifeCard && card.ex !== 'Only #1');
+
   return (
     <div className="min-h-screen bg-background py-8">
-      <div className="container mx-auto px-4">
-        <div className="mb-8">
+      <div className="container mx-auto px-4 max-w-[1800px]">
+        <div className="mb-6">
           <Link
             href="/decks"
             className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
@@ -158,132 +354,454 @@ export default function DeckBuilderPage() {
             <ArrowLeft className="h-4 w-4" />
             Back to Decks
           </Link>
-          <h1 className="mb-2 bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-5xl font-extrabold tracking-tight text-transparent">
+          <h1 className="mb-2 bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-4xl font-extrabold tracking-tight text-transparent">
             Deck Builder
           </h1>
-          <p className="text-lg text-muted-foreground">
-            Search cards and build your deck
+          <p className="text-muted-foreground">
+            Build your deck with 5 life cards, 1 only one card (optional), and up to {getMaxDeckSize()} deck cards
           </p>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
-          {/* Left Column - Search and Results */}
-          <div className="space-y-6 lg:col-span-2">
-            {/* Search Filters */}
-            <Card className="border-2">
-              <CardHeader>
-                <h2 className="text-2xl font-bold tracking-tight">🔍 Search Cards</h2>
+        <div className="flex gap-4">
+          {/* Left Sidebar - Filters */}
+          <div className="w-64 shrink-0">
+            <Card className="border-2 sticky top-4">
+              <CardHeader className="pb-3">
+                <h2 className="text-xl font-bold">🔍 Filters</h2>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="space-y-1.5 relative">
+                  <Label htmlFor="name" className="text-xs font-semibold">
+                    Card Name
+                  </Label>
+                  <Input
+                    id="name"
+                    placeholder="Search..."
+                    value={nameFilter}
+                    onChange={handleNameInputChange}
+                    onFocus={() => {
+                      if (nameFilter && nameSuggestions.length > 0) {
+                        setShowSuggestions(true);
+                      }
+                    }}
+                    onBlur={() => {
+                      // Delay to allow clicking on suggestions
+                      setTimeout(() => setShowSuggestions(false), 200);
+                    }}
+                    className="h-8 text-sm"
+                    autoComplete="off"
+                  />
+                  
+                  {/* Suggestions Dropdown */}
+                  {showSuggestions && nameSuggestions.length > 0 && (
+                    <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-md shadow-lg max-h-60 overflow-y-auto">
+                      {nameSuggestions.map((card) => (
+                        <div
+                          key={card._id}
+                          className="px-3 py-2 hover:bg-accent cursor-pointer transition-colors flex items-center gap-2 text-sm"
+                          onClick={() => selectSuggestion(card.name)}
+                        >
+                          {card.imageUrl && (
+                            <div className="relative w-8 h-12 flex-shrink-0">
+                              <Image
+                                src={card.imageUrl}
+                                alt={card.name}
+                                fill
+                                className="object-contain rounded"
+                                sizes="32px"
+                              />
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium truncate">{card.name}</div>
+                            <div className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Badge variant="outline" className="text-[10px] px-1 py-0">
+                                {card.type}
+                              </Badge>
+                              <Badge 
+                                variant="outline" 
+                                className={`text-[10px] px-1 py-0 bg-gradient-to-r ${getRarityColor(card.rare)} text-white border-0`}
+                              >
+                                {card.rare}
+                              </Badge>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="type" className="text-xs font-semibold">
+                    Type
+                  </Label>
+                  <Select value={typeFilter} onValueChange={setTypeFilter}>
+                    <SelectTrigger id="type" className="h-8 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All</SelectItem>
+                      {types.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {type}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="rarity" className="text-xs font-semibold">
+                    Rarity
+                  </Label>
+                  <Select value={rarityFilter} onValueChange={setRarityFilter}>
+                    <SelectTrigger id="rarity" className="h-8 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All</SelectItem>
+                      {rarities.map((rarity) => (
+                        <SelectItem key={rarity} value={rarity}>
+                          {rarity}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="series" className="text-xs font-semibold">
+                    Series
+                  </Label>
+                  <Select value={seriesFilter} onValueChange={setSeriesFilter}>
+                    <SelectTrigger id="series" className="h-8 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All</SelectItem>
+                      {series.map((s) => (
+                        <SelectItem key={s} value={s}>
+                          {s}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <Button
+                    variant="outline"
+                    onClick={clearFilters}
+                    className="flex-1 h-8 text-xs"
+                  >
+                    <X className="mr-1 h-3 w-3" />
+                    Clear Filters
+                  </Button>
+                </div>
+
+                {/* Deck Info in Sidebar */}
+                <div className="border-t pt-4 mt-4 space-y-3">
+                  <h3 className="text-sm font-bold">📝 Deck Info</h3>
+                  
+                  <div className="space-y-1.5">
+                    <Label htmlFor="deckName" className="text-xs">
+                      Name <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="deckName"
+                      placeholder="Deck name"
+                      value={deckName}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDeckName(e.target.value)}
+                      className="h-8 text-sm"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="deckAuthor" className="text-xs">
+                      Author <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="deckAuthor"
+                      placeholder="Your name"
+                      value={deckAuthor}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDeckAuthor(e.target.value)}
+                      className="h-8 text-sm"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="deckArchetype" className="text-xs">
+                      Archetype
+                    </Label>
+                    <Input
+                      id="deckArchetype"
+                      placeholder="e.g. Aggro"
+                      value={deckArchetype}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDeckArchetype(e.target.value)}
+                      className="h-8 text-sm"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="deckDescription" className="text-xs">
+                      Description
+                    </Label>
+                    <Textarea
+                      id="deckDescription"
+                      placeholder="Deck strategy..."
+                      value={deckDescription}
+                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDeckDescription(e.target.value)}
+                      rows={3}
+                      className="text-sm"
+                    />
+                  </div>
+
+                  <Button
+                    className="w-full bg-gradient-to-r from-primary via-accent to-secondary font-bold"
+                    onClick={handleSaveDeck}
+                    disabled={saving || selectedCards.length === 0}
+                  >
+                    <Save className="mr-2 h-4 w-4" />
+                    {saving ? 'Saving...' : 'Save Deck'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Main Content Area */}
+          <div className="flex-1 space-y-4">
+            {/* Life Cards and Only One Section - Side by Side */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* Life Cards Section */}
+              <Card className="border-2">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-bold flex items-center gap-2">
+                    <Heart className="h-5 w-5 text-red-500 fill-red-500" />
+                    Life Cards{' '}
+                    <span className="bg-gradient-to-r from-red-500 to-pink-500 bg-clip-text text-transparent">
+                      ({getLifeCardCount()}/5)
+                    </span>
+                  </h2>
+                  {lifeCards.length > 0 && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setSelectedCards(selectedCards.filter(c => !c.isLifeCard))}
+                    >
+                      Clear
+                    </Button>
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleSearch} className="space-y-4">
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="name" className="text-sm font-semibold">
-                        Card Name
-                      </Label>
-                      <Input
-                        id="name"
-                        placeholder="Search card name..."
-                        value={nameFilter}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNameFilter(e.target.value)}
-                        className="border-2 font-medium transition-all focus:border-primary"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="type" className="text-sm font-semibold">
-                        Type
-                      </Label>
-                      <Select value={typeFilter} onValueChange={setTypeFilter}>
-                        <SelectTrigger id="type">
-                          <SelectValue placeholder="Select type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All</SelectItem>
-                          {types.map((type) => (
-                            <SelectItem key={type} value={type}>
-                              {type}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="rarity" className="text-sm font-semibold">
-                        Rarity
-                      </Label>
-                      <Select
-                        value={rarityFilter}
-                        onValueChange={setRarityFilter}
-                      >
-                        <SelectTrigger id="rarity">
-                          <SelectValue placeholder="Select rarity" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All</SelectItem>
-                          {rarities.map((rarity) => (
-                            <SelectItem key={rarity} value={rarity}>
-                              {rarity}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="series" className="text-sm font-semibold">
-                        Series
-                      </Label>
-                      <Select
-                        value={seriesFilter}
-                        onValueChange={setSeriesFilter}
-                      >
-                        <SelectTrigger id="series">
-                          <SelectValue placeholder="Select series" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All</SelectItem>
-                          {series.map((s) => (
-                            <SelectItem key={s} value={s}>
-                              {s}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                {lifeCards.length === 0 ? (
+                  <div className="py-8 text-center text-sm text-muted-foreground border-2 border-dashed rounded-lg">
+                    Click + on Life button in search results to add life cards
                   </div>
-
-                  <div className="flex gap-2">
-                    <Button
-                      type="submit"
-                      disabled={loading}
-                      className="bg-gradient-to-r from-primary to-accent font-semibold"
-                    >
-                      <Search className="mr-2 h-4 w-4" />
-                      Search
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={clearFilters}
-                      className="border-2 font-semibold"
-                    >
-                      <X className="mr-2 h-4 w-4" />
-                      Clear Filters
-                    </Button>
+                ) : (
+                  <div className="flex gap-2 flex-wrap">
+                    {lifeCards.map((card) => (
+                      <div
+                        key={`life-${card._id}`}
+                        className="group relative w-20 transition-all hover:scale-[3] hover:z-50"
+                      >
+                        {card.imageUrl && (
+                          <div className="relative aspect-[2/3] overflow-hidden rounded border-2 border-red-500 bg-muted/30 shadow-lg">
+                            <Image
+                              src={card.imageUrl}
+                              alt={card.name}
+                              fill
+                              className="object-contain"
+                              sizes="80px"
+                            />
+                            {/* Hover overlay with controls */}
+                            <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 p-1">
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  className="h-6 w-6 p-0 text-xs"
+                                  onClick={() => removeCardFromDeck(card._id, true)}
+                                >
+                                  -
+                                </Button>
+                                <span className="text-white text-xs font-bold w-4 text-center">
+                                  {card.quantity}
+                                </span>
+                                <Button
+                                  size="sm"
+                                  variant="default"
+                                  className="h-6 w-6 p-0 text-xs"
+                                  onClick={() => addCardToDeck(card)}
+                                  disabled={card.quantity >= 1}
+                                >
+                                  +
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
-                </form>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Only One Section */}
+            <Card className="border-2">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-bold flex items-center gap-2">
+                    <span className="text-2xl">⭐</span>
+                    Only One{' '}
+                    <span className="bg-gradient-to-r from-yellow-500 to-orange-500 bg-clip-text text-transparent">
+                      ({getOnlyOneCardCount()}/1)
+                    </span>
+                  </h2>
+                  {onlyOneCards.length > 0 && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setSelectedCards(selectedCards.filter(c => c.ex !== 'Only #1'))}
+                    >
+                      Clear
+                    </Button>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent>
+                {onlyOneCards.length === 0 ? (
+                  <div className="py-8 text-center text-sm text-muted-foreground border-2 border-dashed rounded-lg">
+                    Click cards with "Only #1" Ex to add here
+                  </div>
+                ) : (
+                  <div className="flex gap-2 flex-wrap">
+                    {onlyOneCards.map((card) => (
+                      <div
+                        key={`only-${card._id}`}
+                        className="group relative w-20 transition-all hover:scale-[3] hover:z-50"
+                      >
+                        {card.imageUrl && (
+                          <div className="relative aspect-[2/3] overflow-hidden rounded border-2 border-yellow-500 bg-muted/30 shadow-lg">
+                            <Image
+                              src={card.imageUrl}
+                              alt={card.name}
+                              fill
+                              className="object-contain"
+                              sizes="80px"
+                            />
+                            {/* Hover overlay with controls */}
+                            <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 p-1">
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                className="h-6 px-2 text-xs"
+                                onClick={() => removeCardFromDeck(card._id, false, true)}
+                              >
+                                Remove
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+            </div>
+
+            {/* Deck Cards Section */}
+            <Card className="border-2">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-bold">
+                    🎴 Main Deck{' '}
+                    <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                      ({getTotalCardCount()}/{getMaxDeckSize()})
+                    </span>
+                  </h2>
+                  {deckCards.length > 0 && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setSelectedCards(selectedCards.filter(c => c.isLifeCard || c.ex === 'Only #1'))}
+                    >
+                      Clear
+                    </Button>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent>
+                {deckCards.length === 0 ? (
+                  <div className="py-8 text-center text-sm text-muted-foreground border-2 border-dashed rounded-lg">
+                    Click + on Deck button in search results to add cards to main deck
+                  </div>
+                ) : (
+                  <div className="flex gap-2 flex-wrap">
+                    {deckCards.map((card) => (
+                      <div
+                        key={`deck-${card._id}`}
+                        className="group relative w-20 transition-all hover:scale-[3] hover:z-50"
+                      >
+                        {card.imageUrl && (
+                          <div className="relative aspect-[2/3] overflow-hidden rounded border-2 border-border bg-muted/30 shadow-lg">
+                            <Image
+                              src={card.imageUrl}
+                              alt={card.name}
+                              fill
+                              className="object-contain"
+                              sizes="80px"
+                            />
+                            {/* Quantity badge */}
+                            <div className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground shadow-lg ring-2 ring-background">
+                              {card.quantity}
+                            </div>
+                            {/* Hover overlay with controls */}
+                            <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 p-1">
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  className="h-6 w-6 p-0 text-xs"
+                                  onClick={() => removeCardFromDeck(card._id, false)}
+                                >
+                                  -
+                                </Button>
+                                <span className="text-white text-xs font-bold w-4 text-center">
+                                  {card.quantity}
+                                </span>
+                                <Button
+                                  size="sm"
+                                  variant="default"
+                                  className="h-6 w-6 p-0 text-xs"
+                                  onClick={() => addCardToDeck(card)}
+                                  disabled={card.quantity >= 4 || getTotalCardCount() >= getMaxDeckSize()}
+                                >
+                                  +
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
             {/* Search Results */}
             <Card className="border-2">
-              <CardHeader>
-                <h2 className="text-2xl font-bold tracking-tight">
+              <CardHeader className="pb-3">
+                <h2 className="text-xl font-bold">
                   📋 Search Results{' '}
                   <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                    ({searchResults.length} cards)
+                    ({searchResults.length})
                   </span>
                 </h2>
               </CardHeader>
@@ -297,56 +815,28 @@ export default function DeckBuilderPage() {
                     No cards found
                   </div>
                 ) : (
-                  <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="grid gap-2 grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10">
                     {searchResults.map((card) => (
                       <div
                         key={card._id}
-                        className="group relative overflow-hidden rounded-lg border border-border bg-card/50 backdrop-blur-sm transition-all hover:border-glow"
+                        onClick={() => addCardToDeck(card)}
+                        className="group relative overflow-hidden rounded-lg border border-border bg-card/50 backdrop-blur-sm transition-all hover:scale-[2.5] hover:z-50 hover:shadow-2xl cursor-pointer"
                       >
                         <div
-                          className={`h-1 bg-gradient-to-r ${getRarityColor(card.rare)}`}
+                          className={`h-0.5 bg-gradient-to-r ${getRarityColor(card.rare)}`}
                         />
-                        <div className="p-4">
-                          <div className="mb-2 flex items-start justify-between gap-2">
-                            <h3 className="font-thai flex-1 font-bold text-foreground line-clamp-2">
-                              {card.name}
-                            </h3>
-                            <Badge variant="secondary" className="text-xs">
-                              {card.type}
-                            </Badge>
-                          </div>
-                          <div className="mb-3 flex items-center gap-2 text-xs text-muted-foreground">
-                            <span className="font-mono">{card.print}</span>
-                            <span>•</span>
-                            <Badge variant="outline" className="text-xs">
-                              {card.rare}
-                            </Badge>
-                          </div>
-                          <div className="flex gap-2 text-xs">
-                            {card.cost && (
-                              <div className="rounded bg-muted/50 px-2 py-1">
-                                Cost: {card.cost}
-                              </div>
-                            )}
-                            {card.power && (
-                              <div className="rounded bg-muted/50 px-2 py-1">
-                                Power: {card.power}
-                              </div>
-                            )}
-                          </div>
-                          <Button
-                            size="sm"
-                            className="mt-3 w-full"
-                            onClick={() => addCardToDeck(card)}
-                            disabled={selectedCards.some(
-                              (c) => c._id === card._id
-                            )}
-                          >
-                            <Plus className="mr-2 h-4 w-4" />
-                            {selectedCards.some((c) => c._id === card._id)
-                              ? 'Added'
-                              : 'Add to Deck'}
-                          </Button>
+                        <div className="p-1">
+                          {card.imageUrl && (
+                            <div className="relative aspect-[2/3] overflow-hidden rounded border border-border bg-muted/30">
+                              <Image
+                                src={card.imageUrl}
+                                alt={card.name}
+                                fill
+                                className="object-contain"
+                                sizes="100px"
+                              />
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -354,138 +844,6 @@ export default function DeckBuilderPage() {
                 )}
               </CardContent>
             </Card>
-          </div>
-
-          {/* Right Column - Deck Builder */}
-          <div className="space-y-6">
-            {/* Deck Info */}
-            <Card className="border-2">
-              <CardHeader>
-                <h2 className="text-2xl font-bold tracking-tight">📝 Deck Information</h2>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="deckName" className="text-sm font-semibold">
-                    Deck Name <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="deckName"
-                    placeholder="Your deck name"
-                    value={deckName}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDeckName(e.target.value)}
-                    className="border-2 font-medium transition-all focus:border-primary"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="deckAuthor" className="text-sm font-semibold">
-                    Author <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="deckAuthor"
-                    placeholder="Your name"
-                    value={deckAuthor}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDeckAuthor(e.target.value)}
-                    className="border-2 font-medium transition-all focus:border-primary"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="deckArchetype" className="text-sm font-semibold">
-                    Deck Archetype
-                  </Label>
-                  <Input
-                    id="deckArchetype"
-                    placeholder="e.g. Aggro, Control, Combo"
-                    value={deckArchetype}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDeckArchetype(e.target.value)}
-                    className="border-2 font-medium transition-all focus:border-primary"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="deckDescription" className="text-sm font-semibold">
-                    Description
-                  </Label>
-                  <Textarea
-                    id="deckDescription"
-                    placeholder="Describe your deck strategy and playstyle"
-                    value={deckDescription}
-                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDeckDescription(e.target.value)}
-                    rows={4}
-                    className="border-2 font-medium transition-all focus:border-primary"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Selected Cards */}
-            <Card className="border-2">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <h2 className="text-2xl font-bold tracking-tight">
-                    🎴 Cards in Deck{' '}
-                    <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                      ({selectedCards.length})
-                    </span>
-                  </h2>
-                  {selectedCards.length > 0 && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => setSelectedCards([])}
-                    >
-                      Clear All
-                    </Button>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent>
-                {selectedCards.length === 0 ? (
-                  <div className="py-8 text-center text-sm text-muted-foreground">
-                    No cards in deck yet
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {selectedCards.map((card) => (
-                      <div
-                        key={card._id}
-                        className="flex items-center gap-2 rounded-lg border border-border bg-card/50 p-3"
-                      >
-                        <div className="flex-1">
-                          <div className="font-thai font-semibold text-foreground line-clamp-1">
-                            {card.name}
-                          </div>
-                          <div className="flex gap-2 text-xs text-muted-foreground">
-                            <span>{card.type}</span>
-                            <span>•</span>
-                            <span>{card.rare}</span>
-                          </div>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => removeCardFromDeck(card._id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Save Button */}
-            <Button
-              className="w-full bg-gradient-to-r from-primary via-accent to-secondary font-bold text-lg shadow-lg transition-all hover:shadow-xl"
-              size="lg"
-              onClick={handleSaveDeck}
-              disabled={saving || selectedCards.length === 0}
-            >
-              <Save className="mr-2 h-5 w-5" />
-              {saving ? 'Saving...' : 'Save Deck'}
-            </Button>
           </div>
         </div>
       </div>
