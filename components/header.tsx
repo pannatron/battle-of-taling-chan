@@ -4,26 +4,29 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Menu, Swords, Sparkles } from "lucide-react"
 import { useState } from "react"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-20 items-center justify-between">
-        <Link href="/" className="group flex items-center gap-3">
-          <div className="relative">
-            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-primary via-accent to-secondary opacity-75 blur-sm transition-opacity group-hover:opacity-100" />
-            <div className="relative flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary via-accent to-secondary p-[2px]">
-              <div className="flex h-full w-full items-center justify-center rounded-xl bg-background">
-                <Swords className="h-6 w-6 text-foreground" />
+      <div className="container mx-auto grid h-20 grid-cols-[auto_1fr] lg:grid-cols-[1fr_auto_1fr] items-center gap-4 px-4 md:px-6">
+        <div className="flex items-center">
+          <Link href="/" className="group flex items-center gap-3 flex-shrink-0">
+            <div className="relative">
+              <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-primary via-accent to-secondary opacity-75 blur-sm transition-opacity group-hover:opacity-100" />
+              <div className="relative flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary via-accent to-secondary p-[2px]">
+                <div className="flex h-full w-full items-center justify-center rounded-xl bg-background">
+                  <Swords className="h-6 w-6 text-foreground" />
+                </div>
               </div>
             </div>
-          </div>
-          <span className="text-xl font-bold text-foreground">Battle of Taling Chan</span>
-        </Link>
+            <span className="text-xl font-bold text-foreground hidden sm:inline">Battle of Taling Chan</span>
+          </Link>
+        </div>
 
-        <nav className="hidden items-center gap-8 md:flex">
+        <nav className="hidden items-center gap-6 lg:flex">
           <Link
             href="/decks"
             className="relative text-sm font-medium text-muted-foreground transition-colors hover:text-foreground after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-gradient-to-r after:from-primary after:to-accent after:transition-all hover:after:w-full"
@@ -51,14 +54,15 @@ export function Header() {
           </Link>
         </nav>
 
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" className="hidden md:inline-flex">
+        <div className="flex items-center justify-end gap-2 sm:gap-3">
+          <ThemeToggle />
+          <Button variant="ghost" className="hidden lg:inline-flex">
             Log in
           </Button>
-          <Button className="hidden bg-gradient-to-r from-primary to-accent font-semibold md:inline-flex">
+          <Button className="hidden bg-gradient-to-r from-primary to-accent font-semibold lg:inline-flex">
             Sign up
           </Button>
-          <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+          <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
             <Menu className="h-5 w-5" />
           </Button>
         </div>

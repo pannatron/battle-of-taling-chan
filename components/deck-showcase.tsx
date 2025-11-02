@@ -41,7 +41,7 @@ export function DeckShowcase() {
         <div className="absolute bottom-0 left-1/3 h-96 w-96 animate-pulse rounded-full bg-primary/10 blur-3xl animation-delay-2000" />
       </div>
 
-      <div className="container relative">
+      <div className="container relative mx-auto px-4 md:px-6">
         <div className="mb-16 flex flex-col items-start justify-between gap-4 md:flex-row md:items-end">
           <div>
             <h2 className="mb-3 text-balance text-4xl font-bold tracking-tight md:text-5xl">

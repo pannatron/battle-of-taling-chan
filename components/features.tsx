@@ -37,7 +37,7 @@ export function Features() {
         <div className="absolute right-0 bottom-1/4 h-96 w-96 animate-pulse rounded-full bg-accent/10 blur-3xl animation-delay-2000" />
       </div>
 
-      <div className="container relative">
+      <div className="container relative mx-auto px-4 md:px-6">
         <div className="mx-auto mb-16 max-w-3xl text-center">
           <h2 className="mb-6 text-balance text-4xl font-bold tracking-tight md:text-5xl lg:text-6xl">
             <span className="bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-transparent">

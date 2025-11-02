@@ -1,4 +1,5 @@
 import Link from "next/link"
+import Image from "next/image"
 import { Swords } from "lucide-react"
 
 export function Footer() {
@@ -6,7 +7,7 @@ export function Footer() {
     <footer className="relative border-t border-border/40 bg-background/80 backdrop-blur-xl">
       <div className="absolute inset-0 -z-10 bg-gradient-to-t from-primary/5 to-transparent" />
 
-      <div className="container py-16 md:py-20">
+      <div className="container mx-auto px-4 py-16 md:px-6 md:py-20">
         <div className="grid gap-12 md:grid-cols-4">
           <div className="md:col-span-2">
             <Link href="/" className="group mb-6 flex items-center gap-3">
@@ -21,8 +22,7 @@ export function Footer() {
               <span className="text-xl font-bold text-foreground">Battle of Taling Chan</span>
             </Link>
             <p className="mb-6 max-w-md text-sm leading-relaxed text-muted-foreground">
-              Thailand's premier trading card game community. Build decks, compete in tournaments, and trade cards with
-              players nationwide.
+              Fan-made decklist showcase for the Battle of TalingChan TCG. Not affiliated with or endorsed by the original developers. All game content belongs to its respective owners.
             </p>
             <p className="text-xs text-muted-foreground/60">© 2025 Battle of Taling Chan. All rights reserved.</p>
           </div>
@@ -101,6 +101,30 @@ export function Footer() {
                 </Link>
               </li>
             </ul>
+          </div>
+        </div>
+
+        {/* Official Game Credit Section */}
+        <div className="mt-12 pt-8 border-t border-border/40">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-center sm:text-left">
+            <Image
+              src="/BOT logo.jpg"
+              alt="Battle of TalingChan Official Logo"
+              width={60}
+              height={60}
+              className="rounded-lg flex-shrink-0"
+            />
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground mb-1">
+                Fan-made decklist showcase for the Battle of TalingChan TCG
+              </p>
+              <p className="text-xs text-muted-foreground/70">
+                Not affiliated with or endorsed by the original developers
+              </p>
+              <p className="text-xs text-muted-foreground/70">
+                All game content belongs to its respective owners
+              </p>
+            </div>
           </div>
         </div>
       </div>
