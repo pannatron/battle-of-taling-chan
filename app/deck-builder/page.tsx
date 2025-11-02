@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search, Plus, Trash2, Save, X, ArrowLeft, Heart, Grid3x3, List } from 'lucide-react';
+import { Search, Plus, Trash2, Save, X, ArrowLeft, Heart, Grid3x3, List, Download } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -51,6 +51,7 @@ export default function DeckBuilderPage() {
   
   // Visualization mode
   const [visualizationMode, setVisualizationMode] = useState<'compact' | 'grid'>('compact');
+  const [exporting, setExporting] = useState(false);
 
   // Filter options
   const [types, setTypes] = useState<string[]>([]);
@@ -138,7 +139,7 @@ export default function DeckBuilderPage() {
 
   const getTotalCardCount = () => {
     return selectedCards
-      .filter((card) => !card.isLifeCard)
+      .filter((card) => !card.isLifeCard && !card.isSideDeck)
       .reduce((total, card) => total + card.quantity, 0);
   };
 
@@ -150,7 +151,7 @@ export default function DeckBuilderPage() {
 
   const getOnlyOneCardCount = () => {
     return selectedCards
-      .filter((card) => card.isLifeCard === false && card.ex === 'Only #1')
+      .filter((card) => card.isLifeCard === false && card.ex === 'Only #1' && !card.isSideDeck)
       .reduce((total, card) => total + card.quantity, 0);
   };
 
@@ -158,6 +159,23 @@ export default function DeckBuilderPage() {
     return selectedCards
       .filter((card) => card.isSideDeck)
       .reduce((total, card) => total + card.quantity, 0);
+  };
+
+  const getSideDeckOnlyOneCount = () => {
+    return selectedCards
+      .filter((card) => card.isSideDeck && card.ex === 'Only #1')
+      .reduce((total, card) => total + card.quantity, 0);
+  };
+
+  const getMaxSideDeckSize = () => {
+    const onlyOneCount = getSideDeckOnlyOneCount();
+    return onlyOneCount > 0 ? 11 : 11; // Always 11, but composition varies
+  };
+
+  const isMainDeckFull = () => {
+    const maxDeckSize = getMaxDeckSize();
+    const totalCards = getTotalCardCount();
+    return totalCards >= maxDeckSize;
   };
 
   const getMaxDeckSize = () => {
@@ -190,32 +208,8 @@ export default function DeckBuilderPage() {
     const isOnlyOne = card.ex === 'Only #1';
     const isSideDeck = targetDeck === 'side';
     
-    if (isSideDeck) {
-      const totalSideDeck = getSideDeckCardCount();
-      if (totalSideDeck >= 10) {
-        alert('ไซด์เด็คเต็มแล้ว! (จำกัด 10 ใบ)');
-        return;
-      }
-
-      const existingCard = selectedCards.find(
-        (c) => c._id === card._id && c.isSideDeck
-      );
-      if (existingCard) {
-        if (existingCard.quantity >= 4) {
-          alert('ใส่การ์ดใบนี้ได้สูงสุด 4 ใบในไซด์เด็ค');
-          return;
-        }
-        setSelectedCards(
-          selectedCards.map((c) =>
-            c._id === card._id && c.isSideDeck
-              ? { ...c, quantity: c.quantity + 1 }
-              : c
-          )
-        );
-      } else {
-        setSelectedCards([...selectedCards, { ...card, quantity: 1, isSideDeck: true }]);
-      }
-    } else if (isLifeCard) {
+    // Life cards can be added independently of main deck
+    if (isLifeCard) {
       const totalLifeCards = getLifeCardCount();
       if (totalLifeCards >= 5) {
         alert('ไลฟ์การ์ดเต็มแล้ว! (จำกัด 5 ใบ)');
@@ -232,6 +226,63 @@ export default function DeckBuilderPage() {
         }
       } else {
         setSelectedCards([...selectedCards, { ...card, quantity: 1, isLifeCard: true }]);
+      }
+      return;
+    }
+    
+    if (isSideDeck) {
+      // Check if main deck is full before allowing side deck additions
+      if (!isMainDeckFull()) {
+        alert('ต้องเติมเด็คหลักให้เต็มก่อน (' + getMaxDeckSize() + ' ใบ) ถึงจะเพิ่มการ์ดในไซด์เด็คได้');
+        return;
+      }
+
+      const totalSideDeck = getSideDeckCardCount();
+      const sideDeckOnlyOneCount = getSideDeckOnlyOneCount();
+      const isCardOnlyOne = card.ex === 'Only #1';
+
+      // Check side deck limit: 11 total (1 Only One + 10 regular OR 11 regular)
+      if (isCardOnlyOne) {
+        // If trying to add Only One card
+        if (sideDeckOnlyOneCount >= 1) {
+          alert('ไซด์เด็คมี Only One การ์ดได้แค่ 1 ใบ');
+          return;
+        }
+        if (totalSideDeck >= 11) {
+          alert('ไซด์เด็คเต็มแล้ว! (จำกัด 11 ใบ)');
+          return;
+        }
+      } else {
+        // If trying to add regular card
+        const maxRegularCards = sideDeckOnlyOneCount > 0 ? 10 : 11;
+        const regularCardsCount = totalSideDeck - sideDeckOnlyOneCount;
+        if (regularCardsCount >= maxRegularCards) {
+          alert(`ไซด์เด็คมีการ์ดธรรมดาเต็มแล้ว! (จำกัด ${maxRegularCards} ใบ)`);
+          return;
+        }
+      }
+
+      const existingCard = selectedCards.find(
+        (c) => c._id === card._id && c.isSideDeck
+      );
+      if (existingCard) {
+        if (isCardOnlyOne) {
+          alert('ใส่ Only One การ์ดได้แค่ 1 ใบในไซด์เด็ค');
+          return;
+        }
+        if (existingCard.quantity >= 4) {
+          alert('ใส่การ์ดใบนี้ได้สูงสุด 4 ใบในไซด์เด็ค');
+          return;
+        }
+        setSelectedCards(
+          selectedCards.map((c) =>
+            c._id === card._id && c.isSideDeck
+              ? { ...c, quantity: c.quantity + 1 }
+              : c
+          )
+        );
+      } else {
+        setSelectedCards([...selectedCards, { ...card, quantity: 1, isSideDeck: true }]);
       }
     } else if (isOnlyOne) {
       const totalOnlyOne = getOnlyOneCardCount();
@@ -399,6 +450,221 @@ export default function DeckBuilderPage() {
     }
   };
 
+  const exportDeckAsImage = async () => {
+    setExporting(true);
+    console.log('🚀 Starting export...');
+    
+    try {
+      // Dynamically import html2canvas
+      const html2canvas = (await import('html2canvas')).default;
+      
+      const deckElement = document.getElementById('deck-visualization');
+      if (!deckElement) {
+        alert('ไม่สามารถส่งออกรูปภาพได้');
+        setExporting(false);
+        return;
+      }
+
+      console.log('📦 Element found, preparing for capture...');
+
+      // Wait for all images to load
+      const images = deckElement.querySelectorAll('img');
+      console.log(`🖼️ Found ${images.length} images to load...`);
+      
+      const imagePromises = Array.from(images).map((img) => {
+        return new Promise<void>((resolve) => {
+          // Skip if already loaded or data URL
+          if (img.complete || img.src.startsWith('data:')) {
+            console.log('✅ Image already loaded or is data URL');
+            resolve();
+            return;
+          }
+
+          let resolved = false;
+          const timeout = setTimeout(() => {
+            if (!resolved) {
+              console.warn('⏱️ Image load timeout:', img.src);
+              resolved = true;
+              resolve();
+            }
+          }, 10000); // 10 second timeout per image
+          
+          img.onload = () => {
+            if (!resolved) {
+              console.log('✅ Image loaded:', img.src.substring(0, 50) + '...');
+              resolved = true;
+              clearTimeout(timeout);
+              resolve();
+            }
+          };
+          
+          img.onerror = () => {
+            if (!resolved) {
+              console.error('❌ Failed to load image:', img.src);
+              resolved = true;
+              clearTimeout(timeout);
+              resolve();
+            }
+          };
+
+          // Force reload if needed
+          if (!img.complete) {
+            const src = img.src;
+            img.src = '';
+            img.src = src;
+          }
+        });
+      });
+
+      console.log('⏳ Waiting for all images to load...');
+      await Promise.all(imagePromises);
+      console.log('✅ All images loaded');
+
+      // Small delay to ensure rendering is complete
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      const canvas = await html2canvas(deckElement, {
+        backgroundColor: '#1a1a1a',
+        scale: 2,
+        logging: true,
+        useCORS: true,
+        allowTaint: true,
+        onclone: (clonedDoc) => {
+          console.log('🔧 onclone callback triggered');
+          
+          // Inject a style tag that overrides all oklch() colors with RGB equivalents
+          const styleEl = clonedDoc.createElement('style');
+          styleEl.textContent = `
+            * {
+              /* Override all Tailwind/oklch colors with safe RGB fallbacks */
+              --background: #fafafa !important;
+              --foreground: #1f1f1f !important;
+              --card: #ffffff !important;
+              --card-foreground: #1f1f1f !important;
+              --popover: #fafafa !important;
+              --popover-foreground: #1f1f1f !important;
+              --primary: #7c3aed !important;
+              --primary-foreground: #fafafa !important;
+              --secondary: #0ea5e9 !important;
+              --secondary-foreground: #fafafa !important;
+              --muted: #e5e5e5 !important;
+              --muted-foreground: #737373 !important;
+              --accent: #d946ef !important;
+              --accent-foreground: #fafafa !important;
+              --destructive: #ef4444 !important;
+              --destructive-foreground: #fafafa !important;
+              --border: #d4d4d4 !important;
+              --input: #d4d4d4 !important;
+              --ring: #7c3aed !important;
+            }
+            
+            /* Force all background colors to be transparent or solid colors */
+            .bg-muted, [class*="bg-muted"] {
+              background-color: #e5e5e5 !important;
+            }
+            .bg-background, [class*="bg-background"] {
+              background-color: #fafafa !important;
+            }
+            .bg-white {
+              background-color: #ffffff !important;
+            }
+            
+            /* Remove all gradient backgrounds */
+            [class*="bg-gradient"],
+            [class*="from-"],
+            [class*="to-"],
+            [class*="via-"] {
+              background-image: none !important;
+              background-color: #1a1a1a !important;
+            }
+            
+            /* Force text colors */
+            .text-white, [class*="text-white"] {
+              color: #ffffff !important;
+            }
+            .text-black, [class*="text-black"] {
+              color: #000000 !important;
+            }
+            .text-muted-foreground {
+              color: #737373 !important;
+            }
+            
+            /* Ensure borders are visible */
+            .border, [class*="border-"] {
+              border-color: #d4d4d4 !important;
+            }
+            .border-dashed {
+              border-style: dashed !important;
+            }
+            
+            /* Ring colors for badges */
+            .ring-black {
+              --tw-ring-color: #000000 !important;
+            }
+            .ring-cyan-500 {
+              --tw-ring-color: #06b6d4 !important;
+            }
+            .ring-2 {
+              box-shadow: 0 0 0 2px var(--tw-ring-color, #000000) !important;
+            }
+          `;
+          clonedDoc.head.appendChild(styleEl);
+          console.log('✅ Injected RGB color overrides');
+          
+          // Remove problematic classes
+          const allElements = clonedDoc.querySelectorAll('*');
+          console.log(`🔍 Processing ${allElements.length} elements...`);
+          
+          let modifiedCount = 0;
+          allElements.forEach((element) => {
+            const el = element as HTMLElement;
+            
+            // Remove gradient-related classes
+            const classList = Array.from(el.classList);
+            classList.forEach(className => {
+              if (className.includes('bg-gradient') || 
+                  className.includes('text-gradient') || 
+                  className.includes('bg-clip-text') ||
+                  className.includes('text-transparent')) {
+                el.classList.remove(className);
+                modifiedCount++;
+              }
+            });
+          });
+          
+          console.log(`✅ Modified ${modifiedCount} problematic classes`);
+        },
+      });
+
+      console.log('✨ Canvas created successfully!');
+
+      // Convert canvas to blob and download
+      canvas.toBlob((blob: Blob | null) => {
+        if (blob) {
+          console.log('💾 Blob created, downloading...');
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `${deckName || 'deck'}-${Date.now()}.png`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+          console.log('✅ Download complete!');
+        } else {
+          console.error('❌ Failed to create blob');
+          alert('ไม่สามารถสร้างไฟล์รูปภาพได้');
+        }
+        setExporting(false);
+      }, 'image/png');
+    } catch (error) {
+      console.error('❌ Export error:', error);
+      console.error('Error stack:', (error as Error).stack);
+      alert('เกิดข้อผิดพลาดในการส่งออกรูปภาพ: ' + (error as Error).message);
+      setExporting(false);
+    }
+  };
+
   const getRarityColor = (rare: string) => {
     switch (rare) {
       case 'UR':
@@ -417,6 +683,8 @@ export default function DeckBuilderPage() {
   const lifeCards = selectedCards.filter((card) => card.isLifeCard);
   const onlyOneCards = selectedCards.filter((card) => !card.isLifeCard && card.ex === 'Only #1' && !card.isSideDeck);
   const sideDeckCards = selectedCards.filter((card) => card.isSideDeck);
+  const sideDeckOnlyOneCards = sideDeckCards.filter((card) => card.ex === 'Only #1');
+  const sideDeckRegularCards = sideDeckCards.filter((card) => card.ex !== 'Only #1');
   const deckCards = selectedCards.filter((card) => !card.isLifeCard && card.ex !== 'Only #1' && !card.isSideDeck);
 
   return (
@@ -434,7 +702,7 @@ export default function DeckBuilderPage() {
             Deck Builder
           </h1>
           <p className="text-muted-foreground">
-            Build your deck with 5 life cards, 1 only one card (optional), up to {getMaxDeckSize()} deck cards, and up to 10 side deck cards
+            Build your deck with 5 life cards, 1 only one card (optional), up to {getMaxDeckSize()} deck cards, and up to 11 side deck cards (1 Only One + 10 regular OR 11 regular)
           </p>
         </div>
 
@@ -666,53 +934,37 @@ export default function DeckBuilderPage() {
                 <Grid3x3 className="h-4 w-4 mr-2" />
                 View Mode
               </Button>
+              {visualizationMode === 'grid' && (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={exportDeckAsImage}
+                  disabled={exporting || selectedCards.length === 0}
+                  className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  {exporting ? 'กำลังส่งออก...' : 'ส่งออกรูป'}
+                </Button>
+              )}
             </div>
 
             {visualizationMode === 'grid' ? (
               /* Full Deck Visualization - View Mode (No Card borders, no headings) */
-              <div className="space-y-6 p-6 bg-muted/30 rounded-lg">
-                {/* Main Deck Grid - Max 8 per row */}
+              <div id="deck-visualization" className="space-y-3 p-3 bg-muted/30 rounded-lg">
+                {/* Main Deck Grid - 8 cards per row */}
                 {deckCards.length === 0 ? (
                   <div className="py-8 text-center text-sm text-muted-foreground border-2 border-dashed rounded-lg">
                     No cards in main deck
                   </div>
                 ) : (
-                  <div className="grid grid-cols-8 gap-2">
+                  <div className="grid grid-cols-8 gap-1.5">
                     {deckCards.map((card) => (
                       <div
                         key={`deck-view-${card._id}`}
-                        className="group relative transition-all hover:scale-110 hover:z-10"
+                        className="group relative transition-all hover:scale-125 hover:z-10"
                       >
                         {card.imageUrl && (
-                          <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-muted/30 shadow-lg">
-                            <Image
-                              src={card.imageUrl}
-                              alt={card.name}
-                              fill
-                              className="object-contain"
-                              sizes="12.5vw"
-                            />
-                            {/* Quantity badge - Center */}
-                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-white text-lg font-bold text-black shadow-xl ring-2 ring-black">
-                              {card.quantity}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Side Deck Grid - Below Main Deck */}
-                {sideDeckCards.length > 0 && (
-                  <div className="grid grid-cols-10 gap-2 mt-4">
-                    {sideDeckCards.map((card) => (
-                      <div
-                        key={`side-view-${card._id}`}
-                        className="group relative transition-all hover:scale-110 hover:z-10"
-                      >
-                        {card.imageUrl && (
-                          <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-muted/30 shadow-lg border-2 border-cyan-500">
+                          <div className="relative aspect-[2/3] overflow-hidden rounded bg-muted/30 shadow-md">
                             <Image
                               src={card.imageUrl}
                               alt={card.name}
@@ -721,7 +973,7 @@ export default function DeckBuilderPage() {
                               sizes="10vw"
                             />
                             {/* Quantity badge - Center */}
-                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-white text-lg font-bold text-black shadow-xl ring-2 ring-cyan-500">
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-full bg-white text-sm font-bold text-black shadow-xl ring-2 ring-black">
                               {card.quantity}
                             </div>
                           </div>
@@ -731,21 +983,124 @@ export default function DeckBuilderPage() {
                   </div>
                 )}
 
-                {/* Life Cards, Only One & Side Deck Summary - Aligned Right */}
-                <div className="flex items-start justify-end gap-8">
-                  {/* Life Cards Stack - No borders */}
-                  {lifeCards.length === 0 ? (
-                    <div className="w-36 py-8 text-center text-sm text-muted-foreground border-2 border-dashed rounded-lg">
-                      No life cards
+                {/* Side Deck, Life Cards, and Only One - Bottom Row */}
+                <div className="flex items-end justify-between gap-4">
+                  {/* Side Deck - Left Side */}
+                  <div className="flex items-center gap-2 pb-8">
+                    {/* Vertical SIDE text */}
+                    <div className="flex items-center justify-center w-6">
+                      <div className="text-lg font-bold text-white" style={{ writingMode: 'vertical-lr', transform: 'rotate(180deg)' }}>
+                        SIDE
+                      </div>
                     </div>
-                  ) : (
-                    <div className="flex flex-col items-center">
-                      <div className="relative w-28" style={{ height: `${7 + (lifeCards.length - 1) * 2}rem` }}>
-                        {lifeCards.map((card, index) => (
+                    
+                    {/* Side Deck Cards */}
+                    {sideDeckCards.length === 0 ? (
+                      <div className="w-24 py-6 text-center text-xs text-muted-foreground border-2 border-dashed rounded-lg">
+                        No side deck
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-3">
+                        {/* Only One card from side deck */}
+                        {sideDeckOnlyOneCards.length > 0 && (
+                          <div className="flex flex-col gap-1">
+                            {sideDeckOnlyOneCards.map((card) => (
+                              <div
+                                key={`side-only-view-${card._id}`}
+                                className="w-20 transition-all hover:scale-125 hover:z-10"
+                              >
+                                {card.imageUrl && (
+                                  <div className="relative aspect-[2/3] overflow-hidden rounded bg-muted/30 shadow-lg">
+                                    <Image
+                                      src={card.imageUrl}
+                                      alt={card.name}
+                                      fill
+                                      className="object-contain"
+                                      sizes="80px"
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        
+                    {/* Regular side deck cards */}
+                    {sideDeckRegularCards.length > 0 && (
+                      <div className="flex items-end">
+                        {sideDeckRegularCards.map((card, index) => (
                           <div
-                            key={`life-view-${card._id}`}
-                            className="absolute left-1/2 -translate-x-1/2 w-28 transition-all hover:scale-110 hover:z-10"
-                            style={{ top: `${index * 2}rem` }}
+                            key={`side-regular-view-${card._id}`}
+                            className="w-20 transition-all hover:scale-125 hover:z-10"
+                            style={{ marginLeft: index > 0 ? '-1rem' : '0' }}
+                          >
+                            {card.imageUrl && (
+                              <div className="relative aspect-[2/3] overflow-hidden rounded bg-muted/30 shadow-lg">
+                                <Image
+                                  src={card.imageUrl}
+                                  alt={card.name}
+                                  fill
+                                  className="object-contain"
+                                  sizes="80px"
+                                />
+                                {/* Quantity badge */}
+                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-full bg-white text-sm font-bold text-black shadow-xl ring-2 ring-cyan-500">
+                                  {card.quantity}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Life Cards and Only One - Right Side */}
+                  <div className="flex items-start gap-4">
+                    {/* Life Cards Stack */}
+                    {lifeCards.length === 0 ? (
+                      <div className="w-24 py-6 text-center text-xs text-muted-foreground border-2 border-dashed rounded-lg">
+                        No life cards
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center">
+                        <div className="relative w-25" style={{ height: `${8 + (lifeCards.length - 1) * 2.5}rem` }}>
+                          {lifeCards.map((card, index) => (
+                            <div
+                              key={`life-view-${card._id}`}
+                              className="absolute left-1/2 -translate-x-1/2 w-19 transition-all hover:scale-125 hover:z-8"
+                              style={{ top: `${index * 2.5}rem` }}
+                            >
+                              {card.imageUrl && (
+                                <div className="relative aspect-[2/3] overflow-hidden rounded bg-muted/30 shadow-lg">
+                                  <Image
+                                    src={card.imageUrl}
+                                    alt={card.name}
+                                    fill
+                                    className="object-contain"
+                                    sizes="112px"
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Only One Card */}
+                    {onlyOneCards.length === 0 ? (
+                      <div className="w-48 py-8 text-center text-sm text-muted-foreground border-2 border-dashed rounded-lg">
+                        No only one card
+                      </div>
+                    ) : (
+                      <div className="flex justify-center">
+                        {onlyOneCards.map((card) => (
+                          <div
+                            key={`only-view-${card._id}`}
+                            className="w-48 transition-all hover:scale-105"
                           >
                             {card.imageUrl && (
                               <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-muted/30 shadow-2xl">
@@ -754,43 +1109,15 @@ export default function DeckBuilderPage() {
                                   alt={card.name}
                                   fill
                                   className="object-contain"
-                                  sizes="112px"
+                                  sizes="192px"
                                 />
                               </div>
                             )}
                           </div>
                         ))}
                       </div>
-                    </div>
-                  )}
-
-                  {/* Only One Card - No borders */}
-                  {onlyOneCards.length === 0 ? (
-                    <div className="w-48 py-8 text-center text-sm text-muted-foreground border-2 border-dashed rounded-lg">
-                      No only one card
-                    </div>
-                  ) : (
-                    <div className="flex justify-center">
-                      {onlyOneCards.map((card) => (
-                        <div
-                          key={`only-view-${card._id}`}
-                          className="w-48 transition-all hover:scale-105"
-                        >
-                          {card.imageUrl && (
-                            <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-muted/30 shadow-2xl">
-                              <Image
-                                src={card.imageUrl}
-                                alt={card.name}
-                                fill
-                                className="object-contain"
-                                sizes="192px"
-                              />
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
             ) : (
@@ -943,7 +1270,7 @@ export default function DeckBuilderPage() {
                           <span className="text-base">🔄</span>
                           Side Deck{' '}
                           <span className="bg-gradient-to-r from-cyan-500 to-blue-500 bg-clip-text text-transparent">
-                            ({getSideDeckCardCount()}/10)
+                            ({getSideDeckCardCount()}/11)
                           </span>
                         </h2>
                         {sideDeckCards.length > 0 && (
@@ -959,13 +1286,50 @@ export default function DeckBuilderPage() {
                       </div>
                       {sideDeckCards.length === 0 ? (
                         <div className="py-4 text-center text-xs text-muted-foreground border-2 border-dashed rounded-lg">
-                          Right-click to add
+                          {isMainDeckFull() ? 'Right-click to add' : 'Fill main deck first'}
                         </div>
                 ) : (
                   <div className="flex gap-1.5 flex-wrap">
-                    {sideDeckCards.map((card) => (
+                    {/* Only One card first */}
+                    {sideDeckOnlyOneCards.map((card) => (
                       <div
-                        key={`side-${card._id}`}
+                        key={`side-only-${card._id}`}
+                        className="group relative w-16 transition-all hover:scale-[3] hover:z-50"
+                      >
+                        {card.imageUrl && (
+                          <div className="relative aspect-[2/3] overflow-hidden rounded border-2 border-yellow-500 bg-muted/30 shadow-lg">
+                            <Image
+                              src={card.imageUrl}
+                              alt={card.name}
+                              fill
+                              className="object-contain"
+                              sizes="64px"
+                            />
+                            {/* Hover overlay with controls */}
+                            <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 p-1">
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                className="h-6 px-2 text-xs"
+                                onClick={() => removeCardFromDeck(card._id, false, false, true)}
+                              >
+                                Remove
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    
+                    {/* Spacer if Only One exists */}
+                    {sideDeckOnlyOneCards.length > 0 && sideDeckRegularCards.length > 0 && (
+                      <div className="w-4"></div>
+                    )}
+                    
+                    {/* Regular cards */}
+                    {sideDeckRegularCards.map((card) => (
+                      <div
+                        key={`side-regular-${card._id}`}
                         className="group relative w-16 transition-all hover:scale-[3] hover:z-50"
                       >
                         {card.imageUrl && (
@@ -1000,7 +1364,7 @@ export default function DeckBuilderPage() {
                                   variant="default"
                                   className="h-6 w-6 p-0 text-xs"
                                   onClick={() => addCardToDeck(card, 'side')}
-                                  disabled={card.quantity >= 4 || getSideDeckCardCount() >= 10}
+                                  disabled={card.quantity >= 4 || getSideDeckCardCount() >= 11}
                                 >
                                   +
                                 </Button>
@@ -1122,13 +1486,20 @@ export default function DeckBuilderPage() {
                     {searchResults.map((card) => (
                       <div
                         key={card._id}
-                        onClick={() => addCardToDeck(card)}
+                        onClick={() => {
+                          // If main deck is full, automatically add to side deck
+                          if (isMainDeckFull()) {
+                            addCardToDeck(card, 'side');
+                          } else {
+                            addCardToDeck(card);
+                          }
+                        }}
                         onContextMenu={(e) => {
                           e.preventDefault();
                           addCardToDeck(card, 'side');
                         }}
                         className="group relative overflow-hidden rounded-lg border border-border bg-card/50 backdrop-blur-sm transition-all hover:scale-[2.5] hover:z-50 hover:shadow-2xl cursor-pointer"
-                        title="Left click: Add to main deck | Right click: Add to side deck"
+                        title={isMainDeckFull() ? "Click to add to side deck" : "Left click: Add to main deck | Right click: Add to side deck"}
                       >
                         <div
                           className={`h-0.5 bg-gradient-to-r ${getRarityColor(card.rare)}`}
