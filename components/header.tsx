@@ -34,6 +34,12 @@ export function Header() {
             Deck Lists
           </Link>
           <Link
+            href="/deck-builder"
+            className="relative text-sm font-medium text-muted-foreground transition-colors hover:text-foreground after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-gradient-to-r after:from-primary after:to-accent after:transition-all hover:after:w-full"
+          >
+            Deck Builder
+          </Link>
+          <Link
             href="/tournaments"
             className="relative text-sm font-medium text-muted-foreground transition-colors hover:text-foreground after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-gradient-to-r after:from-primary after:to-accent after:transition-all hover:after:w-full"
           >
@@ -73,6 +79,9 @@ export function Header() {
           <nav className="flex flex-col gap-4">
             <Link href="/decks" className="text-sm font-medium text-muted-foreground hover:text-foreground">
               Deck Lists
+            </Link>
+            <Link href="/deck-builder" className="text-sm font-medium text-muted-foreground hover:text-foreground">
+              Deck Builder
             </Link>
             <Link href="/tournaments" className="text-sm font-medium text-muted-foreground hover:text-foreground">
               Tournaments

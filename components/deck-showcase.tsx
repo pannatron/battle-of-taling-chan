@@ -2,38 +2,12 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Eye, Heart, TrendingUp, Zap } from "lucide-react"
+import Link from "next/link"
+import { getAllDecks } from "@/lib/api"
 
-const sampleDecks = [
-  {
-    name: "Dragon Storm Control",
-    author: "ThaiMaster99",
-    archetype: "Control",
-    wins: 45,
-    views: 1250,
-    likes: 89,
-    gradient: "from-blue-500 via-cyan-500 to-blue-600",
-  },
-  {
-    name: "Aggro Red Rush",
-    author: "BangkokAce",
-    archetype: "Aggro",
-    wins: 38,
-    views: 980,
-    likes: 67,
-    gradient: "from-red-500 via-orange-500 to-red-600",
-  },
-  {
-    name: "Combo Infinite Loop",
-    author: "ComboKing",
-    archetype: "Combo",
-    wins: 52,
-    views: 1580,
-    likes: 124,
-    gradient: "from-purple-500 via-pink-500 to-purple-600",
-  },
-]
-
-export function DeckShowcase() {
+export async function DeckShowcase() {
+  const allDecks = await getAllDecks()
+  const topDecks = allDecks.slice(0, 3)
   return (
     <section className="relative py-24 md:py-32">
       <div className="absolute inset-0 -z-10">
@@ -52,18 +26,27 @@ export function DeckShowcase() {
             </h2>
             <p className="text-pretty text-lg text-muted-foreground">Winning strategies from recent tournaments</p>
           </div>
-          <Button
-            variant="outline"
-            className="hidden border-glow bg-card/50 font-semibold backdrop-blur-sm hover:bg-card md:inline-flex"
-          >
-            View All Decks
-          </Button>
+          <Link href="/decks">
+            <Button
+              variant="outline"
+              className="hidden border-glow bg-card/50 font-semibold backdrop-blur-sm hover:bg-card md:inline-flex"
+            >
+              View All Decks
+            </Button>
+          </Link>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {sampleDecks.map((deck, index) => (
-            <Card
-              key={index}
+        {topDecks.length === 0 ? (
+          <div className="rounded-lg border border-border bg-card/50 p-12 text-center backdrop-blur-sm">
+            <p className="text-lg text-muted-foreground">
+              No decks available yet. Check back soon!
+            </p>
+          </div>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {topDecks.map((deck) => (
+              <Card
+                key={deck._id}
               className="group relative overflow-hidden border-border bg-card/50 backdrop-blur-sm transition-all hover:border-glow hover:card-glow"
             >
               <div className={`h-1 bg-gradient-to-r ${deck.gradient}`} />
@@ -83,6 +66,12 @@ export function DeckShowcase() {
               </CardHeader>
 
               <CardContent className="relative space-y-4">
+                {deck.description && (
+                  <p className="text-sm text-muted-foreground line-clamp-2">
+                    {deck.description}
+                  </p>
+                )}
+
                 <div className="flex items-center gap-6 text-sm">
                   <div className="flex items-center gap-1.5">
                     <div className="rounded-md bg-accent/20 p-1">
@@ -112,17 +101,20 @@ export function DeckShowcase() {
                   <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-accent/10 opacity-0 transition-opacity group-hover/btn:opacity-100" />
                 </Button>
               </CardContent>
-            </Card>
-          ))}
-        </div>
+              </Card>
+            ))}
+          </div>
+        )}
 
         <div className="mt-8 text-center md:hidden">
-          <Button
-            variant="outline"
-            className="w-full border-glow bg-card/50 font-semibold backdrop-blur-sm hover:bg-card"
-          >
-            View All Decks
-          </Button>
+          <Link href="/decks" className="block">
+            <Button
+              variant="outline"
+              className="w-full border-glow bg-card/50 font-semibold backdrop-blur-sm hover:bg-card"
+            >
+              View All Decks
+            </Button>
+          </Link>
         </div>
       </div>
     </section>
