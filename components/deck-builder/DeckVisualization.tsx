@@ -23,204 +23,54 @@ export function DeckVisualization({
   const sideDeckOnlyOneCards = sideDeckCards.filter((card) => card.ex === 'Only #1');
   const sideDeckRegularCards = sideDeckCards.filter((card) => card.ex !== 'Only #1');
 
-  const exportDeckAsImage = async () => {
+  const exportDeckServerSide = async () => {
     setExporting(true);
-    console.log('🚀 Starting export...');
+    console.log('🚀 Starting server-side export...');
 
     try {
-      const html2canvas = (await import('html2canvas')).default;
+      // Prepare deck data for export (works without saving)
+      const allCards = [...lifeCards, ...onlyOneCards, ...sideDeckCards, ...deckCards];
+      
+      const deckData = {
+        name: deckName || 'Untitled Deck',
+        cards: allCards.map(card => ({
+          _id: card._id,
+          name: card.name,
+          imageUrl: card.imageUrl,
+          quantity: card.quantity,
+          ex: card.isLifeCard ? 'Life' : card.isSideDeck ? 'Side Deck' : card.ex || undefined
+        }))
+      };
 
-      const deckElement = document.getElementById('deck-visualization');
-      if (!deckElement) {
-        alert('ไม่สามารถส่งออกรูปภาพได้');
-        setExporting(false);
-        return;
+      // Trigger export from backend using temporary data
+      const response = await fetch(`http://localhost:3001/export/deck/temporary`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(deckData),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to export deck from server');
       }
 
-      console.log('📦 Element found, preparing for capture...');
-
-      const images = deckElement.querySelectorAll('img');
-      console.log(`🖼️ Found ${images.length} images to load...`);
-
-      const imagePromises = Array.from(images).map((img) => {
-        return new Promise<void>((resolve) => {
-          if (img.complete || img.src.startsWith('data:')) {
-            console.log('✅ Image already loaded or is data URL');
-            resolve();
-            return;
-          }
-
-          let resolved = false;
-          const timeout = setTimeout(() => {
-            if (!resolved) {
-              console.warn('⏱️ Image load timeout:', img.src);
-              resolved = true;
-              resolve();
-            }
-          }, 10000);
-
-          img.onload = () => {
-            if (!resolved) {
-              console.log('✅ Image loaded:', img.src.substring(0, 50) + '...');
-              resolved = true;
-              clearTimeout(timeout);
-              resolve();
-            }
-          };
-
-          img.onerror = () => {
-            if (!resolved) {
-              console.error('❌ Failed to load image:', img.src);
-              resolved = true;
-              clearTimeout(timeout);
-              resolve();
-            }
-          };
-
-          if (!img.complete) {
-            const src = img.src;
-            img.src = '';
-            img.src = src;
-          }
-        });
-      });
-
-      console.log('⏳ Waiting for all images to load...');
-      await Promise.all(imagePromises);
-      console.log('✅ All images loaded');
-
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      const canvas = await html2canvas(deckElement, {
-        backgroundColor: '#1a1a1a',
-        scale: 2,
-        logging: true,
-        useCORS: true,
-        allowTaint: true,
-        onclone: (clonedDoc) => {
-          console.log('🔧 onclone callback triggered');
-
-          const styleEl = clonedDoc.createElement('style');
-          styleEl.textContent = `
-            * {
-              --background: #fafafa !important;
-              --foreground: #1f1f1f !important;
-              --card: #ffffff !important;
-              --card-foreground: #1f1f1f !important;
-              --popover: #fafafa !important;
-              --popover-foreground: #1f1f1f !important;
-              --primary: #7c3aed !important;
-              --primary-foreground: #fafafa !important;
-              --secondary: #0ea5e9 !important;
-              --secondary-foreground: #fafafa !important;
-              --muted: #e5e5e5 !important;
-              --muted-foreground: #737373 !important;
-              --accent: #d946ef !important;
-              --accent-foreground: #fafafa !important;
-              --destructive: #ef4444 !important;
-              --destructive-foreground: #fafafa !important;
-              --border: #d4d4d4 !important;
-              --input: #d4d4d4 !important;
-              --ring: #7c3aed !important;
-            }
-            
-            .bg-muted, [class*="bg-muted"] {
-              background-color: #e5e5e5 !important;
-            }
-            .bg-background, [class*="bg-background"] {
-              background-color: #fafafa !important;
-            }
-            .bg-white {
-              background-color: #ffffff !important;
-            }
-            
-            [class*="bg-gradient"],
-            [class*="from-"],
-            [class*="to-"],
-            [class*="via-"] {
-              background-image: none !important;
-              background-color: #1a1a1a !important;
-            }
-            
-            .text-white, [class*="text-white"] {
-              color: #ffffff !important;
-            }
-            .text-black, [class*="text-black"] {
-              color: #000000 !important;
-            }
-            .text-muted-foreground {
-              color: #737373 !important;
-            }
-            
-            .border, [class*="border-"] {
-              border-color: #d4d4d4 !important;
-            }
-            .border-dashed {
-              border-style: dashed !important;
-            }
-            
-            .ring-black {
-              --tw-ring-color: #000000 !important;
-            }
-            .ring-cyan-500 {
-              --tw-ring-color: #06b6d4 !important;
-            }
-            .ring-2 {
-              box-shadow: 0 0 0 2px var(--tw-ring-color, #000000) !important;
-            }
-          `;
-          clonedDoc.head.appendChild(styleEl);
-          console.log('✅ Injected RGB color overrides');
-
-          const allElements = clonedDoc.querySelectorAll('*');
-          console.log(`🔍 Processing ${allElements.length} elements...`);
-
-          let modifiedCount = 0;
-          allElements.forEach((element) => {
-            const el = element as HTMLElement;
-
-            const classList = Array.from(el.classList);
-            classList.forEach((className) => {
-              if (
-                className.includes('bg-gradient') ||
-                className.includes('text-gradient') ||
-                className.includes('bg-clip-text') ||
-                className.includes('text-transparent')
-              ) {
-                el.classList.remove(className);
-                modifiedCount++;
-              }
-            });
-          });
-
-          console.log(`✅ Modified ${modifiedCount} problematic classes`);
-        },
-      });
-
-      console.log('✨ Canvas created successfully!');
-
-      canvas.toBlob((blob: Blob | null) => {
-        if (blob) {
-          console.log('💾 Blob created, downloading...');
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = `${deckName || 'deck'}-${Date.now()}.png`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          URL.revokeObjectURL(url);
-          console.log('✅ Download complete!');
-        } else {
-          console.error('❌ Failed to create blob');
-          alert('ไม่สามารถสร้างไฟล์รูปภาพได้');
-        }
-        setExporting(false);
-      }, 'image/png');
+      // Download the image
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${deckName || 'deck'}-${Date.now()}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      console.log('✅ Server-side export complete!');
+      setExporting(false);
     } catch (error) {
-      console.error('❌ Export error:', error);
-      console.error('Error stack:', (error as Error).stack);
-      alert('เกิดข้อผิดพลาดในการส่งออกรูปภาพ: ' + (error as Error).message);
+      console.error('❌ Server-side export error:', error);
+      alert('Failed to export deck image: ' + (error as Error).message);
       setExporting(false);
     }
   };
@@ -231,12 +81,12 @@ export function DeckVisualization({
         <Button
           size="sm"
           variant="secondary"
-          onClick={exportDeckAsImage}
+          onClick={exportDeckServerSide}
           disabled={exporting || deckCards.length === 0}
-          className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white"
+          className="bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white"
         >
           <Download className="h-4 w-4 mr-2" />
-          {exporting ? 'กำลังส่งออก...' : 'ส่งออกรูป'}
+          {exporting ? 'Exporting...' : 'Export Image'}
         </Button>
       </div>
 
@@ -345,38 +195,33 @@ export function DeckVisualization({
           </div>
 
           {/* Life Cards and Only One - Right Side */}
-          <div className="flex items-start gap-4">
+          <div className="flex items-end gap-4">
             {/* Life Cards Stack */}
             {lifeCards.length === 0 ? (
               <div className="w-24 py-6 text-center text-xs text-muted-foreground border-2 border-dashed rounded-lg">
                 No life cards
               </div>
             ) : (
-              <div className="flex flex-col items-center">
-                <div
-                  className="relative w-25"
-                  style={{ height: `${8 + (lifeCards.length - 1) * 2.5}rem` }}
-                >
-                  {lifeCards.map((card, index) => (
-                    <div
-                      key={`life-view-${card._id}`}
-                      className="absolute left-1/2 -translate-x-1/2 w-19 transition-all hover:scale-125 hover:z-8"
-                      style={{ top: `${index * 2.5}rem` }}
-                    >
-                      {card.imageUrl && (
-                        <div className="relative aspect-[2/3] overflow-hidden rounded bg-muted/30 shadow-lg">
-                          <Image
-                            src={card.imageUrl}
-                            alt={card.name}
-                            fill
-                            className="object-contain"
-                            sizes="112px"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
+              <div className="relative w-25" style={{ height: `${6 + (lifeCards.length - 1) * 2.5}rem` }}>
+                {lifeCards.map((card, index) => (
+                  <div
+                    key={`life-view-${card._id}`}
+                    className="absolute left-1/2 -translate-x-1/2 w-19 transition-all hover:scale-125 hover:z-8"
+                    style={{ bottom: `${(lifeCards.length - 1 - index) * 2.5}rem` }}
+                  >
+                    {card.imageUrl && (
+                      <div className="relative aspect-[2/3] overflow-hidden rounded bg-muted/30 shadow-lg">
+                        <Image
+                          src={card.imageUrl}
+                          alt={card.name}
+                          fill
+                          className="object-contain"
+                          sizes="112px"
+                        />
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             )}
 
