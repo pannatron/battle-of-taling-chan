@@ -9,6 +9,7 @@ export interface Deck {
   gradient: string;
   description?: string;
   cardIds: string[];
+  sideDeckIds?: string[];
   createdAt?: string;
   updatedAt?: string;
 }

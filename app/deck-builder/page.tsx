@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search, Plus, Trash2, Save, X, ArrowLeft, Heart } from 'lucide-react';
+import { Search, Plus, Trash2, Save, X, ArrowLeft, Heart, Grid3x3, List } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -24,6 +24,7 @@ import Image from 'next/image';
 interface DeckCard extends CardType {
   quantity: number;
   isLifeCard?: boolean;
+  isSideDeck?: boolean;
 }
 
 export default function DeckBuilderPage() {
@@ -47,6 +48,9 @@ export default function DeckBuilderPage() {
   const [deckAuthor, setDeckAuthor] = useState('');
   const [deckArchetype, setDeckArchetype] = useState('');
   const [deckDescription, setDeckDescription] = useState('');
+  
+  // Visualization mode
+  const [visualizationMode, setVisualizationMode] = useState<'compact' | 'grid'>('compact');
 
   // Filter options
   const [types, setTypes] = useState<string[]>([]);
@@ -150,15 +154,27 @@ export default function DeckBuilderPage() {
       .reduce((total, card) => total + card.quantity, 0);
   };
 
+  const getSideDeckCardCount = () => {
+    return selectedCards
+      .filter((card) => card.isSideDeck)
+      .reduce((total, card) => total + card.quantity, 0);
+  };
+
   const getMaxDeckSize = () => {
     const onlyOneCount = getOnlyOneCardCount();
     return onlyOneCount > 0 ? 49 : 50;
   };
 
-  const getCardQuantity = (cardId: string, isLifeCard: boolean = false, isOnlyOne: boolean = false) => {
+  const getCardQuantity = (cardId: string, isLifeCard: boolean = false, isOnlyOne: boolean = false, isSideDeck: boolean = false) => {
     if (isOnlyOne) {
       const card = selectedCards.find(
         (c) => c._id === cardId && c.ex === 'Only #1' && !c.isLifeCard
+      );
+      return card ? card.quantity : 0;
+    }
+    if (isSideDeck) {
+      const card = selectedCards.find(
+        (c) => c._id === cardId && c.isSideDeck
       );
       return card ? card.quantity : 0;
     }
@@ -168,12 +184,38 @@ export default function DeckBuilderPage() {
     return card ? card.quantity : 0;
   };
 
-  const addCardToDeck = (card: CardType) => {
+  const addCardToDeck = (card: CardType, targetDeck: 'main' | 'life' | 'side' = 'main') => {
     // Auto-detect if card is a life card based on type
-    const isLifeCard = card.type === 'Life';
+    const isLifeCard = card.type === 'Life' || targetDeck === 'life';
     const isOnlyOne = card.ex === 'Only #1';
+    const isSideDeck = targetDeck === 'side';
     
-    if (isLifeCard) {
+    if (isSideDeck) {
+      const totalSideDeck = getSideDeckCardCount();
+      if (totalSideDeck >= 10) {
+        alert('ไซด์เด็คเต็มแล้ว! (จำกัด 10 ใบ)');
+        return;
+      }
+
+      const existingCard = selectedCards.find(
+        (c) => c._id === card._id && c.isSideDeck
+      );
+      if (existingCard) {
+        if (existingCard.quantity >= 4) {
+          alert('ใส่การ์ดใบนี้ได้สูงสุด 4 ใบในไซด์เด็ค');
+          return;
+        }
+        setSelectedCards(
+          selectedCards.map((c) =>
+            c._id === card._id && c.isSideDeck
+              ? { ...c, quantity: c.quantity + 1 }
+              : c
+          )
+        );
+      } else {
+        setSelectedCards([...selectedCards, { ...card, quantity: 1, isSideDeck: true }]);
+      }
+    } else if (isLifeCard) {
       const totalLifeCards = getLifeCardCount();
       if (totalLifeCards >= 5) {
         alert('ไลฟ์การ์ดเต็มแล้ว! (จำกัด 5 ใบ)');
@@ -239,13 +281,35 @@ export default function DeckBuilderPage() {
     }
   };
 
-  const removeCardFromDeck = (cardId: string, isLifeCard: boolean = false, isOnlyOne: boolean = false) => {
+  const removeCardFromDeck = (cardId: string, isLifeCard: boolean = false, isOnlyOne: boolean = false, isSideDeck: boolean = false) => {
     if (isOnlyOne) {
       setSelectedCards(
         selectedCards.filter(
           (c) => !(c._id === cardId && c.ex === 'Only #1')
         )
       );
+      return;
+    }
+
+    if (isSideDeck) {
+      const existingCard = selectedCards.find(
+        (c) => c._id === cardId && c.isSideDeck
+      );
+      if (existingCard && existingCard.quantity > 1) {
+        setSelectedCards(
+          selectedCards.map((c) =>
+            c._id === cardId && c.isSideDeck
+              ? { ...c, quantity: c.quantity - 1 }
+              : c
+          )
+        );
+      } else {
+        setSelectedCards(
+          selectedCards.filter(
+            (c) => !(c._id === cardId && c.isSideDeck)
+          )
+        );
+      }
       return;
     }
 
@@ -291,13 +355,23 @@ export default function DeckBuilderPage() {
     }
 
     setSaving(true);
-    // Expand card IDs based on quantities (only deck cards, not life cards)
+    // Expand card IDs based on quantities (only deck cards, not life cards or side deck)
     const cardIds: string[] = [];
     selectedCards
-      .filter((card) => !card.isLifeCard)
+      .filter((card) => !card.isLifeCard && !card.isSideDeck)
       .forEach((card) => {
         for (let i = 0; i < card.quantity; i++) {
           cardIds.push(card._id);
+        }
+      });
+
+    // Expand side deck card IDs
+    const sideDeckIds: string[] = [];
+    selectedCards
+      .filter((card) => card.isSideDeck)
+      .forEach((card) => {
+        for (let i = 0; i < card.quantity; i++) {
+          sideDeckIds.push(card._id);
         }
       });
 
@@ -307,6 +381,7 @@ export default function DeckBuilderPage() {
       archetype: deckArchetype || 'Other',
       description: deckDescription,
       cardIds,
+      sideDeckIds,
       wins: 0,
       views: 0,
       likes: 0,
@@ -340,8 +415,9 @@ export default function DeckBuilderPage() {
   };
 
   const lifeCards = selectedCards.filter((card) => card.isLifeCard);
-  const onlyOneCards = selectedCards.filter((card) => !card.isLifeCard && card.ex === 'Only #1');
-  const deckCards = selectedCards.filter((card) => !card.isLifeCard && card.ex !== 'Only #1');
+  const onlyOneCards = selectedCards.filter((card) => !card.isLifeCard && card.ex === 'Only #1' && !card.isSideDeck);
+  const sideDeckCards = selectedCards.filter((card) => card.isSideDeck);
+  const deckCards = selectedCards.filter((card) => !card.isLifeCard && card.ex !== 'Only #1' && !card.isSideDeck);
 
   return (
     <div className="min-h-screen bg-background py-8">
@@ -358,7 +434,7 @@ export default function DeckBuilderPage() {
             Deck Builder
           </h1>
           <p className="text-muted-foreground">
-            Build your deck with 5 life cards, 1 only one card (optional), and up to {getMaxDeckSize()} deck cards
+            Build your deck with 5 life cards, 1 only one card (optional), up to {getMaxDeckSize()} deck cards, and up to 10 side deck cards
           </p>
         </div>
 
@@ -572,193 +648,337 @@ export default function DeckBuilderPage() {
 
           {/* Main Content Area */}
           <div className="flex-1 space-y-4">
-            {/* Life Cards and Only One Section - Side by Side */}
-            <div className="grid grid-cols-2 gap-4">
-              {/* Life Cards Section */}
-              <Card className="border-2">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-bold flex items-center gap-2">
-                    <Heart className="h-5 w-5 text-red-500 fill-red-500" />
-                    Life Cards{' '}
-                    <span className="bg-gradient-to-r from-red-500 to-pink-500 bg-clip-text text-transparent">
-                      ({getLifeCardCount()}/5)
-                    </span>
-                  </h2>
-                  {lifeCards.length > 0 && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => setSelectedCards(selectedCards.filter(c => !c.isLifeCard))}
-                    >
-                      Clear
-                    </Button>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent>
-                {lifeCards.length === 0 ? (
-                  <div className="py-8 text-center text-sm text-muted-foreground border-2 border-dashed rounded-lg">
-                    Click + on Life button in search results to add life cards
-                  </div>
-                ) : (
-                  <div className="flex gap-2 flex-wrap">
-                    {lifeCards.map((card) => (
-                      <div
-                        key={`life-${card._id}`}
-                        className="group relative w-20 transition-all hover:scale-[3] hover:z-50"
-                      >
-                        {card.imageUrl && (
-                          <div className="relative aspect-[2/3] overflow-hidden rounded border-2 border-red-500 bg-muted/30 shadow-lg">
-                            <Image
-                              src={card.imageUrl}
-                              alt={card.name}
-                              fill
-                              className="object-contain"
-                              sizes="80px"
-                            />
-                            {/* Hover overlay with controls */}
-                            <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 p-1">
-                              <div className="flex items-center gap-1">
-                                <Button
-                                  size="sm"
-                                  variant="destructive"
-                                  className="h-6 w-6 p-0 text-xs"
-                                  onClick={() => removeCardFromDeck(card._id, true)}
-                                >
-                                  -
-                                </Button>
-                                <span className="text-white text-xs font-bold w-4 text-center">
-                                  {card.quantity}
-                                </span>
-                                <Button
-                                  size="sm"
-                                  variant="default"
-                                  className="h-6 w-6 p-0 text-xs"
-                                  onClick={() => addCardToDeck(card)}
-                                  disabled={card.quantity >= 1}
-                                >
-                                  +
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Only One Section */}
-            <Card className="border-2">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-bold flex items-center gap-2">
-                    <span className="text-2xl">⭐</span>
-                    Only One{' '}
-                    <span className="bg-gradient-to-r from-yellow-500 to-orange-500 bg-clip-text text-transparent">
-                      ({getOnlyOneCardCount()}/1)
-                    </span>
-                  </h2>
-                  {onlyOneCards.length > 0 && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => setSelectedCards(selectedCards.filter(c => c.ex !== 'Only #1'))}
-                    >
-                      Clear
-                    </Button>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent>
-                {onlyOneCards.length === 0 ? (
-                  <div className="py-8 text-center text-sm text-muted-foreground border-2 border-dashed rounded-lg">
-                    Click cards with "Only #1" Ex to add here
-                  </div>
-                ) : (
-                  <div className="flex gap-2 flex-wrap">
-                    {onlyOneCards.map((card) => (
-                      <div
-                        key={`only-${card._id}`}
-                        className="group relative w-20 transition-all hover:scale-[3] hover:z-50"
-                      >
-                        {card.imageUrl && (
-                          <div className="relative aspect-[2/3] overflow-hidden rounded border-2 border-yellow-500 bg-muted/30 shadow-lg">
-                            <Image
-                              src={card.imageUrl}
-                              alt={card.name}
-                              fill
-                              className="object-contain"
-                              sizes="80px"
-                            />
-                            {/* Hover overlay with controls */}
-                            <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 p-1">
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                className="h-6 px-2 text-xs"
-                                onClick={() => removeCardFromDeck(card._id, false, true)}
-                              >
-                                Remove
-                              </Button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            {/* View Mode Toggle - Top */}
+            <div className="flex items-center justify-end gap-2">
+              <Button
+                size="sm"
+                variant={visualizationMode === 'compact' ? 'default' : 'outline'}
+                onClick={() => setVisualizationMode('compact')}
+              >
+                <List className="h-4 w-4 mr-2" />
+                Edit Mode
+              </Button>
+              <Button
+                size="sm"
+                variant={visualizationMode === 'grid' ? 'default' : 'outline'}
+                onClick={() => setVisualizationMode('grid')}
+              >
+                <Grid3x3 className="h-4 w-4 mr-2" />
+                View Mode
+              </Button>
             </div>
 
-            {/* Deck Cards Section */}
-            <Card className="border-2">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-bold">
-                    🎴 Main Deck{' '}
-                    <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                      ({getTotalCardCount()}/{getMaxDeckSize()})
-                    </span>
-                  </h2>
-                  {deckCards.length > 0 && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => setSelectedCards(selectedCards.filter(c => c.isLifeCard || c.ex === 'Only #1'))}
-                    >
-                      Clear
-                    </Button>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent>
+            {visualizationMode === 'grid' ? (
+              /* Full Deck Visualization - View Mode (No Card borders, no headings) */
+              <div className="space-y-6 p-6 bg-muted/30 rounded-lg">
+                {/* Main Deck Grid - Max 8 per row */}
                 {deckCards.length === 0 ? (
                   <div className="py-8 text-center text-sm text-muted-foreground border-2 border-dashed rounded-lg">
-                    Click + on Deck button in search results to add cards to main deck
+                    No cards in main deck
                   </div>
                 ) : (
-                  <div className="flex gap-2 flex-wrap">
+                  <div className="grid grid-cols-8 gap-2">
                     {deckCards.map((card) => (
                       <div
-                        key={`deck-${card._id}`}
-                        className="group relative w-20 transition-all hover:scale-[3] hover:z-50"
+                        key={`deck-view-${card._id}`}
+                        className="group relative transition-all hover:scale-110 hover:z-10"
                       >
                         {card.imageUrl && (
-                          <div className="relative aspect-[2/3] overflow-hidden rounded border-2 border-border bg-muted/30 shadow-lg">
+                          <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-muted/30 shadow-lg">
                             <Image
                               src={card.imageUrl}
                               alt={card.name}
                               fill
                               className="object-contain"
-                              sizes="80px"
+                              sizes="12.5vw"
+                            />
+                            {/* Quantity badge - Center */}
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-white text-lg font-bold text-black shadow-xl ring-2 ring-black">
+                              {card.quantity}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Side Deck Grid - Below Main Deck */}
+                {sideDeckCards.length > 0 && (
+                  <div className="grid grid-cols-10 gap-2 mt-4">
+                    {sideDeckCards.map((card) => (
+                      <div
+                        key={`side-view-${card._id}`}
+                        className="group relative transition-all hover:scale-110 hover:z-10"
+                      >
+                        {card.imageUrl && (
+                          <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-muted/30 shadow-lg border-2 border-cyan-500">
+                            <Image
+                              src={card.imageUrl}
+                              alt={card.name}
+                              fill
+                              className="object-contain"
+                              sizes="10vw"
+                            />
+                            {/* Quantity badge - Center */}
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-white text-lg font-bold text-black shadow-xl ring-2 ring-cyan-500">
+                              {card.quantity}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Life Cards, Only One & Side Deck Summary - Aligned Right */}
+                <div className="flex items-start justify-end gap-8">
+                  {/* Life Cards Stack - No borders */}
+                  {lifeCards.length === 0 ? (
+                    <div className="w-36 py-8 text-center text-sm text-muted-foreground border-2 border-dashed rounded-lg">
+                      No life cards
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center">
+                      <div className="relative w-28" style={{ height: `${7 + (lifeCards.length - 1) * 2}rem` }}>
+                        {lifeCards.map((card, index) => (
+                          <div
+                            key={`life-view-${card._id}`}
+                            className="absolute left-1/2 -translate-x-1/2 w-28 transition-all hover:scale-110 hover:z-10"
+                            style={{ top: `${index * 2}rem` }}
+                          >
+                            {card.imageUrl && (
+                              <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-muted/30 shadow-2xl">
+                                <Image
+                                  src={card.imageUrl}
+                                  alt={card.name}
+                                  fill
+                                  className="object-contain"
+                                  sizes="112px"
+                                />
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Only One Card - No borders */}
+                  {onlyOneCards.length === 0 ? (
+                    <div className="w-48 py-8 text-center text-sm text-muted-foreground border-2 border-dashed rounded-lg">
+                      No only one card
+                    </div>
+                  ) : (
+                    <div className="flex justify-center">
+                      {onlyOneCards.map((card) => (
+                        <div
+                          key={`only-view-${card._id}`}
+                          className="w-48 transition-all hover:scale-105"
+                        >
+                          {card.imageUrl && (
+                            <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-muted/30 shadow-2xl">
+                              <Image
+                                src={card.imageUrl}
+                                alt={card.name}
+                                fill
+                                className="object-contain"
+                                sizes="192px"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              /* Edit Mode - Original Layout with Cards */
+              <>
+                {/* Life Cards, Only One, and Side Deck - Compact Layout */}
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Life Cards & Only One - Combined in One Card, Same Row */}
+                  <Card className="border-2">
+                    <CardContent className="pt-3 pb-3">
+                      <div className="flex gap-4 items-stretch">
+                        {/* Life Cards Section */}
+                        <div className="flex-1 flex flex-col">
+                          <h2 className="text-sm font-bold flex items-center gap-1 leading-6 mb-1.5">
+                            <Heart className="h-3.5 w-3.5 text-red-500 fill-red-500" />
+                            Life{' '}
+                            <span className="bg-gradient-to-r from-red-500 to-pink-500 bg-clip-text text-transparent">
+                              ({getLifeCardCount()}/5)
+                            </span>
+                          </h2>
+                          {lifeCards.length === 0 ? (
+                            <div className="py-4 text-center text-xs text-muted-foreground border-2 border-dashed rounded-lg">
+                              Add life cards
+                            </div>
+                          ) : (
+                            <>
+                              <div className="flex gap-1.5 justify-start flex-wrap mb-1.5">
+                                {lifeCards.map((card) => (
+                                <div
+                                  key={`life-${card._id}`}
+                                  className="group relative w-16 transition-all hover:scale-[3] hover:z-50"
+                                >
+                                  {card.imageUrl && (
+                                    <div className="relative aspect-[2/3] overflow-hidden rounded border-2 border-red-500 bg-muted/30 shadow-lg">
+                                      <Image
+                                        src={card.imageUrl}
+                                        alt={card.name}
+                                        fill
+                                        className="object-contain"
+                                        sizes="64px"
+                                      />
+                                      {/* Hover overlay with controls */}
+                                      <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 p-1">
+                                        <div className="flex items-center gap-1">
+                                          <Button
+                                            size="sm"
+                                            variant="destructive"
+                                            className="h-6 w-6 p-0 text-xs"
+                                            onClick={() => removeCardFromDeck(card._id, true)}
+                                          >
+                                            -
+                                          </Button>
+                                          <span className="text-white text-xs font-bold w-4 text-center">
+                                            {card.quantity}
+                                          </span>
+                                          <Button
+                                            size="sm"
+                                            variant="default"
+                                            className="h-6 w-6 p-0 text-xs"
+                                            onClick={() => addCardToDeck(card)}
+                                            disabled={card.quantity >= 1}
+                                          >
+                                            +
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
+                                  </div>
+                                ))}
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setSelectedCards(selectedCards.filter(c => !c.isLifeCard))}
+                                className="h-5 px-1.5 text-[10px] w-fit"
+                              >
+                                Clear
+                              </Button>
+                            </>
+                          )}
+                        </div>
+
+                        {/* Only One Section */}
+                        <div className="flex-shrink-0 flex flex-col items-start">
+                          <h2 className="text-sm font-bold flex items-center gap-1 leading-6 mb-1.5">
+                            <span className="text-base leading-6">⭐</span>
+                            Only One{' '}
+                            <span className="bg-gradient-to-r from-yellow-500 to-orange-500 bg-clip-text text-transparent">
+                              ({getOnlyOneCardCount()}/1)
+                            </span>
+                          </h2>
+                          {onlyOneCards.length === 0 ? (
+                            <div className="w-16 py-4 text-center text-xs text-muted-foreground border-2 border-dashed rounded-lg">
+                              Only #1
+                            </div>
+                          ) : (
+                            <>
+                              <div className="flex gap-1.5 mb-1.5">
+                                {onlyOneCards.map((card) => (
+                                <div
+                                  key={`only-${card._id}`}
+                                  className="group relative w-16 transition-all hover:scale-[3] hover:z-50"
+                                >
+                                  {card.imageUrl && (
+                                    <div className="relative aspect-[2/3] overflow-hidden rounded border-2 border-yellow-500 bg-muted/30 shadow-lg">
+                                      <Image
+                                        src={card.imageUrl}
+                                        alt={card.name}
+                                        fill
+                                        className="object-contain"
+                                        sizes="64px"
+                                      />
+                                      {/* Hover overlay with controls */}
+                                      <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 p-1">
+                                        <Button
+                                          size="sm"
+                                          variant="destructive"
+                                          className="h-6 px-2 text-xs"
+                                          onClick={() => removeCardFromDeck(card._id, false, true)}
+                                        >
+                                          Remove
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  )}
+                                  </div>
+                                ))}
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setSelectedCards(selectedCards.filter(c => c.ex !== 'Only #1'))}
+                                className="h-5 px-1.5 text-[10px] w-fit"
+                              >
+                                Clear
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Side Deck Section */}
+                  <Card className="border-2">
+                    <CardContent className="pt-3 pb-3">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <h2 className="text-sm font-bold flex items-center gap-1">
+                          <span className="text-base">🔄</span>
+                          Side Deck{' '}
+                          <span className="bg-gradient-to-r from-cyan-500 to-blue-500 bg-clip-text text-transparent">
+                            ({getSideDeckCardCount()}/10)
+                          </span>
+                        </h2>
+                        {sideDeckCards.length > 0 && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setSelectedCards(selectedCards.filter(c => !c.isSideDeck))}
+                            className="h-5 px-1.5 text-[10px]"
+                          >
+                            Clear
+                          </Button>
+                        )}
+                      </div>
+                      {sideDeckCards.length === 0 ? (
+                        <div className="py-4 text-center text-xs text-muted-foreground border-2 border-dashed rounded-lg">
+                          Right-click to add
+                        </div>
+                ) : (
+                  <div className="flex gap-1.5 flex-wrap">
+                    {sideDeckCards.map((card) => (
+                      <div
+                        key={`side-${card._id}`}
+                        className="group relative w-16 transition-all hover:scale-[3] hover:z-50"
+                      >
+                        {card.imageUrl && (
+                          <div className="relative aspect-[2/3] overflow-hidden rounded border-2 border-cyan-500 bg-muted/30 shadow-lg">
+                            <Image
+                              src={card.imageUrl}
+                              alt={card.name}
+                              fill
+                              className="object-contain"
+                              sizes="64px"
                             />
                             {/* Quantity badge */}
-                            <div className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground shadow-lg ring-2 ring-background">
+                            <div className="absolute top-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-cyan-500 text-[8px] font-bold text-white shadow-lg ring-1 ring-background">
                               {card.quantity}
                             </div>
                             {/* Hover overlay with controls */}
@@ -768,7 +988,7 @@ export default function DeckBuilderPage() {
                                   size="sm"
                                   variant="destructive"
                                   className="h-6 w-6 p-0 text-xs"
-                                  onClick={() => removeCardFromDeck(card._id, false)}
+                                  onClick={() => removeCardFromDeck(card._id, false, false, true)}
                                 >
                                   -
                                 </Button>
@@ -779,8 +999,8 @@ export default function DeckBuilderPage() {
                                   size="sm"
                                   variant="default"
                                   className="h-6 w-6 p-0 text-xs"
-                                  onClick={() => addCardToDeck(card)}
-                                  disabled={card.quantity >= 4 || getTotalCardCount() >= getMaxDeckSize()}
+                                  onClick={() => addCardToDeck(card, 'side')}
+                                  disabled={card.quantity >= 4 || getSideDeckCardCount() >= 10}
                                 >
                                   +
                                 </Button>
@@ -791,9 +1011,92 @@ export default function DeckBuilderPage() {
                       </div>
                     ))}
                   </div>
-                )}
-              </CardContent>
-            </Card>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Deck Cards Section - Edit Mode */}
+                <Card className="border-2">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-xl font-bold">
+                        🎴 Main Deck{' '}
+                        <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                          ({getTotalCardCount()}/{getMaxDeckSize()})
+                        </span>
+                      </h2>
+                      {deckCards.length > 0 && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setSelectedCards(selectedCards.filter(c => c.isLifeCard || c.ex === 'Only #1' || c.isSideDeck))}
+                        >
+                          Clear
+                        </Button>
+                      )}
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {deckCards.length === 0 ? (
+                      <div className="py-8 text-center text-sm text-muted-foreground border-2 border-dashed rounded-lg">
+                        Click + on Deck button in search results to add cards to main deck
+                      </div>
+                    ) : (
+                      <div className="flex gap-2 flex-wrap">
+                        {deckCards.map((card) => (
+                          <div
+                            key={`deck-${card._id}`}
+                            className="group relative w-20 transition-all hover:scale-[3] hover:z-50"
+                          >
+                            {card.imageUrl && (
+                              <div className="relative aspect-[2/3] overflow-hidden rounded border-2 border-border bg-muted/30 shadow-lg">
+                                <Image
+                                  src={card.imageUrl}
+                                  alt={card.name}
+                                  fill
+                                  className="object-contain"
+                                  sizes="80px"
+                                />
+                                {/* Quantity badge */}
+                                <div className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground shadow-lg ring-2 ring-background">
+                                  {card.quantity}
+                                </div>
+                                {/* Hover overlay with controls */}
+                                <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 p-1">
+                                  <div className="flex items-center gap-1">
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      className="h-6 w-6 p-0 text-xs"
+                                      onClick={() => removeCardFromDeck(card._id, false)}
+                                    >
+                                      -
+                                    </Button>
+                                    <span className="text-white text-xs font-bold w-4 text-center">
+                                      {card.quantity}
+                                    </span>
+                                    <Button
+                                      size="sm"
+                                      variant="default"
+                                      className="h-6 w-6 p-0 text-xs"
+                                      onClick={() => addCardToDeck(card)}
+                                      disabled={card.quantity >= 4 || getTotalCardCount() >= getMaxDeckSize()}
+                                    >
+                                      +
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </>
+            )}
 
             {/* Search Results */}
             <Card className="border-2">
@@ -820,7 +1123,12 @@ export default function DeckBuilderPage() {
                       <div
                         key={card._id}
                         onClick={() => addCardToDeck(card)}
+                        onContextMenu={(e) => {
+                          e.preventDefault();
+                          addCardToDeck(card, 'side');
+                        }}
                         className="group relative overflow-hidden rounded-lg border border-border bg-card/50 backdrop-blur-sm transition-all hover:scale-[2.5] hover:z-50 hover:shadow-2xl cursor-pointer"
+                        title="Left click: Add to main deck | Right click: Add to side deck"
                       >
                         <div
                           className={`h-0.5 bg-gradient-to-r ${getRarityColor(card.rare)}`}
