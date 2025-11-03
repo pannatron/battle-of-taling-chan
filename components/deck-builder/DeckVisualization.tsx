@@ -38,7 +38,8 @@ export function DeckVisualization({
           name: card.name,
           imageUrl: card.imageUrl,
           quantity: card.quantity,
-          ex: card.isLifeCard ? 'Life' : card.isSideDeck ? 'Side Deck' : card.ex || undefined
+          ex: card.isLifeCard ? 'Life' : card.ex || undefined,
+          isSideDeck: card.isSideDeck || undefined
         }))
       };
 
