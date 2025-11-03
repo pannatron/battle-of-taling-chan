@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 
@@ -13,7 +13,7 @@ interface DeckCard {
   isSideDeck?: boolean;
 }
 
-export default function ExportDeckPage() {
+function ExportDeckContent() {
   const searchParams = useSearchParams();
   const deckId = searchParams.get('id');
   const [deck, setDeck] = useState<any>(null);
@@ -52,7 +52,7 @@ export default function ExportDeckPage() {
       return;
     }
 
-    fetch(`http://localhost:3001/decks/${deckId}`)
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/decks/${deckId}`)
       .then((res) => res.json())
       .then((data) => {
         setDeck(data);
@@ -280,5 +280,17 @@ export default function ExportDeckPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ExportDeckPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen bg-gray-900">
+        <div className="text-white text-xl">Loading deck...</div>
+      </div>
+    }>
+      <ExportDeckContent />
+    </Suspense>
   );
 }

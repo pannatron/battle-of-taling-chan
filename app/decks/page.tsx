@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button"
 import { Eye, Heart, TrendingUp, Zap } from "lucide-react"
 import { getAllDecks } from "@/lib/api"
 
+export const dynamic = 'force-dynamic';
+
 export default async function DecksPage() {
   const decks = await getAllDecks()
 
