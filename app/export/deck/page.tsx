@@ -127,7 +127,7 @@ export default function ExportDeckPage() {
             {deckCards.map((card) => (
               <div key={`deck-view-${card._id}`} className="relative">
                 {card.imageUrl && (
-                  <div className="relative aspect-[2/3] overflow-hidden rounded bg-gray-900">
+                  <div className="relative aspect-[2/3] overflow-hidden rounded bg-transparent">
                     <Image
                       src={card.imageUrl}
                       alt={card.name}
@@ -171,7 +171,7 @@ export default function ExportDeckPage() {
                     {sideDeckOnlyOneCards.map((card) => (
                       <div key={`side-only-view-${card._id}`} className="w-20">
                         {card.imageUrl && (
-                          <div className="relative aspect-[2/3] overflow-hidden rounded bg-gray-900">
+                          <div className="relative aspect-[2/3] overflow-hidden rounded bg-transparent">
                             <Image
                               src={card.imageUrl}
                               alt={card.name}
@@ -197,7 +197,7 @@ export default function ExportDeckPage() {
                         style={{ marginLeft: index > 0 ? '-1rem' : '0' }}
                       >
                         {card.imageUrl && (
-                          <div className="relative aspect-[2/3] overflow-hidden rounded bg-gray-900">
+                          <div className="relative aspect-[2/3] overflow-hidden rounded bg-transparent">
                             <Image
                               src={card.imageUrl}
                               alt={card.name}
@@ -235,7 +235,7 @@ export default function ExportDeckPage() {
                     style={{ bottom: `${(lifeCards.length - 1 - index) * 2.5}rem` }}
                   >
                     {card.imageUrl && (
-                      <div className="relative aspect-[2/3] overflow-hidden rounded bg-gray-900">
+                      <div className="relative aspect-[2/3] overflow-hidden rounded bg-transparent">
                         <Image
                           src={card.imageUrl}
                           alt={card.name}
@@ -261,7 +261,7 @@ export default function ExportDeckPage() {
                 {onlyOneCards.map((card) => (
                   <div key={`only-view-${card._id}`} className="w-48">
                     {card.imageUrl && (
-                      <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-gray-900">
+                      <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-transparent">
                         <Image
                           src={card.imageUrl}
                           alt={card.name}
