@@ -15,7 +15,15 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import Image from 'next/image';
+import { X } from 'lucide-react';
 
 export default function AdminPage() {
   const [cards, setCards] = useState<Card[]>([]);
@@ -25,24 +33,79 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Filter states
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [rarityFilter, setRarityFilter] = useState('all');
+  const [seriesFilter, setSeriesFilter] = useState('all');
+  const [colorFilter, setColorFilter] = useState('all');
+  const [imageStatusFilter, setImageStatusFilter] = useState('all');
+  
+  // Available filter options
+  const [types, setTypes] = useState<string[]>([]);
+  const [rarities, setRarities] = useState<string[]>([]);
+  const [series, setSeries] = useState<string[]>([]);
+  const [colors, setColors] = useState<string[]>([]);
 
   useEffect(() => {
     loadCards();
   }, []);
 
   useEffect(() => {
-    if (searchTerm.trim() === '') {
-      setFilteredCards(cards);
-    } else {
-      const filtered = cards.filter(
+    // Extract unique values for filters
+    const uniqueTypes = Array.from(new Set(cards.map((c) => c.type).filter(Boolean)));
+    const uniqueRarities = Array.from(new Set(cards.map((c) => c.rare).filter(Boolean)));
+    const uniqueSeries = Array.from(new Set(cards.map((c) => c.series).filter(Boolean)));
+    const uniqueColors = Array.from(new Set(cards.map((c) => c.color).filter(Boolean)));
+    
+    setTypes(uniqueTypes.sort());
+    setRarities(uniqueRarities.sort());
+    setSeries(uniqueSeries.sort());
+    setColors(uniqueColors.sort());
+  }, [cards]);
+
+  useEffect(() => {
+    let filtered = cards;
+
+    // Search term filter
+    if (searchTerm.trim() !== '') {
+      filtered = filtered.filter(
         (card) =>
           card.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
           card.print.toLowerCase().includes(searchTerm.toLowerCase()) ||
           card.series.toLowerCase().includes(searchTerm.toLowerCase())
       );
-      setFilteredCards(filtered);
     }
-  }, [searchTerm, cards]);
+
+    // Type filter
+    if (typeFilter !== 'all') {
+      filtered = filtered.filter((card) => card.type === typeFilter);
+    }
+
+    // Rarity filter
+    if (rarityFilter !== 'all') {
+      filtered = filtered.filter((card) => card.rare === rarityFilter);
+    }
+
+    // Series filter
+    if (seriesFilter !== 'all') {
+      filtered = filtered.filter((card) => card.series === seriesFilter);
+    }
+
+    // Color filter
+    if (colorFilter !== 'all') {
+      filtered = filtered.filter((card) => card.color === colorFilter);
+    }
+
+    // Image status filter
+    if (imageStatusFilter === 'with-image') {
+      filtered = filtered.filter((card) => card.imageUrl && card.imageUrl.trim() !== '');
+    } else if (imageStatusFilter === 'without-image') {
+      filtered = filtered.filter((card) => !card.imageUrl || card.imageUrl.trim() === '');
+    }
+
+    setFilteredCards(filtered);
+  }, [searchTerm, typeFilter, rarityFilter, seriesFilter, colorFilter, imageStatusFilter, cards]);
 
   const loadCards = async () => {
     setLoading(true);
@@ -50,6 +113,15 @@ export default function AdminPage() {
     setCards(data);
     setFilteredCards(data);
     setLoading(false);
+  };
+
+  const clearFilters = () => {
+    setSearchTerm('');
+    setTypeFilter('all');
+    setRarityFilter('all');
+    setSeriesFilter('all');
+    setColorFilter('all');
+    setImageStatusFilter('all');
   };
 
   const handleCardSelect = (card: Card) => {
@@ -99,19 +171,122 @@ export default function AdminPage() {
         <div>
           <CardUI>
             <CardHeader>
-              <CardTitle>เลือกการ์ด</CardTitle>
+              <CardTitle>เลือกการ์ด ({filteredCards.length} / {cards.length})</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="mb-4">
-                <Label htmlFor="search">ค้นหาการ์ด</Label>
-                <Input
-                  id="search"
-                  type="text"
-                  placeholder="ค้นหาด้วยชื่อ, พิมพ์, หรือซีรีส์"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="mt-2"
-                />
+              <div className="space-y-4 mb-4">
+                {/* Search */}
+                <div>
+                  <Label htmlFor="search">ค้นหาการ์ด</Label>
+                  <Input
+                    id="search"
+                    type="text"
+                    placeholder="ค้นหาด้วยชื่อ, พิมพ์, หรือซีรีส์"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="mt-2"
+                  />
+                </div>
+
+                {/* Filters */}
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Type Filter */}
+                  <div>
+                    <Label htmlFor="type">ประเภท</Label>
+                    <Select value={typeFilter} onValueChange={setTypeFilter}>
+                      <SelectTrigger id="type" className="mt-2">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">ทั้งหมด</SelectItem>
+                        {types.map((type) => (
+                          <SelectItem key={type} value={type}>
+                            {type}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Rarity Filter */}
+                  <div>
+                    <Label htmlFor="rarity">ความหายาก</Label>
+                    <Select value={rarityFilter} onValueChange={setRarityFilter}>
+                      <SelectTrigger id="rarity" className="mt-2">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">ทั้งหมด</SelectItem>
+                        {rarities.map((rarity) => (
+                          <SelectItem key={rarity} value={rarity}>
+                            {rarity}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Series Filter */}
+                  <div>
+                    <Label htmlFor="series">ซีรีส์</Label>
+                    <Select value={seriesFilter} onValueChange={setSeriesFilter}>
+                      <SelectTrigger id="series" className="mt-2">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">ทั้งหมด</SelectItem>
+                        {series.map((s) => (
+                          <SelectItem key={s} value={s}>
+                            {s}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Color Filter */}
+                  <div>
+                    <Label htmlFor="color">สี</Label>
+                    <Select value={colorFilter} onValueChange={setColorFilter}>
+                      <SelectTrigger id="color" className="mt-2">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">ทั้งหมด</SelectItem>
+                        {colors.map((color) => (
+                          <SelectItem key={color} value={color}>
+                            {color}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Image Status Filter */}
+                  <div className="col-span-2">
+                    <Label htmlFor="imageStatus">สถานะรูปภาพ</Label>
+                    <Select value={imageStatusFilter} onValueChange={setImageStatusFilter}>
+                      <SelectTrigger id="imageStatus" className="mt-2">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">ทั้งหมด</SelectItem>
+                        <SelectItem value="with-image">มีรูปภาพ</SelectItem>
+                        <SelectItem value="without-image">ไม่มีรูปภาพ</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Clear Filters Button */}
+                <Button
+                  variant="outline"
+                  onClick={clearFilters}
+                  className="w-full"
+                >
+                  <X className="mr-2 h-4 w-4" />
+                  ล้างตัวกรอง
+                </Button>
               </div>
 
               <div className="max-h-[600px] overflow-y-auto space-y-2">

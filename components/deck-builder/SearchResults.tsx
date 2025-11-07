@@ -58,8 +58,8 @@ export function SearchResults({
                   className={`h-0.5 bg-gradient-to-r ${getRarityColor(card.rare)}`}
                 />
                 <div className="p-1">
-                  {card.imageUrl && (
-                    <div className="relative aspect-[2/3] overflow-hidden rounded border border-border bg-muted/30">
+                  <div className="relative aspect-[2/3] overflow-hidden rounded border border-border bg-muted/30">
+                    {card.imageUrl ? (
                       <Image
                         src={card.imageUrl}
                         alt={card.name}
@@ -67,8 +67,15 @@ export function SearchResults({
                         className="object-contain"
                         sizes="100px"
                       />
-                    </div>
-                  )}
+                    ) : (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground">
+                        <div className="text-2xl mb-1">🃏</div>
+                        <div className="text-[8px] text-center px-1 leading-tight">
+                          {card.name}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}

@@ -123,7 +123,7 @@ export function DeckFilters({
                   className="px-3 py-2 hover:bg-accent cursor-pointer transition-colors flex items-center gap-2 text-sm"
                   onClick={() => selectSuggestion(card.name)}
                 >
-                  {card.imageUrl && (
+                  {card.imageUrl ? (
                     <div className="relative w-8 h-12 flex-shrink-0">
                       <Image
                         src={card.imageUrl}
@@ -132,6 +132,10 @@ export function DeckFilters({
                         className="object-contain rounded"
                         sizes="32px"
                       />
+                    </div>
+                  ) : (
+                    <div className="w-8 h-12 flex-shrink-0 bg-muted rounded flex items-center justify-center text-xs text-muted-foreground">
+                      N/A
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
@@ -164,7 +168,7 @@ export function DeckFilters({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All</SelectItem>
-              {types.map((type) => (
+              {types.filter(type => type && type.trim() !== '').map((type) => (
                 <SelectItem key={type} value={type}>
                   {type}
                 </SelectItem>
@@ -183,7 +187,7 @@ export function DeckFilters({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All</SelectItem>
-              {rarities.map((rarity) => (
+              {rarities.filter(rarity => rarity && rarity.trim() !== '').map((rarity) => (
                 <SelectItem key={rarity} value={rarity}>
                   {rarity}
                 </SelectItem>
@@ -202,7 +206,7 @@ export function DeckFilters({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All</SelectItem>
-              {series.map((s) => (
+              {series.filter(s => s && s.trim() !== '').map((s) => (
                 <SelectItem key={s} value={s}>
                   {s}
                 </SelectItem>

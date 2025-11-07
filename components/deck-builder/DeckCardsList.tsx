@@ -66,8 +66,8 @@ export function DeckCardsList({
                           key={`life-${card._id}`}
                           className="group relative w-16 transition-all hover:scale-[3] hover:z-50"
                         >
-                          {card.imageUrl && (
-                            <div className="relative aspect-[2/3] overflow-hidden rounded border-2 border-red-500 bg-muted/30 shadow-lg">
+                          <div className="relative aspect-[2/3] overflow-hidden rounded border-2 border-red-500 bg-muted/30 shadow-lg">
+                            {card.imageUrl ? (
                               <Image
                                 src={card.imageUrl}
                                 alt={card.name}
@@ -75,32 +75,39 @@ export function DeckCardsList({
                                 className="object-contain"
                                 sizes="64px"
                               />
-                              <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 p-1">
-                                <div className="flex items-center gap-1">
-                                  <Button
-                                    size="sm"
-                                    variant="destructive"
-                                    className="h-6 w-6 p-0 text-xs"
-                                    onClick={() => onRemoveCard(card._id, true, false, false)}
-                                  >
-                                    -
-                                  </Button>
-                                  <span className="text-white text-xs font-bold w-4 text-center">
-                                    {card.quantity}
-                                  </span>
-                                  <Button
-                                    size="sm"
-                                    variant="default"
-                                    className="h-6 w-6 p-0 text-xs"
-                                    onClick={() => onAddCard(card, 'life')}
-                                    disabled={card.quantity >= 1}
-                                  >
-                                    +
-                                  </Button>
+                            ) : (
+                              <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground">
+                                <div className="text-xl mb-0.5">🃏</div>
+                                <div className="text-[7px] text-center px-0.5 leading-tight">
+                                  {card.name}
                                 </div>
                               </div>
+                            )}
+                            <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 p-1">
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  className="h-6 w-6 p-0 text-xs"
+                                  onClick={() => onRemoveCard(card._id, true, false, false)}
+                                >
+                                  -
+                                </Button>
+                                <span className="text-white text-xs font-bold w-4 text-center">
+                                  {card.quantity}
+                                </span>
+                                <Button
+                                  size="sm"
+                                  variant="default"
+                                  className="h-6 w-6 p-0 text-xs"
+                                  onClick={() => onAddCard(card, 'life')}
+                                  disabled={card.quantity >= 1}
+                                >
+                                  +
+                                </Button>
+                              </div>
                             </div>
-                          )}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -137,8 +144,8 @@ export function DeckCardsList({
                           key={`only-${card._id}`}
                           className="group relative w-16 transition-all hover:scale-[3] hover:z-50"
                         >
-                          {card.imageUrl && (
-                            <div className="relative aspect-[2/3] overflow-hidden rounded border-2 border-yellow-500 bg-muted/30 shadow-lg">
+                          <div className="relative aspect-[2/3] overflow-hidden rounded border-2 border-yellow-500 bg-muted/30 shadow-lg">
+                            {card.imageUrl ? (
                               <Image
                                 src={card.imageUrl}
                                 alt={card.name}
@@ -146,18 +153,25 @@ export function DeckCardsList({
                                 className="object-contain"
                                 sizes="64px"
                               />
-                              <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 p-1">
-                                <Button
-                                  size="sm"
-                                  variant="destructive"
-                                  className="h-6 px-2 text-xs"
-                                  onClick={() => onRemoveCard(card._id, false, true, false)}
-                                >
-                                  Remove
-                                </Button>
+                            ) : (
+                              <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground">
+                                <div className="text-xl mb-0.5">🃏</div>
+                                <div className="text-[7px] text-center px-0.5 leading-tight">
+                                  {card.name}
+                                </div>
                               </div>
+                            )}
+                            <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 p-1">
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                className="h-6 px-2 text-xs"
+                                onClick={() => onRemoveCard(card._id, false, true, false)}
+                              >
+                                Remove
+                              </Button>
                             </div>
-                          )}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -209,8 +223,8 @@ export function DeckCardsList({
                     key={`side-only-${card._id}`}
                     className="group relative w-16 transition-all hover:scale-[3] hover:z-50"
                   >
-                    {card.imageUrl && (
-                      <div className="relative aspect-[2/3] overflow-hidden rounded border-2 border-yellow-500 bg-muted/30 shadow-lg">
+                    <div className="relative aspect-[2/3] overflow-hidden rounded border-2 border-yellow-500 bg-muted/30 shadow-lg">
+                      {card.imageUrl ? (
                         <Image
                           src={card.imageUrl}
                           alt={card.name}
@@ -218,18 +232,25 @@ export function DeckCardsList({
                           className="object-contain"
                           sizes="64px"
                         />
-                        <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 p-1">
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            className="h-6 px-2 text-xs"
-                            onClick={() => onRemoveCard(card._id, false, false, true)}
-                          >
-                            Remove
-                          </Button>
+                      ) : (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground">
+                          <div className="text-xl mb-0.5">🃏</div>
+                          <div className="text-[7px] text-center px-0.5 leading-tight">
+                            {card.name}
+                          </div>
                         </div>
+                      )}
+                      <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 p-1">
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="h-6 px-2 text-xs"
+                          onClick={() => onRemoveCard(card._id, false, false, true)}
+                        >
+                          Remove
+                        </Button>
                       </div>
-                    )}
+                    </div>
                   </div>
                 ))}
 
@@ -242,8 +263,8 @@ export function DeckCardsList({
                     key={`side-regular-${card._id}`}
                     className="group relative w-16 transition-all hover:scale-[3] hover:z-50"
                   >
-                    {card.imageUrl && (
-                      <div className="relative aspect-[2/3] overflow-hidden rounded border-2 border-cyan-500 bg-muted/30 shadow-lg">
+                    <div className="relative aspect-[2/3] overflow-hidden rounded border-2 border-cyan-500 bg-muted/30 shadow-lg">
+                      {card.imageUrl ? (
                         <Image
                           src={card.imageUrl}
                           alt={card.name}
@@ -251,35 +272,42 @@ export function DeckCardsList({
                           className="object-contain"
                           sizes="64px"
                         />
-                        <div className="absolute top-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-cyan-500 text-[8px] font-bold text-white shadow-lg ring-1 ring-background">
-                          {card.quantity}
-                        </div>
-                        <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 p-1">
-                          <div className="flex items-center gap-1">
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              className="h-6 w-6 p-0 text-xs"
-                              onClick={() => onRemoveCard(card._id, false, false, true)}
-                            >
-                              -
-                            </Button>
-                            <span className="text-white text-xs font-bold w-4 text-center">
-                              {card.quantity}
-                            </span>
-                            <Button
-                              size="sm"
-                              variant="default"
-                              className="h-6 w-6 p-0 text-xs"
-                              onClick={() => onAddCard(card, 'side')}
-                              disabled={card.quantity >= 4 || getSideDeckCardCount() >= 11}
-                            >
-                              +
-                            </Button>
+                      ) : (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground">
+                          <div className="text-xl mb-0.5">🃏</div>
+                          <div className="text-[7px] text-center px-0.5 leading-tight">
+                            {card.name}
                           </div>
                         </div>
+                      )}
+                      <div className="absolute top-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-cyan-500 text-[8px] font-bold text-white shadow-lg ring-1 ring-background">
+                        {card.quantity}
                       </div>
-                    )}
+                      <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 p-1">
+                        <div className="flex items-center gap-1">
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            className="h-6 w-6 p-0 text-xs"
+                            onClick={() => onRemoveCard(card._id, false, false, true)}
+                          >
+                            -
+                          </Button>
+                          <span className="text-white text-xs font-bold w-4 text-center">
+                            {card.quantity}
+                          </span>
+                          <Button
+                            size="sm"
+                            variant="default"
+                            className="h-6 w-6 p-0 text-xs"
+                            onClick={() => onAddCard(card, 'side')}
+                            disabled={card.quantity >= 4 || getSideDeckCardCount() >= 11}
+                          >
+                            +
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -321,8 +349,8 @@ export function DeckCardsList({
                   key={`deck-${card._id}`}
                   className="group relative w-20 transition-all hover:scale-[3] hover:z-50"
                 >
-                  {card.imageUrl && (
-                    <div className="relative aspect-[2/3] overflow-hidden rounded border-2 border-border bg-muted/30 shadow-lg">
+                  <div className="relative aspect-[2/3] overflow-hidden rounded border-2 border-border bg-muted/30 shadow-lg">
+                    {card.imageUrl ? (
                       <Image
                         src={card.imageUrl}
                         alt={card.name}
@@ -330,35 +358,42 @@ export function DeckCardsList({
                         className="object-contain"
                         sizes="80px"
                       />
-                      <div className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground shadow-lg ring-2 ring-background">
-                        {card.quantity}
-                      </div>
-                      <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 p-1">
-                        <div className="flex items-center gap-1">
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            className="h-6 w-6 p-0 text-xs"
-                            onClick={() => onRemoveCard(card._id, false, false, false)}
-                          >
-                            -
-                          </Button>
-                          <span className="text-white text-xs font-bold w-4 text-center">
-                            {card.quantity}
-                          </span>
-                          <Button
-                            size="sm"
-                            variant="default"
-                            className="h-6 w-6 p-0 text-xs"
-                            onClick={() => onAddCard(card, 'main')}
-                            disabled={card.quantity >= 4 || getTotalCardCount() >= getMaxDeckSize()}
-                          >
-                            +
-                          </Button>
+                    ) : (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground">
+                        <div className="text-2xl mb-1">🃏</div>
+                        <div className="text-[8px] text-center px-1 leading-tight">
+                          {card.name}
                         </div>
                       </div>
+                    )}
+                    <div className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground shadow-lg ring-2 ring-background">
+                      {card.quantity}
                     </div>
-                  )}
+                    <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 p-1">
+                      <div className="flex items-center gap-1">
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="h-6 w-6 p-0 text-xs"
+                          onClick={() => onRemoveCard(card._id, false, false, false)}
+                        >
+                          -
+                        </Button>
+                        <span className="text-white text-xs font-bold w-4 text-center">
+                          {card.quantity}
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="default"
+                          className="h-6 w-6 p-0 text-xs"
+                          onClick={() => onAddCard(card, 'main')}
+                          disabled={card.quantity >= 4 || getTotalCardCount() >= getMaxDeckSize()}
+                        >
+                          +
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
