@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card as CardType } from '@/types/card';
 import { useDeckBuilder } from '@/hooks/useDeckBuilder';
 import { addCardToDeck, removeCardFromDeck } from '@/lib/deckCardUtils';
@@ -12,9 +12,17 @@ import { DeckCardsList } from '@/components/deck-builder/DeckCardsList';
 import { SearchResults } from '@/components/deck-builder/SearchResults';
 import { DeckVisualization } from '@/components/deck-builder/DeckVisualization';
 
+const ITEMS_PER_PAGE = 80;
+
 export default function DeckBuilderPage() {
   const deckBuilder = useDeckBuilder();
   const [visualizationMode, setVisualizationMode] = useState<'compact' | 'grid'>('compact');
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Reset to page 1 when search results change
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [deckBuilder.searchResults]);
 
   const lifeCards = deckBuilder.selectedCards.filter((card) => card.isLifeCard);
   const onlyOneCards = deckBuilder.selectedCards.filter(
@@ -24,6 +32,12 @@ export default function DeckBuilderPage() {
   const deckCards = deckBuilder.selectedCards.filter(
     (card) => !card.isLifeCard && card.ex !== 'Only #1' && !card.isSideDeck
   );
+
+  // Calculate pagination
+  const totalPages = Math.ceil(deckBuilder.searchResults.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const paginatedResults = deckBuilder.searchResults.slice(startIndex, endIndex);
 
   const handleAddCard = (card: CardType, target: 'main' | 'life' | 'side') => {
     const newCards = addCardToDeck(
@@ -191,10 +205,14 @@ export default function DeckBuilderPage() {
 
             {/* Search Results */}
             <SearchResults
-              searchResults={deckBuilder.searchResults}
+              searchResults={paginatedResults}
+              totalResults={deckBuilder.searchResults.length}
               loading={deckBuilder.loading}
               isMainDeckFull={deckBuilder.isMainDeckFull()}
               onCardClick={handleAddCard}
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
             />
           </div>
         </div>
