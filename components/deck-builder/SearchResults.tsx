@@ -19,6 +19,7 @@ interface SearchResultsProps {
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
+  getLifeCardCount: () => number;
 }
 
 export function SearchResults({
@@ -32,6 +33,7 @@ export function SearchResults({
   currentPage,
   totalPages,
   onPageChange,
+  getLifeCardCount,
 }: SearchResultsProps) {
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [fullScreenCard, setFullScreenCard] = useState<CardType | null>(null);
@@ -251,7 +253,7 @@ export function SearchResults({
                   </Button>
                 </div>
                 
-                {isMainDeckFull && (
+                {isMainDeckFull && getLifeCardCount() === 5 && (
                   <div className="flex items-center gap-1.5 bg-black/60 rounded-lg px-3 py-2">
                     <span className="text-cyan-400 text-sm sm:text-base font-bold mr-1">Side</span>
                     <Button

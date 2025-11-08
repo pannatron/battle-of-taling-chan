@@ -232,6 +232,7 @@ export default function DeckBuilderPage() {
               currentPage={currentPage}
               totalPages={totalPages}
               onPageChange={setCurrentPage}
+              getLifeCardCount={deckBuilder.getLifeCardCount}
             />
           </div>
         </div>
