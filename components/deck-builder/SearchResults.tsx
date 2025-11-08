@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card as CardType } from '@/types/card';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -37,6 +37,76 @@ export function SearchResults({
 }: SearchResultsProps) {
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [fullScreenCard, setFullScreenCard] = useState<CardType | null>(null);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+
+  // Minimum swipe distance (in px) to trigger navigation
+  const minSwipeDistance = 50;
+
+  // Get current card index and navigation functions
+  const getCurrentCardIndex = useCallback(() => {
+    if (!fullScreenCard) return -1;
+    return searchResults.findIndex(card => card._id === fullScreenCard._id);
+  }, [fullScreenCard, searchResults]);
+
+  const navigateToNextCard = useCallback(() => {
+    const currentIndex = getCurrentCardIndex();
+    if (currentIndex < searchResults.length - 1) {
+      setFullScreenCard(searchResults[currentIndex + 1]);
+    }
+  }, [getCurrentCardIndex, searchResults]);
+
+  const navigateToPreviousCard = useCallback(() => {
+    const currentIndex = getCurrentCardIndex();
+    if (currentIndex > 0) {
+      setFullScreenCard(searchResults[currentIndex - 1]);
+    }
+  }, [getCurrentCardIndex, searchResults]);
+
+  // Handle keyboard navigation
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (!fullScreenCard) return;
+      
+      if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        navigateToNextCard();
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        navigateToPreviousCard();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        setFullScreenCard(null);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [fullScreenCard, navigateToNextCard, navigateToPreviousCard]);
+
+  // Handle touch swipe
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+    
+    if (isLeftSwipe) {
+      navigateToNextCard();
+    } else if (isRightSwipe) {
+      navigateToPreviousCard();
+    }
+  };
   
   // Calculate card counts from selectedCards
   const getCardCounts = (cardId: string) => {
@@ -179,6 +249,9 @@ export function SearchResults({
           <div
             className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 p-4"
             onClick={() => setFullScreenCard(null)}
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
           >
             {/* Close button - top right */}
             <button
@@ -200,6 +273,35 @@ export function SearchResults({
                 />
               </svg>
             </button>
+
+            {/* Navigation Arrows */}
+            {getCurrentCardIndex() > 0 && (
+              <button
+                className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-[101] text-white/70 hover:text-white transition-colors bg-black/50 rounded-full p-2 sm:p-3"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigateToPreviousCard();
+                }}
+              >
+                <ChevronLeft className="h-6 w-6 sm:h-8 sm:w-8" />
+              </button>
+            )}
+            {getCurrentCardIndex() < searchResults.length - 1 && (
+              <button
+                className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-[101] text-white/70 hover:text-white transition-colors bg-black/50 rounded-full p-2 sm:p-3"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigateToNextCard();
+                }}
+              >
+                <ChevronRight className="h-6 w-6 sm:h-8 sm:w-8" />
+              </button>
+            )}
+
+            {/* Card counter */}
+            <div className="absolute top-4 left-4 z-[101] text-white/70 text-sm bg-black/50 rounded px-3 py-1">
+              {getCurrentCardIndex() + 1} / {searchResults.length}
+            </div>
 
             <div className="relative w-full h-full max-w-2xl max-h-[90vh] flex flex-col items-center justify-center">
               <div className="relative w-full aspect-[2/3] max-h-full">
