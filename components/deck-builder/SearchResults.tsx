@@ -36,7 +36,7 @@ export function SearchResults({
 
   const renderPageNumbers = () => {
     const pages = [];
-    const maxVisible = 5;
+    const maxVisible = window.innerWidth < 640 ? 3 : 5; // Show fewer pages on mobile
     let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
     let endPage = Math.min(totalPages, startPage + maxVisible - 1);
 
@@ -51,7 +51,7 @@ export function SearchResults({
           size="sm"
           variant={currentPage === i ? 'default' : 'outline'}
           onClick={() => handlePageChange(i)}
-          className="min-w-[2.5rem]"
+          className="h-8 min-w-[2rem] sm:h-9 sm:min-w-[2.5rem] text-xs sm:text-sm"
         >
           {i}
         </Button>
@@ -63,16 +63,16 @@ export function SearchResults({
 
   return (
     <Card className="border-2">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold">
+      <CardHeader className="pb-2 md:pb-3">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-base sm:text-lg md:text-xl font-bold">
             📋 Search Results{' '}
             <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               ({totalResults})
             </span>
           </h2>
           {totalPages > 1 && !loading && searchResults.length > 0 && (
-            <span className="text-sm text-muted-foreground">
+            <span className="text-xs sm:text-sm text-muted-foreground">
               Page {currentPage} of {totalPages}
             </span>
           )}
@@ -84,7 +84,7 @@ export function SearchResults({
         ) : searchResults.length === 0 ? (
           <div className="py-12 text-center text-muted-foreground">No cards found</div>
         ) : (
-          <div className="grid gap-2 grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10">
+          <div className="grid gap-1.5 sm:gap-2 grid-cols-3 xs:grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10">
             {searchResults.map((card) => (
               <div
                 key={card._id}
@@ -99,7 +99,7 @@ export function SearchResults({
                   e.preventDefault();
                   onCardClick(card, 'side');
                 }}
-                className="group relative overflow-hidden rounded-lg border border-border bg-card/50 backdrop-blur-sm transition-all hover:scale-[2.5] hover:z-50 hover:shadow-2xl cursor-pointer"
+                className="group relative overflow-hidden rounded-lg border border-border bg-card/50 backdrop-blur-sm transition-all hover:scale-[2] sm:hover:scale-[2.5] hover:z-50 hover:shadow-2xl cursor-pointer"
                 title={
                   isMainDeckFull
                     ? 'Click to add to side deck'
@@ -136,15 +136,16 @@ export function SearchResults({
         
         {/* Pagination Controls */}
         {totalPages > 1 && !loading && searchResults.length > 0 && (
-          <div className="mt-6 flex items-center justify-center gap-2">
+          <div className="mt-4 md:mt-6 flex items-center justify-center gap-1 sm:gap-2 flex-wrap">
             <Button
               size="sm"
               variant="outline"
               onClick={() => handlePageChange(1)}
               disabled={currentPage === 1}
               title="First page"
+              className="h-8 w-8 p-0 sm:h-9 sm:w-9"
             >
-              <ChevronsLeft className="h-4 w-4" />
+              <ChevronsLeft className="h-3 w-3 sm:h-4 sm:w-4" />
             </Button>
             <Button
               size="sm"
@@ -152,11 +153,14 @@ export function SearchResults({
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1}
               title="Previous page"
+              className="h-8 w-8 p-0 sm:h-9 sm:w-9"
             >
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
             </Button>
             
-            {renderPageNumbers()}
+            <div className="flex gap-1 sm:gap-2">
+              {renderPageNumbers()}
+            </div>
             
             <Button
               size="sm"
@@ -164,8 +168,9 @@ export function SearchResults({
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
               title="Next page"
+              className="h-8 w-8 p-0 sm:h-9 sm:w-9"
             >
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
             </Button>
             <Button
               size="sm"
@@ -173,8 +178,9 @@ export function SearchResults({
               onClick={() => handlePageChange(totalPages)}
               disabled={currentPage === totalPages}
               title="Last page"
+              className="h-8 w-8 p-0 sm:h-9 sm:w-9"
             >
-              <ChevronsRight className="h-4 w-4" />
+              <ChevronsRight className="h-3 w-3 sm:h-4 sm:w-4" />
             </Button>
           </div>
         )}

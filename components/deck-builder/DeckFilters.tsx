@@ -89,11 +89,11 @@ export function DeckFilters({
   };
 
   return (
-    <Card className="border-2 sticky top-4">
-      <CardHeader className="pb-3">
-        <h2 className="text-xl font-bold">🔍 Filters</h2>
+    <Card className="border-2 lg:sticky lg:top-4">
+      <CardHeader className="pb-2 md:pb-3">
+        <h2 className="text-lg md:text-xl font-bold">🔍 Filters</h2>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-2 md:space-y-3">
         <div className="space-y-1.5 relative">
           <Label htmlFor="name" className="text-xs font-semibold">
             Card Name

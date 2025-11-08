@@ -5,7 +5,7 @@ import { Card as CardType } from '@/types/card';
 import { useDeckBuilder } from '@/hooks/useDeckBuilder';
 import { addCardToDeck, removeCardFromDeck } from '@/lib/deckCardUtils';
 import { Button } from '@/components/ui/button';
-import { Grid3x3, List, ArrowLeft } from 'lucide-react';
+import { Grid3x3, List, ArrowLeft, Filter } from 'lucide-react';
 import Link from 'next/link';
 import { DeckFilters } from '@/components/deck-builder/DeckFilters';
 import { DeckCardsList } from '@/components/deck-builder/DeckCardsList';
@@ -18,6 +18,7 @@ export default function DeckBuilderPage() {
   const deckBuilder = useDeckBuilder();
   const [visualizationMode, setVisualizationMode] = useState<'compact' | 'grid'>('compact');
   const [currentPage, setCurrentPage] = useState(1);
+  const [showFilters, setShowFilters] = useState(false);
 
   // Reset to page 1 when search results change
   useMemo(() => {
@@ -99,29 +100,41 @@ export default function DeckBuilderPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background py-8">
-      <div className="container mx-auto px-4 max-w-[1800px]">
-        <div className="mb-6">
+    <div className="min-h-screen bg-background py-4 md:py-8">
+      <div className="container mx-auto px-2 sm:px-4 max-w-[1800px]">
+        <div className="mb-4 md:mb-6">
           <Link
             href="/decks"
-            className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            className="mb-2 md:mb-4 inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to Decks
           </Link>
-          <h1 className="mb-2 bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-4xl font-extrabold tracking-tight text-transparent">
+          <h1 className="mb-2 bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-transparent">
             Deck Builder
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-xs sm:text-sm text-muted-foreground">
             Build your deck with 5 life cards, 1 only one card (optional), up to{' '}
             {deckBuilder.getMaxDeckSize()} deck cards, and up to 11 side deck cards (1 Only One +
             10 regular OR 11 regular)
           </p>
         </div>
 
-        <div className="flex gap-4">
+        <div className="flex flex-col lg:flex-row gap-4">
+          {/* Mobile Filter Toggle */}
+          <div className="lg:hidden">
+            <Button
+              onClick={() => setShowFilters(!showFilters)}
+              variant="outline"
+              className="w-full"
+            >
+              <Filter className="h-4 w-4 mr-2" />
+              {showFilters ? 'Hide Filters' : 'Show Filters'}
+            </Button>
+          </div>
+
           {/* Left Sidebar - Filters */}
-          <div className="w-64 shrink-0">
+          <div className={`w-full lg:w-64 shrink-0 ${showFilters ? 'block' : 'hidden lg:block'}`}>
             <DeckFilters
               nameFilter={deckBuilder.nameFilter}
               setNameFilter={deckBuilder.setNameFilter}
@@ -154,24 +167,28 @@ export default function DeckBuilderPage() {
           </div>
 
           {/* Main Content Area */}
-          <div className="flex-1 space-y-4">
+          <div className="flex-1 space-y-3 md:space-y-4 min-w-0">
             {/* View Mode Toggle - Top */}
             <div className="flex items-center justify-end gap-2">
               <Button
                 size="sm"
                 variant={visualizationMode === 'compact' ? 'default' : 'outline'}
                 onClick={() => setVisualizationMode('compact')}
+                className="text-xs sm:text-sm"
               >
-                <List className="h-4 w-4 mr-2" />
-                Edit Mode
+                <List className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Edit Mode</span>
+                <span className="sm:hidden">Edit</span>
               </Button>
               <Button
                 size="sm"
                 variant={visualizationMode === 'grid' ? 'default' : 'outline'}
                 onClick={() => setVisualizationMode('grid')}
+                className="text-xs sm:text-sm"
               >
-                <Grid3x3 className="h-4 w-4 mr-2" />
-                View Mode
+                <Grid3x3 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">View Mode</span>
+                <span className="sm:hidden">View</span>
               </Button>
             </div>
 
