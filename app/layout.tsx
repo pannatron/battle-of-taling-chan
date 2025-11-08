@@ -58,6 +58,19 @@ export default function RootLayout({
           otpCodeFieldInput: "border-[#2a2a33] text-[#f8f8f9]",
           formResendCodeLink: "text-[#9d7ff7] hover:text-[#dd7aeb]",
           footer: "bg-transparent",
+          // UserButton styling - comprehensive text color fixes
+          userButtonPopoverCard: "bg-[#1a1a23] border border-[#2a2a33] shadow-2xl",
+          userButtonPopoverActionButton: "text-[#f8f8f9] hover:bg-[#dd7aeb]/10",
+          userButtonPopoverActionButtonText: "text-[#f8f8f9] !important",
+          userButtonPopoverActionButtonIcon: "text-[#f8f8f9]",
+          userButtonPopoverFooter: "bg-transparent border-t border-[#2a2a33]",
+          userPreviewMainIdentifier: "text-[#f8f8f9] !important",
+          userPreviewSecondaryIdentifier: "text-[#a1a1aa] !important",
+          userButtonPopoverMain: "text-[#f8f8f9]",
+          userButtonPopoverText: "text-[#f8f8f9]",
+          profileSectionPrimaryButton: "text-[#f8f8f9]",
+          menuItem: "text-[#f8f8f9] hover:bg-[#dd7aeb]/10",
+          menuItemText: "text-[#f8f8f9]",
         },
       }}
     >

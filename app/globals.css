@@ -151,3 +151,17 @@
     font-family: "PANIDino", sans-serif;
   }
 }
+
+/* Force light text in Clerk UserButton dropdown */
+.cl-userButtonPopoverCard,
+.cl-userButtonPopoverActionButton,
+.cl-userButtonPopoverActionButtonText,
+.cl-userPreviewMainIdentifier,
+.cl-menuItem,
+.cl-menuItemText {
+  color: #f8f8f9 !important;
+}
+
+.cl-userButtonPopoverActionButton:hover {
+  background-color: rgba(221, 122, 235, 0.1) !important;
+}

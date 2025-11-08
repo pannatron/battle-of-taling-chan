@@ -82,7 +82,9 @@ export function Header() {
             </SignInButton>
           </SignedOut>
           <SignedIn>
-            <UserButton afterSignOutUrl="/" />
+            <div className="[&_.cl-userButtonTrigger]:h-8 [&_.cl-userButtonTrigger]:w-8 md:[&_.cl-userButtonTrigger]:h-10 md:[&_.cl-userButtonTrigger]:w-10">
+              <UserButton afterSignOutUrl="/" />
+            </div>
           </SignedIn>
           <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
             <Menu className="h-5 w-5" />
@@ -129,7 +131,9 @@ export function Header() {
             </SignedOut>
             <SignedIn>
               <div className="flex items-center gap-2 pt-2">
-                <UserButton afterSignOutUrl="/" />
+                <div className="[&_.cl-userButtonTrigger]:h-8 [&_.cl-userButtonTrigger]:w-8">
+                  <UserButton afterSignOutUrl="/" />
+                </div>
                 <span className="text-sm text-muted-foreground">Your Account</span>
               </div>
             </SignedIn>
