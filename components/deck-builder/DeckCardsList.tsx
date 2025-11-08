@@ -108,6 +108,7 @@ export function DeckCardsList({
                                     e.stopPropagation();
                                     onRemoveCard(card._id, true, false, false);
                                   }}
+                                  disabled={card.quantity === 0}
                                 >
                                   -
                                 </Button>
@@ -335,6 +336,7 @@ export function DeckCardsList({
                               e.stopPropagation();
                               onRemoveCard(card._id, false, false, true);
                             }}
+                            disabled={card.quantity === 0}
                           >
                             -
                           </Button>
@@ -433,6 +435,7 @@ export function DeckCardsList({
                             e.stopPropagation();
                             onRemoveCard(card._id, false, false, false);
                           }}
+                          disabled={card.quantity === 0}
                         >
                           -
                         </Button>

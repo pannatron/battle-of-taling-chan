@@ -30,6 +30,8 @@ export function SearchResults({
   onPageChange,
 }: SearchResultsProps) {
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
+  const [fullScreenCard, setFullScreenCard] = useState<CardType | null>(null);
+  const [cardCounts, setCardCounts] = useState<{ [key: string]: { main: number; side: number } }>({});
 
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= totalPages) {
@@ -41,6 +43,42 @@ export function SearchResults({
 
   const toggleCard = (cardId: string) => {
     setExpandedCard(expandedCard === cardId ? null : cardId);
+  };
+
+  const handleAddCard = (card: CardType, target: 'main' | 'side') => {
+    onCardClick(card, target);
+    setCardCounts(prev => ({
+      ...prev,
+      [card._id]: {
+        main: target === 'main' ? (prev[card._id]?.main || 0) + 1 : (prev[card._id]?.main || 0),
+        side: target === 'side' ? (prev[card._id]?.side || 0) + 1 : (prev[card._id]?.side || 0)
+      }
+    }));
+  };
+
+  const handleRemoveCard = (card: CardType, target: 'main' | 'side') => {
+    const counts = cardCounts[card._id];
+    if (!counts) return;
+    
+    if (target === 'main' && counts.main > 0) {
+      onCardClick(card, target);
+      setCardCounts(prev => ({
+        ...prev,
+        [card._id]: {
+          ...prev[card._id],
+          main: prev[card._id].main - 1
+        }
+      }));
+    } else if (target === 'side' && counts.side > 0) {
+      onCardClick(card, target);
+      setCardCounts(prev => ({
+        ...prev,
+        [card._id]: {
+          ...prev[card._id],
+          side: prev[card._id].side - 1
+        }
+      }));
+    }
   };
 
   const renderPageNumbers = () => {
@@ -94,95 +132,146 @@ export function SearchResults({
           <div className="py-12 text-center text-muted-foreground">No cards found</div>
         ) : (
           <div className="grid gap-1.5 sm:gap-2 grid-cols-3 xs:grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10">
-            {searchResults.map((card) => (
-              <div
-                key={card._id}
-                className={`group relative overflow-hidden rounded-lg border border-border bg-card/50 backdrop-blur-sm transition-all hover:scale-[2] sm:hover:scale-[2.5] hover:z-50 hover:shadow-2xl cursor-pointer ${
-                  expandedCard === card._id ? 'scale-[2.5] z-50 shadow-2xl' : ''
-                }`}
-                title={
-                  isMainDeckFull
-                    ? 'Click to add to side deck'
-                    : 'Left click: Add to main deck | Right click: Add to side deck'
-                }
-              >
+            {searchResults.map((card) => {
+              const counts = cardCounts[card._id] || { main: 0, side: 0 };
+              return (
                 <div
-                  className={`h-0.5 bg-gradient-to-r ${getRarityColor(card.rare)}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleCard(card._id);
-                  }}
-                />
-                <div 
-                  className="p-1"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleCard(card._id);
-                  }}
+                  key={card._id}
+                  className="group relative overflow-hidden rounded-lg border border-border bg-card/50 backdrop-blur-sm transition-all hover:scale-[2] sm:hover:scale-[2.5] hover:z-50 hover:shadow-2xl cursor-pointer"
                 >
-                  <div className="relative aspect-[2/3] overflow-hidden rounded border border-border bg-muted/30">
-                    {card.imageUrl ? (
-                      <Image
-                        src={card.imageUrl}
-                        alt={card.name}
-                        fill
-                        className="object-contain"
-                        sizes="100px"
-                      />
-                    ) : (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground">
-                        <div className="text-2xl mb-1">🃏</div>
-                        <div className="text-[8px] text-center px-1 leading-tight">
-                          {card.name}
+                  <div
+                    className={`h-0.5 bg-gradient-to-r ${getRarityColor(card.rare)}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setFullScreenCard(card);
+                    }}
+                  />
+                  <div 
+                    className="p-1"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setFullScreenCard(card);
+                    }}
+                  >
+                    <div className="relative aspect-[2/3] overflow-hidden rounded border border-border bg-muted/30">
+                      {card.imageUrl ? (
+                        <Image
+                          src={card.imageUrl}
+                          alt={card.name}
+                          fill
+                          className="object-contain"
+                          sizes="100px"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground">
+                          <div className="text-2xl mb-1">🃏</div>
+                          <div className="text-[8px] text-center px-1 leading-tight">
+                            {card.name}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
+                  
                 </div>
-                
-                {/* Action buttons overlay - shown on expand or hover */}
-                {expandedCard === card._id && (
-                  <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center gap-1 p-2 z-10">
-                    <Button
-                      size="sm"
-                      variant="default"
-                      className="w-full text-xs"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onCardClick(card, 'main');
-                        setExpandedCard(null);
-                      }}
-                      disabled={isMainDeckFull}
-                    >
-                      + Main Deck
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      className="w-full text-xs"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onCardClick(card, 'side');
-                        setExpandedCard(null);
-                      }}
-                    >
-                      + Side Deck
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="w-full text-xs mt-1"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setExpandedCard(null);
-                      }}
-                    >
-                      Close
-                    </Button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Full Screen Card Modal */}
+        {fullScreenCard && (
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 p-4"
+            onClick={() => setFullScreenCard(null)}
+          >
+            <div className="relative w-full h-full max-w-2xl max-h-[90vh] flex flex-col items-center justify-center">
+              <div className="relative w-full aspect-[2/3] max-h-full">
+                {fullScreenCard.imageUrl ? (
+                  <Image
+                    src={fullScreenCard.imageUrl}
+                    alt={fullScreenCard.name}
+                    fill
+                    className="object-contain"
+                    sizes="(max-width: 768px) 100vw, 672px"
+                    priority
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground">
+                    <div className="text-6xl mb-4">🃏</div>
+                    <div className="text-xl text-center px-4">
+                      {fullScreenCard.name}
+                    </div>
                   </div>
                 )}
               </div>
-            ))}
+              
+              {/* Action buttons */}
+              <div className="mt-4 flex flex-col gap-2 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center gap-2 bg-black/60 rounded-lg p-3">
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    className="h-9 w-9 p-0"
+                    onClick={() => {
+                      handleRemoveCard(fullScreenCard, 'main');
+                    }}
+                    disabled={cardCounts[fullScreenCard._id]?.main === 0}
+                  >
+                    -
+                  </Button>
+                  <span className="text-white text-sm font-bold flex-1 text-center">
+                    Main: {cardCounts[fullScreenCard._id]?.main || 0}
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="default"
+                    className="h-9 w-9 p-0"
+                    onClick={() => {
+                      handleAddCard(fullScreenCard, 'main');
+                    }}
+                    disabled={isMainDeckFull}
+                  >
+                    +
+                  </Button>
+                </div>
+                
+                <div className="flex items-center gap-2 bg-black/60 rounded-lg p-3">
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    className="h-9 w-9 p-0"
+                    onClick={() => {
+                      handleRemoveCard(fullScreenCard, 'side');
+                    }}
+                    disabled={cardCounts[fullScreenCard._id]?.side === 0}
+                  >
+                    -
+                  </Button>
+                  <span className="text-cyan-400 text-sm font-bold flex-1 text-center">
+                    Side: {cardCounts[fullScreenCard._id]?.side || 0}
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="h-9 w-9 p-0"
+                    onClick={() => {
+                      handleAddCard(fullScreenCard, 'side');
+                    }}
+                  >
+                    +
+                  </Button>
+                </div>
+                
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setFullScreenCard(null)}
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
           </div>
         )}
         
