@@ -185,6 +185,27 @@ export function SearchResults({
             className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 p-4"
             onClick={() => setFullScreenCard(null)}
           >
+            {/* Close button - top right */}
+            <button
+              className="absolute top-4 right-4 z-[101] text-white hover:text-gray-300 transition-colors"
+              onClick={() => setFullScreenCard(null)}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-8 w-8"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+
             <div className="relative w-full h-full max-w-2xl max-h-[90vh] flex flex-col items-center justify-center">
               <div className="relative w-full aspect-[2/3] max-h-full">
                 {fullScreenCard.imageUrl ? (
@@ -207,12 +228,13 @@ export function SearchResults({
               </div>
               
               {/* Action buttons */}
-              <div className="mt-4 flex flex-col gap-2 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
-                <div className="flex items-center gap-2 bg-black/60 rounded-lg p-3">
+              <div className="mt-4 flex flex-row gap-3 w-full max-w-md justify-center" onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center gap-1.5 bg-black/60 rounded-lg px-2.5 py-2">
+                  <span className="text-white text-xs font-bold mr-0.5">Main</span>
                   <Button
                     size="sm"
                     variant="destructive"
-                    className="h-9 w-9 p-0"
+                    className="h-7 w-7 p-0 text-xs"
                     onClick={() => {
                       handleRemoveCard(fullScreenCard, 'main');
                     }}
@@ -220,13 +242,13 @@ export function SearchResults({
                   >
                     -
                   </Button>
-                  <span className="text-white text-sm font-bold flex-1 text-center">
-                    Main: {cardCounts[fullScreenCard._id]?.main || 0}
+                  <span className="text-white text-sm font-bold w-6 text-center">
+                    {cardCounts[fullScreenCard._id]?.main || 0}
                   </span>
                   <Button
                     size="sm"
                     variant="default"
-                    className="h-9 w-9 p-0"
+                    className="h-7 w-7 p-0 text-xs"
                     onClick={() => {
                       handleAddCard(fullScreenCard, 'main');
                     }}
@@ -236,11 +258,12 @@ export function SearchResults({
                   </Button>
                 </div>
                 
-                <div className="flex items-center gap-2 bg-black/60 rounded-lg p-3">
+                <div className="flex items-center gap-1.5 bg-black/60 rounded-lg px-2.5 py-2">
+                  <span className="text-cyan-400 text-xs font-bold mr-0.5">Side</span>
                   <Button
                     size="sm"
                     variant="destructive"
-                    className="h-9 w-9 p-0"
+                    className="h-7 w-7 p-0 text-xs"
                     onClick={() => {
                       handleRemoveCard(fullScreenCard, 'side');
                     }}
@@ -248,13 +271,13 @@ export function SearchResults({
                   >
                     -
                   </Button>
-                  <span className="text-cyan-400 text-sm font-bold flex-1 text-center">
-                    Side: {cardCounts[fullScreenCard._id]?.side || 0}
+                  <span className="text-cyan-400 text-sm font-bold w-6 text-center">
+                    {cardCounts[fullScreenCard._id]?.side || 0}
                   </span>
                   <Button
                     size="sm"
                     variant="secondary"
-                    className="h-9 w-9 p-0"
+                    className="h-7 w-7 p-0 text-xs"
                     onClick={() => {
                       handleAddCard(fullScreenCard, 'side');
                     }}
@@ -262,14 +285,6 @@ export function SearchResults({
                     +
                   </Button>
                 </div>
-                
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => setFullScreenCard(null)}
-                >
-                  Close
-                </Button>
               </div>
             </div>
           </div>
