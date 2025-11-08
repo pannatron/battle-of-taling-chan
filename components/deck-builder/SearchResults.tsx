@@ -111,9 +111,11 @@ export function SearchResults({
   // Calculate card counts from selectedCards
   const getCardCounts = (cardId: string) => {
     const mainDeckCard = selectedCards.find(c => c._id === cardId && !c.isLifeCard && !c.isSideDeck);
+    const lifeDeckCard = selectedCards.find(c => c._id === cardId && c.isLifeCard);
     const sideDeckCard = selectedCards.find(c => c._id === cardId && c.isSideDeck);
     return {
       main: mainDeckCard?.quantity || 0,
+      life: lifeDeckCard?.quantity || 0,
       side: sideDeckCard?.quantity || 0
     };
   };
@@ -135,15 +137,27 @@ export function SearchResults({
   };
 
   const handleRemoveCardClick = (cardId: string, target: 'main' | 'side') => {
-    // Determine card properties
-    const card = selectedCards.find(c => c._id === cardId && (target === 'side' ? c.isSideDeck : !c.isSideDeck));
-    if (!card) return;
-    
-    const isLife = card.isLifeCard || false;
-    const isOnlyOne = card.ex === 'Only #1';
-    const isSideDeck = target === 'side';
-    
-    onRemoveCard(cardId, isLife, isOnlyOne, isSideDeck);
+    if (target === 'side') {
+      // Side deck removal
+      const card = selectedCards.find(c => c._id === cardId && c.isSideDeck);
+      if (!card) return;
+      
+      const isOnlyOne = card.ex === 'Only #1';
+      onRemoveCard(cardId, false, isOnlyOne, true);
+    } else {
+      // Main/Life deck removal - prioritize life cards
+      const lifeCard = selectedCards.find(c => c._id === cardId && c.isLifeCard);
+      const mainCard = selectedCards.find(c => c._id === cardId && !c.isLifeCard && !c.isSideDeck);
+      
+      if (lifeCard) {
+        // Remove from life deck first if it exists
+        onRemoveCard(cardId, true, false, false);
+      } else if (mainCard) {
+        // Remove from main deck
+        const isOnlyOne = mainCard.ex === 'Only #1';
+        onRemoveCard(cardId, false, isOnlyOne, false);
+      }
+    }
   };
 
   const renderPageNumbers = () => {
@@ -335,12 +349,15 @@ export function SearchResults({
                     onClick={() => {
                       handleRemoveCardClick(fullScreenCard._id, 'main');
                     }}
-                    disabled={getCardCounts(fullScreenCard._id).main === 0}
+                    disabled={getCardCounts(fullScreenCard._id).main === 0 && getCardCounts(fullScreenCard._id).life === 0}
                   >
                     -
                   </Button>
                   <span className="text-white text-base sm:text-lg font-bold w-8 text-center">
-                    {getCardCounts(fullScreenCard._id).main}
+                    {getCardCounts(fullScreenCard._id).main + getCardCounts(fullScreenCard._id).life}
+                    {getCardCounts(fullScreenCard._id).life > 0 && (
+                      <span className="text-cyan-400 text-xs">L</span>
+                    )}
                   </span>
                   <Button
                     size="sm"
@@ -349,7 +366,7 @@ export function SearchResults({
                     onClick={() => {
                       handleAddCard(fullScreenCard, 'main');
                     }}
-                    disabled={isMainDeckFull}
+                    disabled={fullScreenCard.type === 'Life' ? getLifeCardCount() >= 5 : isMainDeckFull}
                   >
                     +
                   </Button>
