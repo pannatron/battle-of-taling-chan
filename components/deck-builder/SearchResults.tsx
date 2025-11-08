@@ -14,6 +14,8 @@ interface SearchResultsProps {
   loading: boolean;
   isMainDeckFull: boolean;
   onCardClick: (card: CardType, target: 'main' | 'side') => void;
+  onRemoveCard: (cardId: string, isLife: boolean, isOnlyOne: boolean, isSideDeck: boolean) => void;
+  selectedCards: Array<CardType & { quantity: number; isLifeCard?: boolean; isSideDeck?: boolean }>;
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
@@ -25,13 +27,24 @@ export function SearchResults({
   loading,
   isMainDeckFull,
   onCardClick,
+  onRemoveCard,
+  selectedCards,
   currentPage,
   totalPages,
   onPageChange,
 }: SearchResultsProps) {
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [fullScreenCard, setFullScreenCard] = useState<CardType | null>(null);
-  const [cardCounts, setCardCounts] = useState<{ [key: string]: { main: number; side: number } }>({});
+  
+  // Calculate card counts from selectedCards
+  const getCardCounts = (cardId: string) => {
+    const mainDeckCard = selectedCards.find(c => c._id === cardId && !c.isLifeCard && !c.isSideDeck);
+    const sideDeckCard = selectedCards.find(c => c._id === cardId && c.isSideDeck);
+    return {
+      main: mainDeckCard?.quantity || 0,
+      side: sideDeckCard?.quantity || 0
+    };
+  };
 
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= totalPages) {
@@ -47,38 +60,18 @@ export function SearchResults({
 
   const handleAddCard = (card: CardType, target: 'main' | 'side') => {
     onCardClick(card, target);
-    setCardCounts(prev => ({
-      ...prev,
-      [card._id]: {
-        main: target === 'main' ? (prev[card._id]?.main || 0) + 1 : (prev[card._id]?.main || 0),
-        side: target === 'side' ? (prev[card._id]?.side || 0) + 1 : (prev[card._id]?.side || 0)
-      }
-    }));
   };
 
-  const handleRemoveCard = (card: CardType, target: 'main' | 'side') => {
-    const counts = cardCounts[card._id];
-    if (!counts) return;
+  const handleRemoveCardClick = (cardId: string, target: 'main' | 'side') => {
+    // Determine card properties
+    const card = selectedCards.find(c => c._id === cardId && (target === 'side' ? c.isSideDeck : !c.isSideDeck));
+    if (!card) return;
     
-    if (target === 'main' && counts.main > 0) {
-      onCardClick(card, target);
-      setCardCounts(prev => ({
-        ...prev,
-        [card._id]: {
-          ...prev[card._id],
-          main: prev[card._id].main - 1
-        }
-      }));
-    } else if (target === 'side' && counts.side > 0) {
-      onCardClick(card, target);
-      setCardCounts(prev => ({
-        ...prev,
-        [card._id]: {
-          ...prev[card._id],
-          side: prev[card._id].side - 1
-        }
-      }));
-    }
+    const isLife = card.isLifeCard || false;
+    const isOnlyOne = card.ex === 'Only #1';
+    const isSideDeck = target === 'side';
+    
+    onRemoveCard(cardId, isLife, isOnlyOne, isSideDeck);
   };
 
   const renderPageNumbers = () => {
@@ -133,7 +126,7 @@ export function SearchResults({
         ) : (
           <div className="grid gap-1.5 sm:gap-2 grid-cols-3 xs:grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10">
             {searchResults.map((card) => {
-              const counts = cardCounts[card._id] || { main: 0, side: 0 };
+              const counts = getCardCounts(card._id);
               return (
                 <div
                   key={card._id}
@@ -236,14 +229,14 @@ export function SearchResults({
                     variant="destructive"
                     className="h-7 w-7 p-0 text-xs"
                     onClick={() => {
-                      handleRemoveCard(fullScreenCard, 'main');
+                      handleRemoveCardClick(fullScreenCard._id, 'main');
                     }}
-                    disabled={cardCounts[fullScreenCard._id]?.main === 0}
+                    disabled={getCardCounts(fullScreenCard._id).main === 0}
                   >
                     -
                   </Button>
                   <span className="text-white text-sm font-bold w-6 text-center">
-                    {cardCounts[fullScreenCard._id]?.main || 0}
+                    Main: {getCardCounts(fullScreenCard._id).main}
                   </span>
                   <Button
                     size="sm"
@@ -265,14 +258,14 @@ export function SearchResults({
                     variant="destructive"
                     className="h-7 w-7 p-0 text-xs"
                     onClick={() => {
-                      handleRemoveCard(fullScreenCard, 'side');
+                      handleRemoveCardClick(fullScreenCard._id, 'side');
                     }}
-                    disabled={cardCounts[fullScreenCard._id]?.side === 0}
+                    disabled={getCardCounts(fullScreenCard._id).side === 0}
                   >
                     -
                   </Button>
                   <span className="text-cyan-400 text-sm font-bold w-6 text-center">
-                    {cardCounts[fullScreenCard._id]?.side || 0}
+                    Side: {getCardCounts(fullScreenCard._id).side}
                   </span>
                   <Button
                     size="sm"
