@@ -227,6 +227,8 @@ export default function DeckBuilderPage() {
               loading={deckBuilder.loading}
               isMainDeckFull={deckBuilder.isMainDeckFull()}
               onCardClick={handleAddCard}
+              onRemoveCard={handleRemoveCard}
+              selectedCards={deckBuilder.selectedCards}
               currentPage={currentPage}
               totalPages={totalPages}
               onPageChange={setCurrentPage}
