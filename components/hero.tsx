@@ -90,7 +90,7 @@ export function Hero() {
                   className="group relative min-w-[200px] overflow-hidden rounded-xl bg-gradient-to-r from-primary via-primary/90 to-accent px-8 py-6 text-base font-bold shadow-xl shadow-primary/30 transition-all hover:scale-105 hover:shadow-2xl hover:shadow-primary/40"
                   asChild
                 >
-                  <Link href="/decks/create" className="flex items-center justify-center gap-2">
+                  <Link href="/deck-builder" className="flex items-center justify-center gap-2">
                     <span className="relative z-10">Create Deck</span>
                     <ArrowRight className="relative z-10 h-5 w-5 transition-transform group-hover:translate-x-1" />
                     <div className="absolute inset-0 bg-gradient-to-r from-accent via-accent/90 to-primary opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
