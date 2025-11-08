@@ -1,3 +1,6 @@
+'use client';
+
+import { useState } from 'react';
 import { Card as CardType } from '@/types/card';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,12 +29,18 @@ export function SearchResults({
   totalPages,
   onPageChange,
 }: SearchResultsProps) {
+  const [expandedCard, setExpandedCard] = useState<string | null>(null);
+
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= totalPages) {
       onPageChange(newPage);
       // Scroll to top of search results
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
+  };
+
+  const toggleCard = (cardId: string) => {
+    setExpandedCard(expandedCard === cardId ? null : cardId);
   };
 
   const renderPageNumbers = () => {
@@ -88,18 +97,9 @@ export function SearchResults({
             {searchResults.map((card) => (
               <div
                 key={card._id}
-                onClick={() => {
-                  if (isMainDeckFull) {
-                    onCardClick(card, 'side');
-                  } else {
-                    onCardClick(card, 'main');
-                  }
-                }}
-                onContextMenu={(e) => {
-                  e.preventDefault();
-                  onCardClick(card, 'side');
-                }}
-                className="group relative overflow-hidden rounded-lg border border-border bg-card/50 backdrop-blur-sm transition-all hover:scale-[2] sm:hover:scale-[2.5] hover:z-50 hover:shadow-2xl cursor-pointer"
+                className={`group relative overflow-hidden rounded-lg border border-border bg-card/50 backdrop-blur-sm transition-all hover:scale-[2] sm:hover:scale-[2.5] hover:z-50 hover:shadow-2xl cursor-pointer ${
+                  expandedCard === card._id ? 'scale-[2.5] z-50 shadow-2xl' : ''
+                }`}
                 title={
                   isMainDeckFull
                     ? 'Click to add to side deck'
@@ -108,8 +108,18 @@ export function SearchResults({
               >
                 <div
                   className={`h-0.5 bg-gradient-to-r ${getRarityColor(card.rare)}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleCard(card._id);
+                  }}
                 />
-                <div className="p-1">
+                <div 
+                  className="p-1"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleCard(card._id);
+                  }}
+                >
                   <div className="relative aspect-[2/3] overflow-hidden rounded border border-border bg-muted/30">
                     {card.imageUrl ? (
                       <Image
@@ -129,6 +139,48 @@ export function SearchResults({
                     )}
                   </div>
                 </div>
+                
+                {/* Action buttons overlay - shown on expand or hover */}
+                {expandedCard === card._id && (
+                  <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center gap-1 p-2 z-10">
+                    <Button
+                      size="sm"
+                      variant="default"
+                      className="w-full text-xs"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onCardClick(card, 'main');
+                        setExpandedCard(null);
+                      }}
+                      disabled={isMainDeckFull}
+                    >
+                      + Main Deck
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="w-full text-xs"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onCardClick(card, 'side');
+                        setExpandedCard(null);
+                      }}
+                    >
+                      + Side Deck
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full text-xs mt-1"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setExpandedCard(null);
+                      }}
+                    >
+                      Close
+                    </Button>
+                  </div>
+                )}
               </div>
             ))}
           </div>

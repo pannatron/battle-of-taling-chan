@@ -1,3 +1,6 @@
+'use client';
+
+import { useState } from 'react';
 import { DeckCard } from '@/hooks/useDeckBuilder';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -37,6 +40,13 @@ export function DeckCardsList({
 }: DeckCardsListProps) {
   const sideDeckOnlyOneCards = sideDeckCards.filter((card) => card.ex === 'Only #1');
   const sideDeckRegularCards = sideDeckCards.filter((card) => card.ex !== 'Only #1');
+  
+  // State for expanded card on mobile
+  const [expandedCard, setExpandedCard] = useState<string | null>(null);
+
+  const toggleCard = (cardId: string) => {
+    setExpandedCard(expandedCard === cardId ? null : cardId);
+  };
 
   return (
     <>
@@ -64,7 +74,10 @@ export function DeckCardsList({
                       {lifeCards.map((card) => (
                         <div
                           key={`life-${card._id}`}
-                          className="group relative w-12 sm:w-16 transition-all hover:scale-[2] sm:hover:scale-[3] hover:z-50"
+                          className={`group relative w-12 sm:w-16 transition-all hover:scale-[2] sm:hover:scale-[3] hover:z-50 ${
+                            expandedCard === `life-${card._id}` ? 'scale-[2.5] z-50' : ''
+                          }`}
+                          onClick={() => toggleCard(`life-${card._id}`)}
                         >
                           <div className="relative aspect-[2/3] overflow-hidden rounded border border-red-500 sm:border-2 bg-muted/30 shadow-lg">
                             {card.imageUrl ? (
@@ -83,13 +96,18 @@ export function DeckCardsList({
                                 </div>
                               </div>
                             )}
-                            <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-0.5 sm:gap-1 p-0.5 sm:p-1">
+                            <div className={`absolute inset-0 bg-black/80 transition-opacity flex flex-col items-center justify-center gap-0.5 sm:gap-1 p-0.5 sm:p-1 ${
+                              expandedCard === `life-${card._id}` ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                            }`}>
                               <div className="flex items-center gap-0.5 sm:gap-1">
                                 <Button
                                   size="sm"
                                   variant="destructive"
                                   className="h-5 w-5 sm:h-6 sm:w-6 p-0 text-[10px] sm:text-xs"
-                                  onClick={() => onRemoveCard(card._id, true, false, false)}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onRemoveCard(card._id, true, false, false);
+                                  }}
                                 >
                                   -
                                 </Button>
@@ -100,7 +118,10 @@ export function DeckCardsList({
                                   size="sm"
                                   variant="default"
                                   className="h-5 w-5 sm:h-6 sm:w-6 p-0 text-[10px] sm:text-xs"
-                                  onClick={() => onAddCard(card, 'life')}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onAddCard(card, 'life');
+                                  }}
                                   disabled={card.quantity >= 1}
                                 >
                                   +
@@ -142,7 +163,10 @@ export function DeckCardsList({
                       {onlyOneCards.map((card) => (
                         <div
                           key={`only-${card._id}`}
-                          className="group relative w-12 sm:w-16 transition-all hover:scale-[2] sm:hover:scale-[3] hover:z-50"
+                          className={`group relative w-12 sm:w-16 transition-all hover:scale-[2] sm:hover:scale-[3] hover:z-50 ${
+                            expandedCard === `only-${card._id}` ? 'scale-[2.5] z-50' : ''
+                          }`}
+                          onClick={() => toggleCard(`only-${card._id}`)}
                         >
                           <div className="relative aspect-[2/3] overflow-hidden rounded border border-yellow-500 sm:border-2 bg-muted/30 shadow-lg">
                             {card.imageUrl ? (
@@ -161,12 +185,17 @@ export function DeckCardsList({
                                 </div>
                               </div>
                             )}
-                            <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-0.5 sm:gap-1 p-0.5 sm:p-1">
+                            <div className={`absolute inset-0 bg-black/80 transition-opacity flex flex-col items-center justify-center gap-0.5 sm:gap-1 p-0.5 sm:p-1 ${
+                              expandedCard === `only-${card._id}` ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                            }`}>
                               <Button
                                 size="sm"
                                 variant="destructive"
                                 className="h-5 sm:h-6 px-1.5 sm:px-2 text-[10px] sm:text-xs"
-                                onClick={() => onRemoveCard(card._id, false, true, false)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onRemoveCard(card._id, false, true, false);
+                                }}
                               >
                                 Remove
                               </Button>
@@ -221,7 +250,10 @@ export function DeckCardsList({
                 {sideDeckOnlyOneCards.map((card) => (
                   <div
                     key={`side-only-${card._id}`}
-                    className="group relative w-12 sm:w-16 transition-all hover:scale-[2] sm:hover:scale-[3] hover:z-50"
+                    className={`group relative w-12 sm:w-16 transition-all hover:scale-[2] sm:hover:scale-[3] hover:z-50 ${
+                      expandedCard === `side-only-${card._id}` ? 'scale-[2.5] z-50' : ''
+                    }`}
+                    onClick={() => toggleCard(`side-only-${card._id}`)}
                   >
                     <div className="relative aspect-[2/3] overflow-hidden rounded border border-yellow-500 sm:border-2 bg-muted/30 shadow-lg">
                       {card.imageUrl ? (
@@ -240,12 +272,17 @@ export function DeckCardsList({
                           </div>
                         </div>
                       )}
-                      <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-0.5 sm:gap-1 p-0.5 sm:p-1">
+                      <div className={`absolute inset-0 bg-black/80 transition-opacity flex flex-col items-center justify-center gap-0.5 sm:gap-1 p-0.5 sm:p-1 ${
+                        expandedCard === `side-only-${card._id}` ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                      }`}>
                         <Button
                           size="sm"
                           variant="destructive"
                           className="h-5 sm:h-6 px-1.5 sm:px-2 text-[10px] sm:text-xs"
-                          onClick={() => onRemoveCard(card._id, false, false, true)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onRemoveCard(card._id, false, false, true);
+                          }}
                         >
                           Remove
                         </Button>
@@ -261,7 +298,10 @@ export function DeckCardsList({
                 {sideDeckRegularCards.map((card) => (
                   <div
                     key={`side-regular-${card._id}`}
-                    className="group relative w-12 sm:w-16 transition-all hover:scale-[2] sm:hover:scale-[3] hover:z-50"
+                    className={`group relative w-12 sm:w-16 transition-all hover:scale-[2] sm:hover:scale-[3] hover:z-50 ${
+                      expandedCard === `side-regular-${card._id}` ? 'scale-[2.5] z-50' : ''
+                    }`}
+                    onClick={() => toggleCard(`side-regular-${card._id}`)}
                   >
                     <div className="relative aspect-[2/3] overflow-hidden rounded border border-cyan-500 sm:border-2 bg-muted/30 shadow-lg">
                       {card.imageUrl ? (
@@ -283,13 +323,18 @@ export function DeckCardsList({
                       <div className="absolute top-0.5 right-0.5 flex h-3 w-3 sm:h-4 sm:w-4 items-center justify-center rounded-full bg-cyan-500 text-[7px] sm:text-[8px] font-bold text-white shadow-lg ring-1 ring-background">
                         {card.quantity}
                       </div>
-                      <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-0.5 sm:gap-1 p-0.5 sm:p-1">
+                      <div className={`absolute inset-0 bg-black/80 transition-opacity flex flex-col items-center justify-center gap-0.5 sm:gap-1 p-0.5 sm:p-1 ${
+                        expandedCard === `side-regular-${card._id}` ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                      }`}>
                         <div className="flex items-center gap-0.5 sm:gap-1">
                           <Button
                             size="sm"
                             variant="destructive"
                             className="h-5 w-5 sm:h-6 sm:w-6 p-0 text-[10px] sm:text-xs"
-                            onClick={() => onRemoveCard(card._id, false, false, true)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onRemoveCard(card._id, false, false, true);
+                            }}
                           >
                             -
                           </Button>
@@ -300,7 +345,10 @@ export function DeckCardsList({
                             size="sm"
                             variant="default"
                             className="h-5 w-5 sm:h-6 sm:w-6 p-0 text-[10px] sm:text-xs"
-                            onClick={() => onAddCard(card, 'side')}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onAddCard(card, 'side');
+                            }}
                             disabled={card.quantity >= 4 || getSideDeckCardCount() >= 11}
                           >
                             +
@@ -348,7 +396,10 @@ export function DeckCardsList({
               {deckCards.map((card) => (
                 <div
                   key={`deck-${card._id}`}
-                  className="group relative w-14 sm:w-16 md:w-20 transition-all hover:scale-[2] sm:hover:scale-[2.5] md:hover:scale-[3] hover:z-50"
+                  className={`group relative w-14 sm:w-16 md:w-20 transition-all hover:scale-[2] sm:hover:scale-[2.5] md:hover:scale-[3] hover:z-50 ${
+                    expandedCard === `deck-${card._id}` ? 'scale-[2.5] z-50' : ''
+                  }`}
+                  onClick={() => toggleCard(`deck-${card._id}`)}
                 >
                   <div className="relative aspect-[2/3] overflow-hidden rounded border border-border sm:border-2 bg-muted/30 shadow-lg">
                     {card.imageUrl ? (
@@ -370,13 +421,18 @@ export function DeckCardsList({
                     <div className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 flex h-4 w-4 sm:h-5 sm:w-5 items-center justify-center rounded-full bg-primary text-[8px] sm:text-[10px] font-bold text-primary-foreground shadow-lg ring-1 sm:ring-2 ring-background">
                       {card.quantity}
                     </div>
-                    <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-0.5 sm:gap-1 p-0.5 sm:p-1">
+                    <div className={`absolute inset-0 bg-black/80 transition-opacity flex flex-col items-center justify-center gap-0.5 sm:gap-1 p-0.5 sm:p-1 ${
+                      expandedCard === `deck-${card._id}` ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                    }`}>
                       <div className="flex items-center gap-0.5 sm:gap-1">
                         <Button
                           size="sm"
                           variant="destructive"
                           className="h-5 w-5 sm:h-6 sm:w-6 p-0 text-[10px] sm:text-xs"
-                          onClick={() => onRemoveCard(card._id, false, false, false)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onRemoveCard(card._id, false, false, false);
+                          }}
                         >
                           -
                         </Button>
@@ -387,7 +443,10 @@ export function DeckCardsList({
                           size="sm"
                           variant="default"
                           className="h-5 w-5 sm:h-6 sm:w-6 p-0 text-[10px] sm:text-xs"
-                          onClick={() => onAddCard(card, 'main')}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onAddCard(card, 'main');
+                          }}
                           disabled={card.quantity >= 4 || getTotalCardCount() >= getMaxDeckSize()}
                         >
                           +
