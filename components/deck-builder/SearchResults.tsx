@@ -222,12 +222,12 @@ export function SearchResults({
               
               {/* Action buttons */}
               <div className="mt-4 flex flex-row gap-3 w-full max-w-md justify-center" onClick={(e) => e.stopPropagation()}>
-                <div className="flex items-center gap-1.5 bg-black/60 rounded-lg px-2.5 py-2">
-                  <span className="text-white text-xs font-bold mr-0.5">Main</span>
+                <div className="flex items-center gap-1.5 bg-black/60 rounded-lg px-3 py-2">
+                  <span className="text-white text-sm sm:text-base font-bold mr-1">Main</span>
                   <Button
                     size="sm"
                     variant="destructive"
-                    className="h-7 w-7 p-0 text-xs"
+                    className="h-8 w-8 p-0 text-base sm:h-9 sm:w-9"
                     onClick={() => {
                       handleRemoveCardClick(fullScreenCard._id, 'main');
                     }}
@@ -235,13 +235,13 @@ export function SearchResults({
                   >
                     -
                   </Button>
-                  <span className="text-white text-sm font-bold w-6 text-center">
-                    Main: {getCardCounts(fullScreenCard._id).main}
+                  <span className="text-white text-base sm:text-lg font-bold w-8 text-center">
+                    {getCardCounts(fullScreenCard._id).main}
                   </span>
                   <Button
                     size="sm"
                     variant="default"
-                    className="h-7 w-7 p-0 text-xs"
+                    className="h-8 w-8 p-0 text-base sm:h-9 sm:w-9"
                     onClick={() => {
                       handleAddCard(fullScreenCard, 'main');
                     }}
@@ -251,33 +251,35 @@ export function SearchResults({
                   </Button>
                 </div>
                 
-                <div className="flex items-center gap-1.5 bg-black/60 rounded-lg px-2.5 py-2">
-                  <span className="text-cyan-400 text-xs font-bold mr-0.5">Side</span>
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    className="h-7 w-7 p-0 text-xs"
-                    onClick={() => {
-                      handleRemoveCardClick(fullScreenCard._id, 'side');
-                    }}
-                    disabled={getCardCounts(fullScreenCard._id).side === 0}
-                  >
-                    -
-                  </Button>
-                  <span className="text-cyan-400 text-sm font-bold w-6 text-center">
-                    Side: {getCardCounts(fullScreenCard._id).side}
-                  </span>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    className="h-7 w-7 p-0 text-xs"
-                    onClick={() => {
-                      handleAddCard(fullScreenCard, 'side');
-                    }}
-                  >
-                    +
-                  </Button>
-                </div>
+                {isMainDeckFull && (
+                  <div className="flex items-center gap-1.5 bg-black/60 rounded-lg px-3 py-2">
+                    <span className="text-cyan-400 text-sm sm:text-base font-bold mr-1">Side</span>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="h-8 w-8 p-0 text-base sm:h-9 sm:w-9"
+                      onClick={() => {
+                        handleRemoveCardClick(fullScreenCard._id, 'side');
+                      }}
+                      disabled={getCardCounts(fullScreenCard._id).side === 0}
+                    >
+                      -
+                    </Button>
+                    <span className="text-cyan-400 text-base sm:text-lg font-bold w-8 text-center">
+                      {getCardCounts(fullScreenCard._id).side}
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="h-8 w-8 p-0 text-base sm:h-9 sm:w-9"
+                      onClick={() => {
+                        handleAddCard(fullScreenCard, 'side');
+                      }}
+                    >
+                      +
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
