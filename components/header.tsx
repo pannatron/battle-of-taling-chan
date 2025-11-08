@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Menu, Swords, Sparkles } from "lucide-react"
 import { useState } from "react"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs"
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -68,12 +69,21 @@ export function Header() {
 
         <div className="flex items-center justify-end gap-2 sm:gap-3">
           <ThemeToggle />
-          <Button variant="ghost" className="hidden lg:inline-flex">
-            Log in
-          </Button>
-          <Button className="hidden bg-gradient-to-r from-primary to-accent font-semibold lg:inline-flex">
-            Sign up
-          </Button>
+          <SignedOut>
+            <SignInButton mode="modal">
+              <Button variant="ghost" className="hidden lg:inline-flex">
+                Log in
+              </Button>
+            </SignInButton>
+            <SignInButton mode="modal">
+              <Button className="hidden bg-gradient-to-r from-primary to-accent font-semibold lg:inline-flex">
+                Sign up
+              </Button>
+            </SignInButton>
+          </SignedOut>
+          <SignedIn>
+            <UserButton afterSignOutUrl="/" />
+          </SignedIn>
           <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
             <Menu className="h-5 w-5" />
           </Button>
@@ -105,12 +115,24 @@ export function Header() {
             <Link href="/admin" className="text-sm font-medium text-muted-foreground hover:text-foreground">
               Admin
             </Link>
-            <div className="flex flex-col gap-2 pt-2">
-              <Button variant="outline" className="w-full border-border/40 bg-card/50 backdrop-blur-sm">
-                Log in
-              </Button>
-              <Button className="w-full bg-gradient-to-r from-primary to-accent font-semibold">Sign up</Button>
-            </div>
+            <SignedOut>
+              <div className="flex flex-col gap-2 pt-2">
+                <SignInButton mode="modal">
+                  <Button variant="outline" className="w-full border-border/40 bg-card/50 backdrop-blur-sm">
+                    Log in
+                  </Button>
+                </SignInButton>
+                <SignInButton mode="modal">
+                  <Button className="w-full bg-gradient-to-r from-primary to-accent font-semibold">Sign up</Button>
+                </SignInButton>
+              </div>
+            </SignedOut>
+            <SignedIn>
+              <div className="flex items-center gap-2 pt-2">
+                <UserButton afterSignOutUrl="/" />
+                <span className="text-sm text-muted-foreground">Your Account</span>
+              </div>
+            </SignedIn>
           </nav>
         </div>
       )}
