@@ -104,8 +104,17 @@ export function addCardToDeck(
   // Main deck logic
   const maxDeckSize = getMaxDeckSize();
   const totalCards = getTotalCardCount();
+  const totalLifeCards = getLifeCardCount();
+  
+  // Check if main deck is full
   if (totalCards >= maxDeckSize) {
-    alert(`เด็คเต็มแล้ว! (จำกัด ${maxDeckSize} ใบ)`);
+    // If main deck is full but life cards are not complete (< 5)
+    if (totalLifeCards < 5) {
+      alert('เด็คหลักเต็มแล้ว! กรุณาเติมไลฟ์การ์ดให้ครบ 5 ใบก่อน');
+      return selectedCards;
+    }
+    // If both main deck and life cards are full, show message
+    alert(`เด็คเต็มแล้ว! (จำกัด ${maxDeckSize} ใบ) ถ้าต้องการเพิ่มการ์ด สามารถเพิ่มในไซด์เด็คได้`);
     return selectedCards;
   }
 
