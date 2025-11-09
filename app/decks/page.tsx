@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -12,7 +12,7 @@ import { Eye, Heart, TrendingUp, Zap, Home, Plus, Search, Sparkles } from "lucid
 import { getAllDecks, getUserDecks, toggleDeckFavorite } from "@/lib/api";
 import { Deck } from "@/types/deck";
 
-export default function DecksPage() {
+function DecksContent() {
   const { user } = useUser();
   const searchParams = useSearchParams();
   const [allDecks, setAllDecks] = useState<Deck[]>([]);
@@ -295,5 +295,23 @@ export default function DecksPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function DecksPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-background">
+        <div className="relative py-24 md:py-32">
+          <div className="container relative mx-auto px-4 md:px-6">
+            <div className="rounded-lg border border-border bg-card/50 p-12 text-center backdrop-blur-sm">
+              <p className="text-lg text-muted-foreground">Loading decks...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    }>
+      <DecksContent />
+    </Suspense>
   );
 }
