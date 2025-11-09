@@ -298,3 +298,59 @@ export async function getCardById(id: string): Promise<Card | null> {
     return null;
   }
 }
+
+// Favorite deck functions
+export async function toggleDeckFavorite(deckId: string, userId: string): Promise<Deck | null> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/decks/${deckId}/favorite`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userId }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to toggle favorite for deck ${deckId}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error(`Error toggling favorite for deck ${deckId}:`, error);
+    return null;
+  }
+}
+
+export async function getUserDecks(userId: string): Promise<Deck[]> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/decks/user/${userId}`, {
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch decks for user ${userId}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error(`Error fetching decks for user ${userId}:`, error);
+    return [];
+  }
+}
+
+export async function getUserFavoriteDecks(userId: string): Promise<Deck[]> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/decks/user/${userId}/favorites`, {
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch favorite decks for user ${userId}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error(`Error fetching favorite decks for user ${userId}:`, error);
+    return [];
+  }
+}

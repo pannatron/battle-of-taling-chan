@@ -6,6 +6,9 @@ export interface Deck {
   wins: number;
   views: number;
   likes: number;
+  favoriteCount: number;
+  favoritedBy: string[];
+  userId?: string;
   gradient: string;
   description?: string;
   cardIds: string[];

@@ -154,8 +154,6 @@ export default function DeckBuilderPage() {
               clearFilters={deckBuilder.clearFilters}
               deckName={deckBuilder.deckName}
               setDeckName={deckBuilder.setDeckName}
-              deckAuthor={deckBuilder.deckAuthor}
-              setDeckAuthor={deckBuilder.setDeckAuthor}
               deckArchetype={deckBuilder.deckArchetype}
               setDeckArchetype={deckBuilder.setDeckArchetype}
               deckDescription={deckBuilder.deckDescription}

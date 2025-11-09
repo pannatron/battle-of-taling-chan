@@ -35,8 +35,6 @@ interface DeckFiltersProps {
   clearFilters: () => void;
   deckName: string;
   setDeckName: (value: string) => void;
-  deckAuthor: string;
-  setDeckAuthor: (value: string) => void;
   deckArchetype: string;
   setDeckArchetype: (value: string) => void;
   deckDescription: string;
@@ -65,8 +63,6 @@ export function DeckFilters({
   clearFilters,
   deckName,
   setDeckName,
-  deckAuthor,
-  setDeckAuthor,
   deckArchetype,
   setDeckArchetype,
   deckDescription,
@@ -243,18 +239,6 @@ export function DeckFilters({
             />
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="deckAuthor" className="text-xs">
-              Author <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              id="deckAuthor"
-              placeholder="Your name"
-              value={deckAuthor}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDeckAuthor(e.target.value)}
-              className="h-8 text-sm"
-            />
-          </div>
 
           <div className="space-y-1.5">
             <Label htmlFor="deckArchetype" className="text-xs">

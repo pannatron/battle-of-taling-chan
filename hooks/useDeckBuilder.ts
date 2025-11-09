@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card as CardType } from '@/types/card';
 import { searchCards, getDistinctCardValues, createDeck } from '@/lib/api';
 import { useRouter } from 'next/navigation';
+import { useUser } from '@clerk/nextjs';
 
 export interface DeckCard extends CardType {
   quantity: number;
@@ -11,6 +12,7 @@ export interface DeckCard extends CardType {
 
 export function useDeckBuilder() {
   const router = useRouter();
+  const { user } = useUser();
   const [searchResults, setSearchResults] = useState<CardType[]>([]);
   const [selectedCards, setSelectedCards] = useState<DeckCard[]>([]);
   const [loading, setLoading] = useState(false);
@@ -27,7 +29,6 @@ export function useDeckBuilder() {
 
   // Deck metadata
   const [deckName, setDeckName] = useState('');
-  const [deckAuthor, setDeckAuthor] = useState('');
   const [deckArchetype, setDeckArchetype] = useState('');
   const [deckDescription, setDeckDescription] = useState('');
 
@@ -105,8 +106,13 @@ export function useDeckBuilder() {
   };
 
   const handleSaveDeck = async () => {
-    if (!deckName || !deckAuthor || selectedCards.length === 0) {
-      alert('กรุณากรอกชื่อเด็ค ชื่อผู้สร้าง และเลือกการ์ดอย่างน้อย 1 ใบ');
+    if (!user) {
+      alert('กรุณา login ก่อนสร้างเด็ค');
+      return;
+    }
+
+    if (!deckName || selectedCards.length === 0) {
+      alert('กรุณากรอกชื่อเด็ค และเลือกการ์ดอย่างน้อย 1 ใบ');
       return;
     }
 
@@ -135,9 +141,12 @@ export function useDeckBuilder() {
         }
       });
 
+    // Get author name from user
+    const authorName = user.fullName || user.username || user.emailAddresses[0]?.emailAddress.split('@')[0] || 'Anonymous';
+
     const deck = {
       name: deckName,
-      author: deckAuthor,
+      author: authorName,
       archetype: deckArchetype || 'Other',
       description: deckDescription,
       cardIds,
@@ -146,6 +155,7 @@ export function useDeckBuilder() {
       views: 0,
       likes: 0,
       gradient: 'from-blue-500 to-purple-600',
+      userId: user.id,
     };
 
     const result = await createDeck(deck);
@@ -153,7 +163,7 @@ export function useDeckBuilder() {
 
     if (result) {
       alert('สร้างเด็คสำเร็จ!');
-      router.push('/decks');
+      router.push('/decks?tab=my');
     } else {
       alert('เกิดข้อผิดพลาดในการสร้างเด็ค');
     }
@@ -221,8 +231,6 @@ export function useDeckBuilder() {
     setColorFilter,
     deckName,
     setDeckName,
-    deckAuthor,
-    setDeckAuthor,
     deckArchetype,
     setDeckArchetype,
     deckDescription,

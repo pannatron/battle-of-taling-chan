@@ -39,9 +39,12 @@ export function SearchResults({
   const [fullScreenCard, setFullScreenCard] = useState<CardType | null>(null);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const [lastWheelTime, setLastWheelTime] = useState<number>(0);
 
   // Minimum swipe distance (in px) to trigger navigation
   const minSwipeDistance = 50;
+  // Throttle time for wheel events (in ms) to prevent too rapid navigation
+  const wheelThrottleTime = 300;
 
   // Get current card index and navigation functions
   const getCurrentCardIndex = useCallback(() => {
@@ -105,6 +108,35 @@ export function SearchResults({
       navigateToNextCard();
     } else if (isRightSwipe) {
       navigateToPreviousCard();
+    }
+  };
+
+  // Handle wheel/trackpad horizontal scroll
+  const onWheel = (e: React.WheelEvent) => {
+    if (!fullScreenCard) return;
+    
+    const now = Date.now();
+    // Throttle to prevent too rapid navigation
+    if (now - lastWheelTime < wheelThrottleTime) return;
+    
+    // Check for horizontal scroll (deltaX) which happens with 2-finger trackpad swipe
+    // Also check deltaY as fallback for vertical scroll being converted to horizontal
+    const horizontalDelta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+    
+    // Threshold to distinguish intentional swipe from accidental movement
+    const threshold = 10;
+    
+    if (Math.abs(horizontalDelta) > threshold) {
+      e.preventDefault();
+      setLastWheelTime(now);
+      
+      if (horizontalDelta > 0) {
+        // Swipe left (or scroll down) = next card
+        navigateToNextCard();
+      } else {
+        // Swipe right (or scroll up) = previous card
+        navigateToPreviousCard();
+      }
     }
   };
   
@@ -266,6 +298,7 @@ export function SearchResults({
             onTouchStart={onTouchStart}
             onTouchMove={onTouchMove}
             onTouchEnd={onTouchEnd}
+            onWheel={onWheel}
           >
             {/* Close button - top right */}
             <button
