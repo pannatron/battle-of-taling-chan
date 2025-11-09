@@ -5,6 +5,7 @@ import { ArrowRight, Trophy, Sparkles } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { useState, useEffect } from "react"
+import { SinCardsSection } from "@/components/sin-cards-section"
 
 export function Hero() {
   const characters = [
@@ -17,6 +18,13 @@ export function Hero() {
   ]
 
   const [currentIndex, setCurrentIndex] = useState(0)
+
+  const scrollToSinCards = () => {
+    const section = document.getElementById('sin-cards-section');
+    if (section) {
+      section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -111,7 +119,7 @@ export function Hero() {
             </div>
 
             {/* Right Side - Premium Character Slideshow */}
-            <div className="order-1 lg:order-2 relative overflow-hidden">
+            <div className="order-1 lg:order-2 relative overflow-visible">
               <div className="relative h-[280px] md:h-[360px] lg:h-[420px] flex flex-row items-center justify-center gap-2 md:gap-4 px-2 md:px-4">
                 {/* Previous Character Preview - Left */}
                 <div className="hidden md:block relative w-[90px] lg:w-[110px] h-[190px] lg:h-[220px] flex-shrink-0">
@@ -184,6 +192,57 @@ export function Hero() {
                   />
                 ))}
               </div>
+
+              {/* การ์ดบาป Button - ใต้ Dots (All screens) */}
+              <div className="mt-8 flex justify-center">
+                <div className="relative inline-block">
+                  <Button
+                    size="sm"
+                    className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-purple-600 via-indigo-600 to-cyan-600 px-6 py-3 shadow-xl transition-all duration-300 hover:scale-105 hover:shadow-purple-500/50 border border-purple-400/40"
+                    onClick={scrollToSinCards}
+                  >
+                    {/* Animated background gradient */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-purple-700 via-indigo-700 to-cyan-700 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                    
+                    {/* Animated glow effect */}
+                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <div className="absolute inset-0 bg-gradient-to-t from-transparent via-purple-500/20 to-cyan-500/30 animate-pulse" />
+                    </div>
+
+                    {/* Sparkle effects */}
+                    <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                      <Sparkles className="h-3 w-3 text-cyan-200 animate-pulse" />
+                    </div>
+                    <div className="absolute bottom-1 left-1 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                      <Sparkles className="h-3 w-3 text-purple-200 animate-pulse" />
+                    </div>
+
+                    {/* Button content */}
+                    <div className="relative z-20 flex items-center gap-2">
+                      <span className="text-base font-bold text-white drop-shadow-lg">การ์ดบาป</span>
+                    </div>
+
+                    {/* Glow effect */}
+                    <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-purple-400 via-indigo-400 to-cyan-400 opacity-0 blur-lg transition-opacity duration-300 group-hover:opacity-50 -z-10" />
+                  </Button>
+
+                  {/* Comment Badge - Above Button */}
+                  <div className="absolute -top-2 left-1/2 -translate-x-1/2 -translate-y-full">
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 via-indigo-500/20 to-cyan-500/20 blur-md" />
+                      <div className="relative bg-gradient-to-r from-purple-900/90 via-indigo-900/90 to-cyan-900/90 backdrop-blur-sm border border-purple-400/30 rounded-full px-3 py-1 shadow-lg">
+                        <span className="text-[10px] font-medium text-cyan-100 whitespace-nowrap">
+                          ประจำเดือนธันวาคม 2568
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Pulsing ring effect */}
+                  <div className="absolute inset-0 rounded-xl animate-ping opacity-10 bg-gradient-to-br from-purple-500 via-indigo-500 to-cyan-500 -z-10" 
+                       style={{ animationDuration: '3s' }} />
+                </div>
+              </div>
             </div>
           </div>
 
@@ -211,6 +270,9 @@ export function Hero() {
           </div>
         </div>
       </div>
+
+      {/* Sin Cards Section */}
+      <SinCardsSection />
     </section>
   )
 }
