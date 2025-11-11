@@ -5,7 +5,10 @@ import { Card as CardType } from '@/types/card';
 export function isOnlyOneCard(ex: string | undefined): boolean {
   if (!ex) return false;
   const normalizedEx = ex.toLowerCase().replace(/\s+/g, '');
-  return normalizedEx === 'only#1' || normalizedEx === 'only1' || normalizedEx === 'onlyone';
+  return normalizedEx === 'only#1' || 
+         normalizedEx === '#only1' || 
+         normalizedEx === 'only1' || 
+         normalizedEx === 'onlyone';
 }
 
 export function addCardToDeck(
