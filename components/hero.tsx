@@ -5,7 +5,7 @@ import { ArrowRight, Trophy, Sparkles } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { useState, useEffect } from "react"
-import { SinCardsSection } from "@/components/sin-cards-section"
+
 
 export function Hero() {
   const characters = [
@@ -270,9 +270,6 @@ export function Hero() {
           </div>
         </div>
       </div>
-
-      {/* Sin Cards Section */}
-      <SinCardsSection />
     </section>
   )
 }
