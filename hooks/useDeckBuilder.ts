@@ -3,6 +3,7 @@ import { Card as CardType } from '@/types/card';
 import { searchCards, getDistinctCardValues, createDeck } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
+import { isOnlyOneCard } from '@/lib/deckCardUtils';
 
 export interface DeckCard extends CardType {
   quantity: number;
@@ -183,7 +184,7 @@ export function useDeckBuilder() {
 
   const getOnlyOneCardCount = () => {
     return selectedCards
-      .filter((card) => card.isLifeCard === false && card.ex === 'Only #1' && !card.isSideDeck)
+      .filter((card) => card.isLifeCard === false && isOnlyOneCard(card.ex) && !card.isSideDeck)
       .reduce((total, card) => total + card.quantity, 0);
   };
 
@@ -195,7 +196,7 @@ export function useDeckBuilder() {
 
   const getSideDeckOnlyOneCount = () => {
     return selectedCards
-      .filter((card) => card.isSideDeck && card.ex === 'Only #1')
+      .filter((card) => card.isSideDeck && isOnlyOneCard(card.ex))
       .reduce((total, card) => total + card.quantity, 0);
   };
 

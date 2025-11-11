@@ -1,6 +1,13 @@
 import { DeckCard } from '@/hooks/useDeckBuilder';
 import { Card as CardType } from '@/types/card';
 
+// Helper function to check if card is Only One
+export function isOnlyOneCard(ex: string | undefined): boolean {
+  if (!ex) return false;
+  const normalizedEx = ex.toLowerCase().replace(/\s+/g, '');
+  return normalizedEx === 'only#1' || normalizedEx === 'only1' || normalizedEx === 'onlyone';
+}
+
 export function addCardToDeck(
   card: CardType,
   selectedCards: DeckCard[],
@@ -14,7 +21,7 @@ export function addCardToDeck(
   isMainDeckFull: () => boolean
 ): DeckCard[] {
   const isLifeCard = card.type === 'Life' || targetDeck === 'life';
-  const isOnlyOne = card.ex === 'Only #1';
+  const isOnlyOne = isOnlyOneCard(card.ex);
   const isSideDeck = targetDeck === 'side';
 
   // Life cards logic
@@ -46,7 +53,7 @@ export function addCardToDeck(
 
     const totalSideDeck = getSideDeckCardCount();
     const sideDeckOnlyOneCount = getSideDeckOnlyOneCount();
-    const isCardOnlyOne = card.ex === 'Only #1';
+    const isCardOnlyOne = isOnlyOneCard(card.ex);
 
     if (isCardOnlyOne) {
       if (sideDeckOnlyOneCount >= 1) {
@@ -92,7 +99,7 @@ export function addCardToDeck(
       return selectedCards;
     }
 
-    const existingCard = selectedCards.find((c) => c._id === card._id && c.ex === 'Only #1');
+    const existingCard = selectedCards.find((c) => c._id === card._id && isOnlyOneCard(c.ex));
     if (existingCard) {
       alert('ใส่ Only One การ์ดได้แค่ 1 ใบ');
       return selectedCards;
@@ -140,7 +147,7 @@ export function removeCardFromDeck(
   isSideDeck: boolean = false
 ): DeckCard[] {
   if (isOnlyOne) {
-    return selectedCards.filter((c) => !(c._id === cardId && c.ex === 'Only #1'));
+    return selectedCards.filter((c) => !(c._id === cardId && isOnlyOneCard(c.ex)));
   }
 
   if (isSideDeck) {

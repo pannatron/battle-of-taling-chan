@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Heart } from 'lucide-react';
 import Image from 'next/image';
+import { isOnlyOneCard } from '@/lib/deckCardUtils';
 
 interface DeckCardsListProps {
   lifeCards: DeckCard[];
@@ -38,8 +39,8 @@ export function DeckCardsList({
   onRemoveCard,
   onClearSection,
 }: DeckCardsListProps) {
-  const sideDeckOnlyOneCards = sideDeckCards.filter((card) => card.ex === 'Only #1');
-  const sideDeckRegularCards = sideDeckCards.filter((card) => card.ex !== 'Only #1');
+  const sideDeckOnlyOneCards = sideDeckCards.filter((card) => isOnlyOneCard(card.ex));
+  const sideDeckRegularCards = sideDeckCards.filter((card) => !isOnlyOneCard(card.ex));
   
   // State for expanded card on mobile
   const [expandedCard, setExpandedCard] = useState<string | null>(null);

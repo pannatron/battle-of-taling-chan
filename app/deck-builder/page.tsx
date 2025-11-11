@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import { Card as CardType } from '@/types/card';
 import { useDeckBuilder } from '@/hooks/useDeckBuilder';
-import { addCardToDeck, removeCardFromDeck } from '@/lib/deckCardUtils';
+import { addCardToDeck, removeCardFromDeck, isOnlyOneCard } from '@/lib/deckCardUtils';
 import { Button } from '@/components/ui/button';
 import { Grid3x3, List, ArrowLeft, Filter } from 'lucide-react';
 import Link from 'next/link';
@@ -27,11 +27,11 @@ export default function DeckBuilderPage() {
 
   const lifeCards = deckBuilder.selectedCards.filter((card) => card.isLifeCard);
   const onlyOneCards = deckBuilder.selectedCards.filter(
-    (card) => !card.isLifeCard && card.ex === 'Only #1' && !card.isSideDeck
+    (card) => !card.isLifeCard && isOnlyOneCard(card.ex) && !card.isSideDeck
   );
   const sideDeckCards = deckBuilder.selectedCards.filter((card) => card.isSideDeck);
   const deckCards = deckBuilder.selectedCards.filter(
-    (card) => !card.isLifeCard && card.ex !== 'Only #1' && !card.isSideDeck
+    (card) => !card.isLifeCard && !isOnlyOneCard(card.ex) && !card.isSideDeck
   );
 
   // Calculate pagination
@@ -81,7 +81,7 @@ export default function DeckBuilderPage() {
         break;
       case 'onlyOne':
         deckBuilder.setSelectedCards(
-          deckBuilder.selectedCards.filter((c) => c.ex !== 'Only #1' || c.isSideDeck)
+          deckBuilder.selectedCards.filter((c) => !isOnlyOneCard(c.ex) || c.isSideDeck)
         );
         break;
       case 'sideDeck':
@@ -92,7 +92,7 @@ export default function DeckBuilderPage() {
       case 'deck':
         deckBuilder.setSelectedCards(
           deckBuilder.selectedCards.filter(
-            (c) => c.isLifeCard || c.ex === 'Only #1' || c.isSideDeck
+            (c) => c.isLifeCard || isOnlyOneCard(c.ex) || c.isSideDeck
           )
         );
         break;
