@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Creepster&family=Nosifer&display=swap');
 @font-face {
   font-family: 'PANIDino';
   src: url('/fonts/186PANIDinoDemo-Regular.ttf') format('truetype');
@@ -6,8 +7,40 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: 'MN Lon';
+  src: url('/fonts/MN Lon.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'MN Lon';
+  src: url('/fonts/MN Lon Italic.ttf') format('truetype');
+  font-weight: normal;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'MN Lon2';
+  src: url('/fonts/MN Lon2.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'MN Lon2';
+  src: url('/fonts/MN Lon2 Italic.ttf') format('truetype');
+  font-weight: normal;
+  font-style: italic;
+  font-display: swap;
+}
 @import "tailwindcss";
 @import "tw-animate-css";
+
 
 @custom-variant dark (&:is(.dark *));
 
@@ -86,6 +119,10 @@
   --font-sans: "Geist", "Geist Fallback";
   --font-mono: "Geist Mono", "Geist Mono Fallback";
   --font-thai: "PANIDino", sans-serif;
+  --font-horror: "Nosifer", cursive;
+  --font-creepy: "Creepster", cursive;
+  --font-mn-lon: "MN Lon", sans-serif;
+  --font-mn-lon2: "MN Lon2", sans-serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -150,51 +187,4 @@
   .font-thai {
     font-family: "PANIDino", sans-serif;
   }
-}
-
-/* Force light text in Clerk UserButton dropdown */
-.cl-userButtonPopoverCard,
-.cl-userButtonPopoverActionButton,
-.cl-userButtonPopoverActionButtonText,
-.cl-userPreviewMainIdentifier,
-.cl-menuItem,
-.cl-menuItemText {
-  color: #f8f8f9 !important;
-}
-
-.cl-userButtonPopoverActionButton:hover {
-  background-color: rgba(221, 122, 235, 0.1) !important;
-}
-
-/* Fix Clerk social buttons layout */
-.cl-socialButtonsBlockButton,
-.cl-socialButtonsBlockButtonArrow {
-  width: 100% !important;
-  max-width: 100% !important;
-}
-
-.cl-socialButtonsBlockButton__google,
-.cl-socialButtonsBlockButton__discord,
-.cl-socialButtonsBlockButton__line {
-  display: flex !important;
-  width: 100% !important;
-  justify-content: center !important;
-  align-items: center !important;
-  margin: 0 !important;
-  position: relative !important;
-}
-
-.cl-socialButtons {
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 0.75rem !important;
-  width: 100% !important;
-}
-
-.cl-socialButtonsIconButton {
-  position: relative !important;
-  width: 100% !important;
-  display: flex !important;
-  justify-content: center !important;
-  align-items: center !important;
 }
