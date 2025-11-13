@@ -8,7 +8,7 @@ const sinCardCategories = [
   {
     id: 'banned',
     title: 'Banned Cards',
-    titleThai: 'การ์ดต้องห้าม',
+    titleThai: 'บาปต้องห้าม',
     description: 'การ์ดที่ถูกห้ามใช้ในการแข่งขันอย่างสมบูรณ์',
     icon: Ban,
     count: 12,
@@ -16,7 +16,7 @@ const sinCardCategories = [
   {
     id: 'limited',
     title: 'Limited Cards',
-    titleThai: 'การ์ดจำกัด',
+    titleThai: 'บาปจำกัด',
     description: 'การ์ดที่ถูกจำกัดจำนวนที่สามารถใส่ใน Deck หรือมีการเพิ่มจำนวนที่ใส่ได้',
     icon: AlertTriangle,
     count: 8,
@@ -24,7 +24,7 @@ const sinCardCategories = [
   {
     id: 'conditional',
     title: 'Conditional Cards',
-    titleThai: 'การ์ดมีเงื่อนไข',
+    titleThai: 'บาปมีเงื่อนไข',
     description: 'การ์ดที่มีเงื่อนไขพิเศษในการใช้งาน เช่น ห้ามใส่ซ้ำกับการ์ดบางใบ หรือต้องเลือกใบใดใบหนึ่ง',
     icon: FileWarning,
     count: 15,
