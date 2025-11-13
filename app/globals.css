@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Creepster&family=Nosifer&display=swap');
 @font-face {
   font-family: 'PANIDino';
   src: url('/fonts/186PANIDinoDemo-Regular.ttf') format('truetype');
@@ -8,6 +9,7 @@
 
 @import "tailwindcss";
 @import "tw-animate-css";
+
 
 @custom-variant dark (&:is(.dark *));
 
@@ -86,6 +88,8 @@
   --font-sans: "Geist", "Geist Fallback";
   --font-mono: "Geist Mono", "Geist Mono Fallback";
   --font-thai: "PANIDino", sans-serif;
+  --font-horror: "Nosifer", cursive;
+  --font-creepy: "Creepster", cursive;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -149,6 +153,35 @@
   }
   .font-thai {
     font-family: "PANIDino", sans-serif;
+  }
+  
+  /* Horror Font Utilities */
+  .font-horror {
+    font-family: "Nosifer", cursive;
+  }
+  
+  .font-creepy {
+    font-family: "Creepster", cursive;
+  }
+  
+  /* Blood text effect */
+  .text-blood {
+    color: #dc2626;
+    text-shadow: 
+      0 0 10px rgba(220, 38, 38, 0.8),
+      0 0 20px rgba(220, 38, 38, 0.6),
+      0 0 30px rgba(220, 38, 38, 0.4),
+      0 2px 0 rgba(139, 0, 0, 0.9),
+      0 4px 0 rgba(100, 0, 0, 0.7),
+      0 6px 8px rgba(0, 0, 0, 0.9);
+  }
+  
+  .text-blood-small {
+    color: #dc2626;
+    text-shadow: 
+      0 0 10px rgba(220, 38, 38, 0.6),
+      0 2px 0 rgba(100, 0, 0, 0.8),
+      0 4px 6px rgba(0, 0, 0, 0.9);
   }
 
   /* Custom Animations for Sin Button */
@@ -247,7 +280,7 @@
     --ty: calc(-40px - var(--random-y, 0.5) * 40px);
   }
 
-  /* Heat Wave Animation */}
+  /* Heat Wave Animation */
   @keyframes heat-wave {
     0%, 100% {
       transform: translateX(-100%) skewX(10deg);
@@ -285,3 +318,4 @@
   .bg-gradient-radial {
     background: radial-gradient(circle, var(--tw-gradient-stops));
   }
+}
