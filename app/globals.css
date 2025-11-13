@@ -7,6 +7,37 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: 'MN Lon';
+  src: url('/fonts/MN Lon.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'MN Lon';
+  src: url('/fonts/MN Lon Italic.ttf') format('truetype');
+  font-weight: normal;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'MN Lon2';
+  src: url('/fonts/MN Lon2.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'MN Lon2';
+  src: url('/fonts/MN Lon2 Italic.ttf') format('truetype');
+  font-weight: normal;
+  font-style: italic;
+  font-display: swap;
+}
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -90,6 +121,8 @@
   --font-thai: "PANIDino", sans-serif;
   --font-horror: "Nosifer", cursive;
   --font-creepy: "Creepster", cursive;
+  --font-mn-lon: "MN Lon", sans-serif;
+  --font-mn-lon2: "MN Lon2", sans-serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -162,6 +195,15 @@
   
   .font-creepy {
     font-family: "Creepster", cursive;
+  }
+  
+  /* MN Lon Font Utilities */
+  .font-mn-lon {
+    font-family: "MN Lon", sans-serif;
+  }
+  
+  .font-mn-lon2 {
+    font-family: "MN Lon2", sans-serif;
   }
   
   /* Blood text effect */

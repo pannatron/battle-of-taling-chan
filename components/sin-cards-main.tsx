@@ -66,7 +66,7 @@ export function SinCardsMain() {
           
           {/* Main Title with Blood Drip Effect - Using Nosifer Font */}
           <div className="relative inline-block mb-6">
-            <h2 className="font-horror text-6xl md:text-7xl lg:text-8xl font-black relative z-10 text-blood tracking-wider">
+            <h2 className="font-mn-lon text-6xl md:text-7xl lg:text-8xl font-black relative z-10 text-blood tracking-wider">
               การ์ดบาป
             </h2>
             
@@ -87,7 +87,7 @@ export function SinCardsMain() {
             </svg>
           </div>
           
-          <p className="text-red-300/70 max-w-2xl mx-auto text-lg mt-8">
+          <p className="font-mn-lon text-red-300/70 max-w-2xl mx-auto text-lg mt-8">
             การ์ดที่ถูกจำกัดการใช้งานเพื่อสร้างความสมดุลในเกม แบ่งออกเป็น 3 ประเภทหลัก
           </p>
         </div>
@@ -176,17 +176,17 @@ export function SinCardsMain() {
 
                       {/* Title - Using Creepster Font */}
                       <div className="text-center mb-4">
-                        <h3 className="font-creepy text-3xl font-black mb-1 text-blood-small tracking-[0.08em] transition-all duration-300 group-hover:text-red-400">
+                        <h3 className="font-mn-lon text-3xl font-black mb-1 text-blood-small tracking-[0.08em] transition-all duration-300 group-hover:text-red-400">
                           {category.titleThai}
                         </h3>
-                        <p className="text-sm text-red-300/60 font-semibold tracking-wider">
+                        <p className="font-mn-lon text-sm text-red-300/60 font-semibold tracking-wider">
                           {category.title}
                         </p>
                       </div>
 
                       {/* Description */}
                       <div className="flex-grow flex items-center mb-6">
-                        <p className="text-center text-base leading-relaxed text-red-200/80 font-medium">
+                        <p className="font-mn-lon text-center text-base leading-relaxed text-red-200/80 font-medium">
                           {category.description}
                         </p>
                       </div>
@@ -207,11 +207,11 @@ export function SinCardsMain() {
                             }}
                           >
                             <div className="flex items-center gap-3">
-                              <span className="text-2xl font-black text-red-200" 
+                              <span className="font-mn-lon text-2xl font-black text-red-200" 
                                     style={{ textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>
                                 {category.count}
                               </span>
-                              <span className="text-sm font-bold text-red-300/80 uppercase tracking-wide">
+                              <span className="font-mn-lon text-sm font-bold text-red-300/80 uppercase tracking-wide">
                                 การ์ด
                               </span>
                             </div>
@@ -238,7 +238,7 @@ export function SinCardsMain() {
                           {/* Animated blood flow on hover */}
                           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-red-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 group-hover:animate-pulse" />
                           
-                          <span className="relative text-base font-bold text-red-400 group-hover:text-red-300 transition-colors flex items-center justify-center gap-2 uppercase tracking-wider"
+                          <span className="font-mn-lon relative text-base font-bold text-red-400 group-hover:text-red-300 transition-colors flex items-center justify-center gap-2 uppercase tracking-wider"
                                 style={{ textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}>
                             <Skull className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
                             ดูการ์ดทั้งหมด
@@ -292,13 +292,13 @@ export function SinCardsMain() {
                 <FileWarning className="h-6 w-6 text-red-400" />
               </div>
               <div>
-                <h4 className="font-creepy mb-3 text-xl font-black text-blood-small tracking-[0.1em]">
+                <h4 className="font-mn-lon mb-3 text-xl font-black text-blood-small tracking-[0.1em]">
                   หมายเหตุสำคัญ
                 </h4>
-                <p className="text-base leading-relaxed text-red-200/80 font-medium mb-2">
+                <p className="font-mn-lon text-base leading-relaxed text-red-200/80 font-medium mb-2">
                   รายการการ์ดบาปจะมีการอัพเดททุกเดือน กรุณาตรวจสอบรายการล่าสุดก่อนการแข่งขันทุกครั้ง
                 </p>
-                <p className="text-base leading-relaxed text-red-300/70 font-medium">
+                <p className="font-mn-lon text-base leading-relaxed text-red-300/70 font-medium">
                   การใช้การ์ดที่ถูกแบนหรือไม่ปฏิบัติตามเงื่อนไขอาจส่งผลให้ถูกตัดสิทธิ์จากการแข่งขัน
                 </p>
               </div>
