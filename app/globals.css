@@ -150,4 +150,138 @@
   .font-thai {
     font-family: "PANIDino", sans-serif;
   }
-}
+
+  /* Custom Animations for Sin Button */
+  @keyframes shake-intense {
+    0%, 100% {
+      transform: translateX(0);
+    }
+    10%, 30%, 50%, 70%, 90% {
+      transform: translateX(-2px) rotate(-0.5deg);
+    }
+    20%, 40%, 60%, 80% {
+      transform: translateX(2px) rotate(0.5deg);
+    }
+  }
+
+  @keyframes float-up {
+    0% {
+      transform: translateY(0);
+      opacity: 0;
+    }
+    50% {
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(-100px);
+      opacity: 0;
+    }
+  }
+
+  @keyframes spin-slow {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .animate-shake-intense {
+    animation: shake-intense 0.5s infinite;
+  }
+
+  .animate-float-up {
+    animation: float-up 2s ease-in-out infinite;
+  }
+
+  .animate-spin-slow {
+    animation: spin-slow 4s linear infinite;
+  }
+
+  /* Fireball specific animations */
+  @keyframes flame-dance {
+    0%, 100% {
+      transform: scaleY(1) scaleX(1);
+      opacity: 0.8;
+    }
+    25% {
+      transform: scaleY(1.2) scaleX(0.9);
+      opacity: 0.9;
+    }
+    50% {
+      transform: scaleY(0.9) scaleX(1.1);
+      opacity: 1;
+    }
+    75% {
+      transform: scaleY(1.1) scaleX(0.95);
+      opacity: 0.85;
+    }
+  }
+
+  @keyframes float-ember {
+    0% {
+      transform: translate(0, 0) scale(1);
+      opacity: 0;
+    }
+    20% {
+      opacity: 1;
+    }
+    80% {
+      opacity: 0.5;
+    }
+    100% {
+      transform: translate(var(--tx, 30px), var(--ty, -60px)) scale(0);
+      opacity: 0;
+    }
+  }
+
+  .animate-flame-dance {
+    animation: flame-dance 1s ease-in-out infinite;
+    transform-origin: bottom center;
+  }
+
+  .animate-float-ember {
+    animation: float-ember 3s ease-out infinite;
+    --tx: calc((var(--random-x, 0.5) - 0.5) * 80px);
+    --ty: calc(-40px - var(--random-y, 0.5) * 40px);
+  }
+
+  /* Heat Wave Animation */}
+  @keyframes heat-wave {
+    0%, 100% {
+      transform: translateX(-100%) skewX(10deg);
+    }
+    50% {
+      transform: translateX(100%) skewX(-10deg);
+    }
+  }
+
+  .animate-heat-wave {
+    animation: heat-wave 2s ease-in-out infinite;
+  }
+
+
+  @keyframes heat-distort {
+    0%, 100% {
+      transform: scaleY(1) translateY(0);
+    }
+    25% {
+      transform: scaleY(1.02) translateY(-2px);
+    }
+    50% {
+      transform: scaleY(0.98) translateY(2px);
+    }
+    75% {
+      transform: scaleY(1.01) translateY(-1px);
+    }
+  }
+
+  .animate-heat-distort {
+    animation: heat-distort 3s ease-in-out infinite;
+  }
+
+  /* Radial gradient utility */
+  .bg-gradient-radial {
+    background: radial-gradient(circle, var(--tw-gradient-stops));
+  }

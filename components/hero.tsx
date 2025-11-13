@@ -150,20 +150,20 @@ export function Hero() {
                   <Button
                     size="lg"
                     variant="outline"
-                    className="group min-w-[200px] rounded-xl border-2 border-primary/50 bg-background/80 px-8 py-6 text-base font-bold backdrop-blur-sm transition-all hover:scale-105 hover:border-primary hover:bg-primary/10 hover:shadow-xl hover:shadow-primary/20"
+                    className="group relative min-w-[200px] overflow-hidden rounded-xl border-2 border-border px-8 py-6 text-base font-bold transition-all hover:scale-105 hover:border-primary/50"
                     asChild
                   >
-                    <Link href="/decks" className="flex items-center justify-center gap-2">
-                      <span>Explore Decks</span>
-                      <Sparkles className="h-4 w-4 transition-transform group-hover:rotate-12" />
+                    <Link href="/deck-lists" className="flex items-center justify-center gap-2">
+                      <span className="relative z-10">Explore Decks</span>
+                      <Sparkles className="relative z-10 h-5 w-5 transition-transform group-hover:rotate-12" />
                     </Link>
                   </Button>
                 </div>
               </div>
 
-              {/* Right Side - Premium Character Slideshow */}
-              <div className="order-1 lg:order-2 relative overflow-visible">
-                <div className="relative h-[280px] md:h-[360px] lg:h-[420px] flex flex-row items-center justify-center gap-2 md:gap-4 px-2 md:px-4">
+              {/* Right Side - Character Showcase */}
+              <div className="order-1 lg:order-2">
+                <div className="flex items-center justify-center gap-2 md:gap-4 h-[380px] md:h-[430px] lg:h-[500px]">
                   {/* Previous Character Preview - Left */}
                   <div className="hidden md:block relative w-[90px] lg:w-[110px] h-[190px] lg:h-[220px] flex-shrink-0">
                     <div className="relative w-full h-full rounded-2xl overflow-hidden opacity-40 grayscale hover:grayscale-0 hover:opacity-70 transition-all duration-500 cursor-pointer bg-background/30 dark:bg-background/10"
@@ -262,53 +262,23 @@ export function Hero() {
           </div>
         </div>
 
-        {/* การ์ดบาป Button - Fixed Bottom Right */}
+        {/* บาป Button - Fixed Bottom Right - Simple GIF Only */}
         <div className="fixed bottom-8 right-8 z-50">
-          <div className="relative inline-block">
-            <Button
-              size="lg"
-              className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-orange-600 via-red-600 to-orange-700 px-8 py-4 shadow-2xl transition-all duration-300 hover:scale-110 hover:shadow-orange-500/60 border-2 border-orange-400/60 hover:border-orange-300"
-              onClick={scrollToSinCards}
-              disabled={isTransitioning}
-            >
-              {/* Animated background gradient */}
-              <div className="absolute inset-0 bg-gradient-to-br from-orange-700 via-red-700 to-orange-800 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-              
-              {/* Animated glow effect */}
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <div className="absolute inset-0 bg-gradient-to-t from-transparent via-orange-500/30 to-red-500/40 animate-pulse" />
-              </div>
-
-              {/* Flame effects */}
-              <div className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                <Flame className="h-5 w-5 text-orange-200 animate-bounce" />
-              </div>
-              <div className="absolute -bottom-1 -left-1 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                <Flame className="h-5 w-5 text-red-200 animate-bounce" style={{ animationDelay: '0.2s' }} />
-              </div>
-
-              {/* Button content */}
-              <div className="relative z-20 flex items-center gap-3">
-                <Flame className="h-6 w-6 text-white animate-pulse" />
-                <span className="text-lg font-bold text-white drop-shadow-lg font-thai">การ์ดบาป</span>
-                <Flame className="h-6 w-6 text-white animate-pulse" style={{ animationDelay: '0.5s' }} />
-              </div>
-
-              {/* Glow effect */}
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-orange-400 via-red-400 to-orange-500 opacity-0 blur-xl transition-opacity duration-300 group-hover:opacity-60 -z-10" />
-            </Button>
-
-            {/* Month Badge - Above Button */}
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2 -translate-y-full">
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-orange-500/20 via-red-500/30 to-orange-500/20 blur-md" />
-              </div>
-            </div>
-
-            {/* Pulsing ring effect */}
-            <div className="absolute inset-0 rounded-2xl animate-ping opacity-20 bg-gradient-to-br from-orange-500 via-red-500 to-orange-600 -z-10" 
-                 style={{ animationDuration: '2s' }} />
-          </div>
+          <button
+            onClick={scrollToSinCards}
+            disabled={isTransitioning}
+            className="cursor-pointer transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {/* Replace this src with your actual GIF file path */}
+            <img 
+              src="/sin-button.gif" 
+              alt="บาป"
+              className="w-auto h-20 object-contain drop-shadow-2xl"
+              style={{
+                filter: 'drop-shadow(0 4px 12px rgba(0, 0, 0, 0.5))',
+              }}
+            />
+          </button>
         </div>
       </section>
     </>
