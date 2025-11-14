@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowLeft, AlertTriangle, X, Skull, Ghost, ArrowUp, ArrowDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { getSinCardsByStatus } from '@/lib/api';
+import { getAllCards } from '@/lib/api';
 import { Card } from '@/types/card';
 
 interface LimitedCard {
@@ -32,7 +32,9 @@ export default function LimitedCardsPage() {
     async function fetchLimitedCards() {
       try {
         setLoading(true);
-        const cards = await getSinCardsByStatus('limited');
+        // Get all cards and filter for those with sinCardLimit (regardless of status)
+        const allCards = await getAllCards();
+        const cards = allCards.filter(card => card.sinCardLimit !== undefined);
         
         // Define rarity priority (lower number = higher priority to show)
         const rarityPriority: { [key: string]: number } = {

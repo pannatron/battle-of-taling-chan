@@ -3,49 +3,85 @@ import { DeckCard } from '@/hooks/useDeckBuilder';
 
 export interface SinCardValidationResult {
   isValid: boolean;
-  errorMessage?: string;
+  errorMessages?: string[];
+  errorMessage?: string; // For backward compatibility in internal functions
   warningMessage?: string;
 }
 
 /**
  * Validates if a card can be added to the deck based on sin card conditions
+ * Now supports multiple restrictions on a single card
  */
 export function validateSinCardConditions(
   card: Card,
   selectedCards: DeckCard[],
   allCards: Card[]
 ): SinCardValidationResult {
-  // Check if card is banned
+  const errors: string[] = [];
+  
+  // Check if card is banned (highest priority - blocks everything)
   if (card.sinCardStatus === 'banned') {
     return {
       isValid: false,
-      errorMessage: `การ์ด "${card.name}" ถูกแบน ไม่สามารถใส่ในเด็คได้`,
+      errorMessages: [`การ์ด "${card.name}" ถูกแบน ไม่สามารถใส่ในเด็คได้`],
     };
   }
 
-  // Check if card has conditional restrictions
-  if (card.sinCardStatus === 'conditional' && card.sinCardConditionType) {
-    switch (card.sinCardConditionType) {
-      case 'choose_one':
-        return validateChooseOne(card, selectedCards, allCards);
-      case 'requires_avatar_symbol':
-        return validateRequiresAvatarSymbol(card, selectedCards);
-      case 'shared_name_limit':
-        return validateSharedNameLimit(card, selectedCards, allCards);
-    }
-  }
-
-  // Check custom limit restrictions
-  if (card.sinCardStatus === 'limited' && card.sinCardLimit !== undefined) {
+  // Check custom limit restrictions (can be combined with other restrictions)
+  if (card.sinCardLimit !== undefined) {
     const existingCard = selectedCards.find(c => c._id === card._id);
     const currentCount = existingCard?.quantity || 0;
     
     if (currentCount >= card.sinCardLimit) {
-      return {
-        isValid: false,
-        errorMessage: `การ์ด "${card.name}" ถูกจำกัดที่ ${card.sinCardLimit} ใบ`,
-      };
+      errors.push(`การ์ด "${card.name}" ถูกจำกัดที่ ${card.sinCardLimit} ใบ`);
     }
+  }
+
+  // Check all conditional restrictions (can have multiple conditions)
+  if (card.sinCardConditionType) {
+    switch (card.sinCardConditionType) {
+      case 'choose_one': {
+        const result = validateChooseOne(card, selectedCards, allCards);
+        if (!result.isValid) {
+          if (result.errorMessages) {
+            errors.push(...result.errorMessages);
+          } else if (result.errorMessage) {
+            errors.push(result.errorMessage);
+          }
+        }
+        break;
+      }
+      case 'requires_avatar_symbol': {
+        const result = validateRequiresAvatarSymbol(card, selectedCards);
+        if (!result.isValid) {
+          if (result.errorMessages) {
+            errors.push(...result.errorMessages);
+          } else if (result.errorMessage) {
+            errors.push(result.errorMessage);
+          }
+        }
+        break;
+      }
+      case 'shared_name_limit': {
+        const result = validateSharedNameLimit(card, selectedCards, allCards);
+        if (!result.isValid) {
+          if (result.errorMessages) {
+            errors.push(...result.errorMessages);
+          } else if (result.errorMessage) {
+            errors.push(result.errorMessage);
+          }
+        }
+        break;
+      }
+    }
+  }
+
+  // Return combined results
+  if (errors.length > 0) {
+    return {
+      isValid: false,
+      errorMessages: errors,
+    };
   }
 
   return { isValid: true };
@@ -197,6 +233,7 @@ function validateSharedNameLimit(
 
 /**
  * Get all sin card warnings for the current deck
+ * Now supports multiple restrictions per card
  */
 export function getDeckSinCardWarnings(
   selectedCards: DeckCard[],
@@ -212,12 +249,11 @@ export function getDeckSinCardWarnings(
     }
   }
 
-  // Check for limited cards exceeding their limit
+  // Check for limited cards exceeding their limit (independent of status)
   for (const deckCard of selectedCards) {
     const fullCard = allCards.find(c => c._id === deckCard._id);
     if (
-      fullCard?.sinCardStatus === 'limited' &&
-      fullCard.sinCardLimit !== undefined &&
+      fullCard?.sinCardLimit !== undefined &&
       deckCard.quantity > fullCard.sinCardLimit
     ) {
       warnings.push(

@@ -108,6 +108,34 @@ export function CardItem({ card }: CardItemProps) {
             Drop Rate: <span className="text-foreground">{card.dropRate}</span>
           </div>
         )}
+
+        {/* Sin Card Restrictions - Show all applicable restrictions */}
+        {(card.sinCardStatus === 'banned' || card.sinCardStatus === 'limited' || card.sinCardStatus === 'conditional' || card.sinCardLimit) && (
+          <div className="space-y-1 border-t border-border/50 pt-3">
+            {/* Banned Status */}
+            {card.sinCardStatus === 'banned' && (
+              <Badge variant="destructive" className="w-full justify-center text-xs">
+                🚫 ถูกแบน
+              </Badge>
+            )}
+            
+            {/* Limited Status */}
+            {card.sinCardLimit !== undefined && (
+              <Badge variant="secondary" className="w-full justify-center bg-yellow-500/20 text-yellow-400 border-yellow-500/40 text-xs">
+                ⚠️ จำกัด {card.sinCardLimit} ใบ
+              </Badge>
+            )}
+            
+            {/* Conditional Restrictions */}
+            {card.sinCardConditionType && card.sinCardConditionType !== 'none' && (
+              <Badge variant="secondary" className="w-full justify-center bg-orange-500/20 text-orange-400 border-orange-500/40 text-xs">
+                {card.sinCardConditionType === 'choose_one' && '🔄 มีเงื่อนไข: เลือกได้ 1 ใบ'}
+                {card.sinCardConditionType === 'requires_avatar_symbol' && '🔄 มีเงื่อนไข: Avatar Symbol'}
+                {card.sinCardConditionType === 'shared_name_limit' && '🔄 มีเงื่อนไข: Shared Name Limit'}
+              </Badge>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

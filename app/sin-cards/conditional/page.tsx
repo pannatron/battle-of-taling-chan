@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowLeft, FileWarning, X, Link2, Zap, Skull, Ghost, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { getSinCardsByStatus, getAllCards, getCardById } from '@/lib/api';
+import { getAllCards, getCardById } from '@/lib/api';
 import { Card } from '@/types/card';
 
 // ประเภทของเงื่อนไข
@@ -100,11 +100,11 @@ export default function ConditionalCardsPage() {
     setError(null);
     
     try {
-      // Load conditional cards and all cards for reference
-      const [conditionalCards, allCardsData] = await Promise.all([
-        getSinCardsByStatus('conditional'),
-        getAllCards()
-      ]);
+      // Load all cards and filter for those with sinCardConditionType (regardless of status)
+      const allCardsData = await getAllCards();
+      const conditionalCards = allCardsData.filter(card => 
+        card.sinCardConditionType && card.sinCardConditionType !== 'none'
+      );
       
       setAllCards(allCardsData);
       

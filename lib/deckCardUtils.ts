@@ -29,7 +29,11 @@ export function addCardToDeck(
   if (allCards.length > 0) {
     const validationResult = validateSinCardConditions(card, selectedCards, allCards);
     if (!validationResult.isValid) {
-      alert(validationResult.errorMessage || 'ไม่สามารถใส่การ์ดนี้ได้');
+      // Handle multiple error messages
+      const errorMessage = validationResult.errorMessages 
+        ? validationResult.errorMessages.join('\n\n') 
+        : (validationResult.errorMessage || 'ไม่สามารถใส่การ์ดนี้ได้');
+      alert(errorMessage);
       return selectedCards;
     }
   }
