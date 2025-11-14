@@ -18,6 +18,14 @@ export interface Card {
   imageUrl: string;
   createdAt: string;
   updatedAt: string;
+  
+  // Sin Card Management Fields
+  sinCardStatus?: 'normal' | 'banned' | 'limited' | 'conditional';
+  sinCardReason?: string;
+  sinCardDate?: string;
+  sinCardLimit?: number;
+  sinCardPreviousLimit?: number;
+  sinCardCondition?: string;
 }
 
 export interface CardListResponse {

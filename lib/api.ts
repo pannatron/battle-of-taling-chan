@@ -354,3 +354,81 @@ export async function getUserFavoriteDecks(userId: string): Promise<Deck[]> {
     return [];
   }
 }
+
+// Sin Card Management API functions
+export async function getSinCardsByStatus(status: string): Promise<Card[]> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/cards/sin-cards/${status}`, {
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch sin cards with status ${status}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error(`Error fetching sin cards with status ${status}:`, error);
+    return [];
+  }
+}
+
+export async function updateCardSinStatus(
+  id: string,
+  sinCardData: {
+    sinCardStatus: string;
+    sinCardReason?: string;
+    sinCardDate?: Date;
+    sinCardLimit?: number;
+    sinCardCondition?: string;
+  }
+): Promise<Card | null> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/cards/${id}/sin-status`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(sinCardData),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to update sin status for card ${id}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error(`Error updating sin status for card ${id}:`, error);
+    return null;
+  }
+}
+
+export async function updateCardSinStatusByName(
+  cardName: string,
+  sinCardData: {
+    sinCardStatus: string;
+    sinCardReason?: string;
+    sinCardDate?: Date;
+    sinCardLimit?: number;
+    sinCardCondition?: string;
+  }
+): Promise<{ modifiedCount: number; cards: Card[] } | null> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/cards/by-name/${encodeURIComponent(cardName)}/sin-status`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(sinCardData),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to update sin status for cards named ${cardName}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error(`Error updating sin status for cards named ${cardName}:`, error);
+    return null;
+  }
+}

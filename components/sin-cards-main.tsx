@@ -2,16 +2,17 @@
 
 import Link from 'next/link';
 import { Ban, AlertTriangle, FileWarning, Skull, Flame, Ghost } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { getSinCardsByStatus } from '@/lib/api';
 
-// ข้อมูล Mock สำหรับ 3 กลุ่มหลัก
-const sinCardCategories = [
+// ข้อมูลพื้นฐานสำหรับ 3 กลุ่มหลัก
+const sinCardCategoriesBase = [
   {
     id: 'banned',
     title: 'Banned Cards',
     titleThai: 'บาปต้องห้าม',
     description: 'การ์ดที่ถูกห้ามใช้ในการแข่งขันอย่างสมบูรณ์',
     icon: Ban,
-    count: 12,
   },
   {
     id: 'limited',
@@ -19,7 +20,6 @@ const sinCardCategories = [
     titleThai: 'บาปจำกัด',
     description: 'การ์ดที่ถูกจำกัดจำนวนที่สามารถใส่ใน Deck หรือมีการเพิ่มจำนวนที่ใส่ได้',
     icon: AlertTriangle,
-    count: 8,
   },
   {
     id: 'conditional',
@@ -27,11 +27,47 @@ const sinCardCategories = [
     titleThai: 'บาปมีเงื่อนไข',
     description: 'การ์ดที่มีเงื่อนไขพิเศษในการใช้งาน เช่น ห้ามใส่ซ้ำกับการ์ดบางใบ หรือต้องเลือกใบใดใบหนึ่ง',
     icon: FileWarning,
-    count: 15,
   },
 ];
 
 export function SinCardsMain() {
+  const [sinCardCategories, setSinCardCategories] = useState(
+    sinCardCategoriesBase.map(cat => ({ ...cat, count: 0 }))
+  );
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchSinCardCounts() {
+      try {
+        setLoading(true);
+        
+        // Fetch counts for each category
+        const [bannedCards, limitedCards, conditionalCards] = await Promise.all([
+          getSinCardsByStatus('banned'),
+          getSinCardsByStatus('limited'),
+          getSinCardsByStatus('conditional'),
+        ]);
+
+        // Update categories with real counts
+        const updatedCategories = sinCardCategoriesBase.map(cat => {
+          let count = 0;
+          if (cat.id === 'banned') count = bannedCards.length;
+          if (cat.id === 'limited') count = limitedCards.length;
+          if (cat.id === 'conditional') count = conditionalCards.length;
+          
+          return { ...cat, count };
+        });
+
+        setSinCardCategories(updatedCategories);
+      } catch (error) {
+        console.error('Error fetching sin card counts:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchSinCardCounts();
+  }, []);
   return (
     <div
       id="sin-cards-section"

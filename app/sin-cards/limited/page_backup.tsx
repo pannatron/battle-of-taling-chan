@@ -1,122 +1,68 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowLeft, AlertTriangle, X, Skull, Ghost, ArrowUp, ArrowDown } from 'lucide-react';
+import { ArrowLeft, Ban, X, Skull, Ghost } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { getSinCardsByStatus } from '@/lib/api';
-import { Card } from '@/types/card';
 
-interface LimitedCard {
-  id: string;
+interface BannedCard {
+  id: number;
   name: string;
   imageUrl: string;
-  limitType: 'decreased' | 'increased';
-  oldLimit: number;
-  newLimit: number;
   reason?: string;
-  effectiveDate?: string;
+  bannedDate?: string;
   series?: string;
   type?: string;
-  print?: string;
 }
 
-export default function LimitedCardsPage() {
-  const [limitedCards, setLimitedCards] = useState<LimitedCard[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedCard, setSelectedCard] = useState<LimitedCard | null>(null);
-  const [filterType, setFilterType] = useState<'all' | 'decreased' | 'increased'>('all');
+// Mock data สำหรับการ์ดที่โดนแบน
+const bannedCards: BannedCard[] = [
+  { 
+    id: 1, 
+    name: '[ โคลัมบัส ] 4 > 1 ใน', 
+    imageUrl: '/character/1.png', 
+    reason: 'การ์ดนี้มีความแรงเกินไปและทำให้เกมไม่สมดุล ผู้เล่นสามารถชนะได้ง่ายเกินไปเมื่อใช้การ์ดนี้',
+    bannedDate: '2024-12-01',
+    series: 'SD01',
+    type: 'Avatar',
+  },
+  { 
+    id: 2, 
+    name: '[ การ์ดตัวอย่าง 2 ] 3 > 1 ใน', 
+    imageUrl: '/character/2.png',
+  },
+  { 
+    id: 3, 
+    name: '[ การ์ดตัวอย่าง 3 ] 4 > 2 ใน', 
+    imageUrl: '/character/3.png', 
+    reason: 'มีผลกระทบต่อสภาพแวดล้อมของเกมมากเกินไป ทำให้ Meta เอียงไปทางเดียว',
+    bannedDate: '2024-10-20',
+    series: 'SD02',
+    type: 'Avatar',
+  },
+  { 
+    id: 4, 
+    name: '[ การ์ดตัวอย่าง 4 ] 4 > 1 ใน', 
+    imageUrl: '/character/11.png',
+  },
+  { 
+    id: 5, 
+    name: '[ การ์ดตัวอย่าง 5 ] 3 > 1 ใน', 
+    imageUrl: '/character/12.png', 
+    reason: 'ให้ Advantage มากเกินไปในรอบแรก ทำให้ฝ่ายที่เล่นก่อนได้เปรียบมากเกินไป',
+    bannedDate: '2024-08-15',
+    series: 'SD03',
+    type: 'Avatar',
+  },
+];
 
-  useEffect(() => {
-    async function fetchLimitedCards() {
-      try {
-        setLoading(true);
-        const cards = await getSinCardsByStatus('limited');
-        
-        // Define rarity priority (lower number = higher priority to show)
-        const rarityPriority: { [key: string]: number } = {
-          'C': 1,
-          'UC': 2,
-          'R': 3,
-          'SR': 4,
-          'UR': 5,
-          'SEC': 10,
-          'PR': 11,
-          'PROMO': 12,
-          'SP': 13,
-        };
-        
-        // Group cards by name
-        const cardsByName: { [key: string]: Card[] } = {};
-        cards.forEach((card: Card) => {
-          const name = card.name || '';
-          if (!cardsByName[name]) {
-            cardsByName[name] = [];
-          }
-          cardsByName[name].push(card);
-        });
-        
-        // For each name, select the card with highest priority (lowest priority number)
-        const selectedCards: Card[] = [];
-        Object.values(cardsByName).forEach((cardsWithSameName) => {
-          const sorted = cardsWithSameName.sort((a, b) => {
-            const priorityA = rarityPriority[a.rare || ''] || 999;
-            const priorityB = rarityPriority[b.rare || ''] || 999;
-            return priorityA - priorityB;
-          });
-          selectedCards.push(sorted[0]);
-        });
-        
-        const transformedCards: LimitedCard[] = selectedCards.map((card: Card) => {
-          const oldLimit = card.sinCardPreviousLimit || 4;
-          const newLimit = card.sinCardLimit || 4;
-          const limitType: 'decreased' | 'increased' = newLimit < oldLimit ? 'decreased' : 'increased';
-          
-          return {
-            id: card._id || '',
-            name: card.name || '',
-            imageUrl: card.imageUrl || '/placeholder.png',
-            limitType,
-            oldLimit,
-            newLimit,
-            reason: card.sinCardReason,
-            effectiveDate: card.sinCardDate ? new Date(card.sinCardDate).toISOString() : undefined,
-            series: card.series,
-            type: card.type,
-            print: card.print,
-          };
-        });
-        
-        setLimitedCards(transformedCards);
-      } catch (error) {
-        console.error('Error fetching limited cards:', error);
-      } finally {
-        setLoading(false);
-      }
-    }
+export default function BannedCardsPage() {
+  const [selectedCard, setSelectedCard] = useState<BannedCard | null>(null);
 
-    fetchLimitedCards();
-  }, []);
-
-  const filteredCards = filterType === 'all' 
-    ? limitedCards 
-    : limitedCards.filter(card => card.limitType === filterType);
-
-  const hasDetails = (card: LimitedCard) => {
-    return !!(card.reason || card.effectiveDate || card.series || card.type);
+  const hasDetails = (card: BannedCard) => {
+    return !!(card.reason || card.bannedDate || card.series || card.type);
   };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-black">
-        <div className="text-center">
-          <Skull className="h-16 w-16 text-red-600 animate-pulse mx-auto mb-4" />
-          <p className="font-mn-lon text-red-400 text-xl">กำลังโหลดการ์ดบาป...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -162,24 +108,24 @@ export default function LimitedCardsPage() {
 
             <div className="relative inline-block mb-4">
               <h1 className="font-mn-lon text-5xl md:text-6xl lg:text-7xl font-black text-blood tracking-wider">
-                บาปจำกัด
+                การ์ดต้องห้าม
               </h1>
               
               {/* Blood Drip Effect */}
               <svg className="absolute -bottom-4 left-0 w-full h-12 opacity-80" viewBox="0 0 400 50" preserveAspectRatio="none">
                 <defs>
-                  <linearGradient id="bloodGradientLimited" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <linearGradient id="bloodGradientBanned" x1="0%" y1="0%" x2="0%" y2="100%">
                     <stop offset="0%" style={{ stopColor: '#dc2626', stopOpacity: 1 }} />
                     <stop offset="100%" style={{ stopColor: '#7f1d1d', stopOpacity: 0.8 }} />
                   </linearGradient>
                 </defs>
-                <path d="M 100 0 Q 100 12, 98 25 Q 96 38, 100 50 L 100 50 Q 104 38, 102 25 Q 100 12, 100 0 Z" fill="url(#bloodGradientLimited)" opacity="0.9" />
-                <path d="M 200 2 Q 200 15, 198 30 Q 196 42, 200 52 L 200 52 Q 204 42, 202 30 Q 200 15, 200 2 Z" fill="url(#bloodGradientLimited)" opacity="0.85" />
-                <path d="M 300 0 Q 300 13, 298 27 Q 296 40, 300 48 L 300 48 Q 304 40, 302 27 Q 300 13, 300 0 Z" fill="url(#bloodGradientLimited)" opacity="0.8" />
+                <path d="M 100 0 Q 100 12, 98 25 Q 96 38, 100 50 L 100 50 Q 104 38, 102 25 Q 100 12, 100 0 Z" fill="url(#bloodGradientBanned)" opacity="0.9" />
+                <path d="M 200 2 Q 200 15, 198 30 Q 196 42, 200 52 L 200 52 Q 204 42, 202 30 Q 200 15, 200 2 Z" fill="url(#bloodGradientBanned)" opacity="0.85" />
+                <path d="M 300 0 Q 300 13, 298 27 Q 296 40, 300 48 L 300 48 Q 304 40, 302 27 Q 300 13, 300 0 Z" fill="url(#bloodGradientBanned)" opacity="0.8" />
               </svg>
             </div>
 
-            <p className="font-mn-lon text-sm text-red-300/80 tracking-wider uppercase">Limited Cards</p>
+            <p className="font-mn-lon text-sm text-red-300/80 tracking-wider uppercase">Banned Cards</p>
           </div>
 
           {/* Warning Box - Wooden Sign Style */}
@@ -206,17 +152,16 @@ export default function LimitedCardsPage() {
 
               <div className="p-6 pt-8">
                 <p className="font-mn-lon text-base leading-relaxed text-red-200/80 text-center">
-                  การ์ดในหมวดนี้ถูกจำกัดจำนวนที่สามารถใส่ใน Deck ได้ 
-                  บางการ์ดอาจถูกลดจำนวนลงเนื่องจากแรงเกินไป 
-                  หรือเพิ่มจำนวนขึ้นเพื่อให้ Deck บางประเภทมีโอกาสแข่งขันมากขึ้น
+                  การ์ดในหมวดนี้ถูกห้ามใช้ในการแข่งขันอย่างสมบูรณ์ เนื่องจากมีผลกระทบต่อความสมดุลของเกมมากเกินไป
+                  ผู้เล่นไม่สามารถใส่การ์ดเหล่านี้ใน Deck ได้ทั้งใน Main Deck และ Side Deck
                 </p>
 
                 <div className="mt-4 flex items-center justify-between text-sm">
                   <span className="font-mn-lon text-red-400 font-semibold">
-                    ทั้งหมด {filteredCards.length} ใบ
+                    ทั้งหมด {bannedCards.length} ใบ
                   </span>
                   <span className="font-mn-lon text-red-300/60">
-                    อัพเดทล่าสุด: {new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long' })}
+                    อัพเดทล่าสุด: ธันวาคม 2568
                   </span>
                 </div>
               </div>
@@ -230,50 +175,13 @@ export default function LimitedCardsPage() {
               />
             </div>
           </div>
-
-          {/* Filter Buttons */}
-          <div className="flex flex-wrap gap-2 mb-6 justify-center">
-            <Button
-              size="sm"
-              variant={filterType === 'all' ? 'default' : 'outline'}
-              onClick={() => setFilterType('all')}
-              className="font-mn-lon"
-            >
-              ทั้งหมด ({limitedCards.length})
-            </Button>
-            <Button
-              size="sm"
-              variant={filterType === 'decreased' ? 'default' : 'outline'}
-              onClick={() => setFilterType('decreased')}
-              className="font-mn-lon"
-            >
-              <ArrowDown className="mr-1 h-3 w-3" />
-              ลดจำนวน ({limitedCards.filter(c => c.limitType === 'decreased').length})
-            </Button>
-            <Button
-              size="sm"
-              variant={filterType === 'increased' ? 'default' : 'outline'}
-              onClick={() => setFilterType('increased')}
-              className="font-mn-lon"
-            >
-              <ArrowUp className="mr-1 h-3 w-3" />
-              เพิ่มจำนวน ({limitedCards.filter(c => c.limitType === 'increased').length})
-            </Button>
-          </div>
         </div>
       </div>
 
       {/* Cards Grid - Wooden Board Cards */}
       <div className="container mx-auto px-4 py-8">
-        {filteredCards.length === 0 ? (
-          <div className="text-center py-16">
-            <Ghost className="h-24 w-24 text-red-600/50 mx-auto mb-4 animate-pulse" />
-            <p className="font-mn-lon text-red-400 text-xl">ไม่พบการ์ดบาปในหมวดนี้</p>
-            <p className="font-mn-lon text-red-300/60 text-sm mt-2">ลองเปลี่ยนตัวกรองหรือกลับมาดูใหม่ภายหลัง</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-          {filteredCards.map((card, index) => (
+        <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+          {bannedCards.map((card, index) => (
             <div
               key={card.id}
               className="group relative"
@@ -324,26 +232,9 @@ export default function LimitedCardsPage() {
                     {/* Dark Overlay */}
                     <div className="absolute inset-0 bg-gradient-to-t from-red-900/70 via-transparent to-transparent" />
                     
-                    {/* Limit Change Icon */}
-                    <div className={`absolute top-2 right-2 rounded-full p-1.5 shadow-lg border ${
-                      card.limitType === 'decreased' ? 'bg-red-600/90 border-red-800' : 'bg-green-600/90 border-green-800'
-                    }`}>
-                      {card.limitType === 'decreased' ? (
-                        <ArrowDown className="h-3 w-3 text-white" />
-                      ) : (
-                        <ArrowUp className="h-3 w-3 text-white" />
-                      )}
-                    </div>
-
-                    {/* Limit Badge at bottom */}
-                    <div className="absolute bottom-2 left-2 right-2 bg-black/90 backdrop-blur-sm rounded px-2 py-1 border border-red-900/60">
-                      <div className="flex items-center justify-center gap-1 text-xs font-bold font-mn-lon">
-                        <span className="text-red-400">{card.oldLimit}</span>
-                        <span className="text-white">→</span>
-                        <span className={card.limitType === 'decreased' ? 'text-red-400' : 'text-green-400'}>
-                          {card.newLimit}
-                        </span>
-                      </div>
+                    {/* Banned Icon */}
+                    <div className="absolute top-2 right-2 rounded-full bg-red-600/90 p-1.5 shadow-lg border border-red-800">
+                      <Ban className="h-3 w-3 text-white" />
                     </div>
 
                     {/* Hover Effect */}
@@ -363,19 +254,16 @@ export default function LimitedCardsPage() {
                 />
               </div>
 
-              {/* Card Print Badge */}
-              {card.print && (
-                <div className="absolute -right-2 -top-2 z-20 flex h-7 w-auto px-2 items-center justify-center rounded-full border-2 border-red-950 text-xs font-bold text-white shadow-lg bg-gradient-to-br from-red-600 to-red-800">
-                  {card.print}
-                </div>
-              )}
+              {/* Card ID Badge */}
+              <div className="absolute -right-2 -top-2 z-20 flex h-7 w-7 items-center justify-center rounded-full border-2 border-red-950 bg-gradient-to-br from-red-600 to-red-800 text-xs font-bold text-white shadow-lg">
+                {card.id}
+              </div>
 
               {/* Shadow below board */}
               <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-3/4 h-3 bg-black/60 blur-xl rounded-full" />
             </div>
           ))}
-          </div>
-        )}
+        </div>
       </div>
 
       {/* Card Detail Modal */}
@@ -444,7 +332,7 @@ export default function LimitedCardsPage() {
                     <h3 className="font-mn-lon text-2xl font-black text-blood-small text-center tracking-wide">
                       {selectedCard.name}
                     </h3>
-                    <div className="mt-4 flex items-center justify-center gap-4">
+                    <div className="mt-4 flex items-center justify-center">
                       <div 
                         className="rounded-full px-6 py-2.5 text-sm font-bold text-white shadow-lg flex items-center gap-2"
                         style={{
@@ -453,15 +341,8 @@ export default function LimitedCardsPage() {
                           boxShadow: `0 0 20px rgba(220, 38, 38, 0.4)`
                         }}
                       >
-                        <AlertTriangle className="h-4 w-4" />
-                        <span className="font-mn-lon">จำกัด</span>
-                      </div>
-                      <div className="flex items-center gap-2 font-mn-lon text-lg font-bold">
-                        <span className="text-red-400">{selectedCard.oldLimit}</span>
-                        <span className="text-white">→</span>
-                        <span className={selectedCard.limitType === 'decreased' ? 'text-red-400' : 'text-green-400'}>
-                          {selectedCard.newLimit}
-                        </span>
+                        <Ban className="h-4 w-4" />
+                        <span className="font-mn-lon">ห้ามใช้งาน</span>
                       </div>
                     </div>
                   </div>
@@ -489,10 +370,10 @@ export default function LimitedCardsPage() {
                         border: '2px solid #450a0a'
                       }}
                     >
-                      <AlertTriangle className="h-8 w-8 text-red-200" />
+                      <Ban className="h-8 w-8 text-red-200" />
                     </div>
                     <h2 className="font-mn-lon text-3xl font-black text-blood-small tracking-wide">
-                      บาปจำกัด
+                      บาปต้องห้าม
                     </h2>
                   </div>
                 </div>
@@ -549,31 +430,30 @@ export default function LimitedCardsPage() {
                       </div>
                     </div>
 
-                    {/* Limit Change Badge */}
-                    <div className="flex justify-center items-center gap-4">
-                      <div 
-                        className="rounded-full px-6 py-2.5 text-sm font-bold text-white shadow-lg flex items-center gap-2"
-                        style={{
-                          background: 'linear-gradient(135deg, #7f1d1d 0%, #991b1b 50%, #7f1d1d 100%)',
-                          border: '3px solid #450a0a',
-                          boxShadow: `0 0 20px rgba(220, 38, 38, 0.4)`
-                        }}
-                      >
-                        {selectedCard.limitType === 'decreased' ? (
-                          <ArrowDown className="h-4 w-4" />
-                        ) : (
-                          <ArrowUp className="h-4 w-4" />
+                    {/* Ban Status */}
+                    <div 
+                      className="rounded-xl shadow-xl overflow-hidden"
+                      style={{
+                        background: `linear-gradient(135deg, #2d1810 0%, #3e2723 50%, #2d1810 100%)`,
+                        border: '3px solid #1c0a00',
+                        boxShadow: `inset 0 2px 4px rgba(0,0,0,0.6), 0 4px 12px rgba(220, 38, 38, 0.2)`
+                      }}
+                    >
+                      <div className="p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Ban className="h-5 w-5 text-red-400" />
+                          <h4 className="font-mn-lon font-bold text-red-300 text-lg">สถานะ</h4>
+                        </div>
+                        <p className="font-mn-lon text-red-200 font-bold text-xl">ห้ามใช้งาน</p>
+                        {selectedCard.bannedDate && (
+                          <p className="font-mn-lon text-sm text-red-300/70 mt-2">
+                            ตั้งแต่: {new Date(selectedCard.bannedDate).toLocaleDateString('th-TH', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric'
+                            })}
+                          </p>
                         )}
-                        <span className="font-mn-lon">
-                          {selectedCard.limitType === 'decreased' ? 'ลดจำนวน' : 'เพิ่มจำนวน'}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 font-mn-lon text-2xl font-bold">
-                        <span className="text-red-400">{selectedCard.oldLimit}</span>
-                        <span className="text-white">→</span>
-                        <span className={selectedCard.limitType === 'decreased' ? 'text-red-400' : 'text-green-400'}>
-                          {selectedCard.newLimit}
-                        </span>
                       </div>
                     </div>
 
@@ -582,34 +462,22 @@ export default function LimitedCardsPage() {
                       <div 
                         className="flex-1 rounded-xl shadow-xl overflow-hidden"
                         style={{
-                          background: selectedCard.limitType === 'increased' 
-                            ? `linear-gradient(135deg, #14532d 0%, #166534 50%, #14532d 100%)`
-                            : `linear-gradient(135deg, #2d1810 0%, #3e2723 50%, #2d1810 100%)`,
+                          background: `linear-gradient(135deg, #2d1810 0%, #3e2723 50%, #2d1810 100%)`,
                           border: '3px solid #1c0a00',
-                          boxShadow: selectedCard.limitType === 'increased'
-                            ? `inset 0 2px 4px rgba(0,0,0,0.6), 0 4px 12px rgba(34, 197, 94, 0.2)`
-                            : `inset 0 2px 4px rgba(0,0,0,0.6), 0 4px 12px rgba(220, 38, 38, 0.2)`
+                          boxShadow: `inset 0 2px 4px rgba(0,0,0,0.6), 0 4px 12px rgba(220, 38, 38, 0.2)`
                         }}
                       >
                         <div className="p-5">
                           <div 
                             className="inline-block rounded-full px-5 py-2 text-sm font-bold text-white shadow-lg mb-4"
                             style={{
-                              background: selectedCard.limitType === 'increased'
-                                ? 'linear-gradient(135deg, #15803d 0%, #16a34a 50%, #15803d 100%)'
-                                : 'linear-gradient(135deg, #7f1d1d 0%, #991b1b 50%, #7f1d1d 100%)',
-                              border: selectedCard.limitType === 'increased'
-                                ? '2px solid #14532d'
-                                : '2px solid #450a0a'
+                              background: 'linear-gradient(135deg, #7f1d1d 0%, #991b1b 50%, #7f1d1d 100%)',
+                              border: '2px solid #450a0a'
                             }}
                           >
-                            <span className="font-mn-lon">
-                              {selectedCard.limitType === 'increased' ? 'ชดใช้กรรม' : 'ทำบาปอะไร?'}
-                            </span>
+                            <span className="font-mn-lon">เหตุผลที่ถูกแบน</span>
                           </div>
-                          <p className={`font-mn-lon text-sm leading-relaxed ${
-                            selectedCard.limitType === 'increased' ? 'text-green-200/90' : 'text-red-200/90'
-                          }`}>
+                          <p className="font-mn-lon text-sm leading-relaxed text-red-200/90">
                             {selectedCard.reason}
                           </p>
                         </div>
@@ -628,7 +496,7 @@ export default function LimitedCardsPage() {
                       <div className="p-4">
                         <p className="font-mn-lon text-xs text-yellow-200 leading-relaxed flex items-center gap-2">
                           <span className="text-lg">⚠️</span>
-                          <span>การใส่การ์ดเกินจำนวนที่กำหนดอาจทำให้ Deck ของคุณไม่ถูกต้องตามกฎ</span>
+                          <span>การใช้การ์ดนี้ในการแข่งขันจะถูกตัดสิทธิ์ทันที</span>
                         </p>
                       </div>
                     </div>
