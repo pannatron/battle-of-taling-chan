@@ -1,68 +1,109 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowLeft, Ban, X, Skull, Ghost } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { getAllCards } from '@/lib/api';
+import { Card } from '@/types/card';
 
 interface BannedCard {
-  id: number;
+  id: string;
   name: string;
   imageUrl: string;
   reason?: string;
   bannedDate?: string;
   series?: string;
   type?: string;
+  print?: string;
 }
 
-// Mock data สำหรับการ์ดที่โดนแบน
-const bannedCards: BannedCard[] = [
-  { 
-    id: 1, 
-    name: '[ โคลัมบัส ] 4 > 1 ใน', 
-    imageUrl: '/character/1.png', 
-    reason: 'การ์ดนี้มีความแรงเกินไปและทำให้เกมไม่สมดุล ผู้เล่นสามารถชนะได้ง่ายเกินไปเมื่อใช้การ์ดนี้',
-    bannedDate: '2024-12-01',
-    series: 'SD01',
-    type: 'Avatar',
-  },
-  { 
-    id: 2, 
-    name: '[ การ์ดตัวอย่าง 2 ] 3 > 1 ใน', 
-    imageUrl: '/character/2.png',
-  },
-  { 
-    id: 3, 
-    name: '[ การ์ดตัวอย่าง 3 ] 4 > 2 ใน', 
-    imageUrl: '/character/3.png', 
-    reason: 'มีผลกระทบต่อสภาพแวดล้อมของเกมมากเกินไป ทำให้ Meta เอียงไปทางเดียว',
-    bannedDate: '2024-10-20',
-    series: 'SD02',
-    type: 'Avatar',
-  },
-  { 
-    id: 4, 
-    name: '[ การ์ดตัวอย่าง 4 ] 4 > 1 ใน', 
-    imageUrl: '/character/11.png',
-  },
-  { 
-    id: 5, 
-    name: '[ การ์ดตัวอย่าง 5 ] 3 > 1 ใน', 
-    imageUrl: '/character/12.png', 
-    reason: 'ให้ Advantage มากเกินไปในรอบแรก ทำให้ฝ่ายที่เล่นก่อนได้เปรียบมากเกินไป',
-    bannedDate: '2024-08-15',
-    series: 'SD03',
-    type: 'Avatar',
-  },
-];
-
 export default function BannedCardsPage() {
+  const [bannedCards, setBannedCards] = useState<BannedCard[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedCard, setSelectedCard] = useState<BannedCard | null>(null);
+
+  useEffect(() => {
+    async function fetchBannedCards() {
+      try {
+        setLoading(true);
+        // Get all cards and filter for those with sinCardStatus === 'banned'
+        const allCards = await getAllCards();
+        const cards = allCards.filter(card => card.sinCardStatus === 'banned');
+        
+        // Define rarity priority (lower number = higher priority to show)
+        const rarityPriority: { [key: string]: number } = {
+          'C': 1,
+          'UC': 2,
+          'R': 3,
+          'SR': 4,
+          'UR': 5,
+          'SEC': 10,
+          'PR': 11,
+          'PROMO': 12,
+          'SP': 13,
+        };
+        
+        // Group cards by name
+        const cardsByName: { [key: string]: Card[] } = {};
+        cards.forEach((card: Card) => {
+          const name = card.name || '';
+          if (!cardsByName[name]) {
+            cardsByName[name] = [];
+          }
+          cardsByName[name].push(card);
+        });
+        
+        // For each name, select the card with highest priority (lowest priority number)
+        const selectedCards: Card[] = [];
+        Object.values(cardsByName).forEach((cardsWithSameName) => {
+          const sorted = cardsWithSameName.sort((a, b) => {
+            const priorityA = rarityPriority[a.rare || ''] || 999;
+            const priorityB = rarityPriority[b.rare || ''] || 999;
+            return priorityA - priorityB;
+          });
+          selectedCards.push(sorted[0]);
+        });
+        
+        const transformedCards: BannedCard[] = selectedCards.map((card: Card) => {
+          return {
+            id: card._id || '',
+            name: card.name || '',
+            imageUrl: card.imageUrl || '/placeholder.png',
+            reason: card.sinCardReason,
+            bannedDate: card.sinCardDate ? new Date(card.sinCardDate).toISOString() : undefined,
+            series: card.series,
+            type: card.type,
+            print: card.print,
+          };
+        });
+        
+        setBannedCards(transformedCards);
+      } catch (error) {
+        console.error('Error fetching banned cards:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchBannedCards();
+  }, []);
 
   const hasDetails = (card: BannedCard) => {
     return !!(card.reason || card.bannedDate || card.series || card.type);
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-black">
+        <div className="text-center">
+          <Skull className="h-16 w-16 text-red-600 animate-pulse mx-auto mb-4" />
+          <p className="font-mn-lon text-red-400 text-xl">กำลังโหลดการ์ดบาป...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -161,7 +202,7 @@ export default function BannedCardsPage() {
                     ทั้งหมด {bannedCards.length} ใบ
                   </span>
                   <span className="font-mn-lon text-red-300/60">
-                    อัพเดทล่าสุด: ธันวาคม 2568
+                    อัพเดทล่าสุด: {new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long' })}
                   </span>
                 </div>
               </div>
@@ -180,90 +221,97 @@ export default function BannedCardsPage() {
 
       {/* Cards Grid - Wooden Board Cards */}
       <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-          {bannedCards.map((card, index) => (
-            <div
-              key={card.id}
-              className="group relative"
-              style={{ animationDelay: `${index * 100}ms` }}
-            >
-              {/* Hanging Chain */}
-              <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-0.5 h-6 bg-gradient-to-b from-gray-700 via-gray-600 to-gray-500 shadow-lg" />
-              <div className="absolute -top-8 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-gray-600 shadow-xl border border-gray-500" />
-
-              {/* Wooden Board Card */}
+        {bannedCards.length === 0 ? (
+          <div className="text-center py-16">
+            <Ghost className="h-24 w-24 text-red-600/50 mx-auto mb-4 animate-pulse" />
+            <p className="font-mn-lon text-red-400 text-xl">ไม่พบการ์ดบาปในหมวดนี้</p>
+            <p className="font-mn-lon text-red-300/60 text-sm mt-2">ยังไม่มีการ์ดที่ถูกแบนในขณะนี้</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+            {bannedCards.map((card, index) => (
               <div
-                onClick={() => setSelectedCard(card)}
-                className="relative cursor-pointer overflow-hidden rounded-lg shadow-2xl transition-all duration-500 hover:scale-105 hover:shadow-[0_0_40px_rgba(220,38,38,0.5)]"
-                style={{
-                  background: `linear-gradient(135deg, #3e2723 0%, #4e342e 20%, #3e2723 40%, #5d4037 60%, #4e342e 80%, #3e2723 100%)`,
-                  border: '6px solid #2d1810',
-                  boxShadow: `
-                    inset 0 2px 4px rgba(0,0,0,0.6),
-                    inset 0 -2px 4px rgba(255,255,255,0.1),
-                    0 8px 32px rgba(0,0,0,0.8)
-                  `
-                }}
+                key={card.id}
+                className="group relative"
+                style={{ animationDelay: `${index * 100}ms` }}
               >
-                {/* Wood Texture */}
-                <div 
-                  className="absolute inset-0 opacity-30 mix-blend-overlay"
+
+                {/* Wooden Board Card */}
+                <div
+                  onClick={() => setSelectedCard(card)}
+                  className="relative cursor-pointer overflow-hidden rounded-lg shadow-2xl transition-all duration-500 hover:scale-105 hover:shadow-[0_0_40px_rgba(220,38,38,0.5)]"
                   style={{
-                    backgroundImage: `repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0,0,0,0.1) 2px, rgba(0,0,0,0.1) 4px)`
+                    background: `linear-gradient(135deg, #3e2723 0%, #4e342e 20%, #3e2723 40%, #5d4037 60%, #4e342e 80%, #3e2723 100%)`,
+                    border: '6px solid #2d1810',
+                    boxShadow: `
+                      inset 0 2px 4px rgba(0,0,0,0.6),
+                      inset 0 -2px 4px rgba(255,255,255,0.1),
+                      0 8px 32px rgba(0,0,0,0.8)
+                    `
                   }}
-                />
+                >
+                  {/* Wood Texture */}
+                  <div 
+                    className="absolute inset-0 opacity-30 mix-blend-overlay"
+                    style={{
+                      backgroundImage: `repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0,0,0,0.1) 2px, rgba(0,0,0,0.1) 4px)`
+                    }}
+                  />
 
-                {/* Nails */}
-                <div className="absolute top-1 left-1 w-1.5 h-1.5 rounded-full bg-gray-800 shadow-inner z-10" />
-                <div className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-gray-800 shadow-inner z-10" />
-                <div className="absolute bottom-1 left-1 w-1.5 h-1.5 rounded-full bg-gray-800 shadow-inner z-10" />
-                <div className="absolute bottom-1 right-1 w-1.5 h-1.5 rounded-full bg-gray-800 shadow-inner z-10" />
+                  {/* Nails */}
+                  <div className="absolute top-1 left-1 w-1.5 h-1.5 rounded-full bg-gray-800 shadow-inner z-10" />
+                  <div className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-gray-800 shadow-inner z-10" />
+                  <div className="absolute bottom-1 left-1 w-1.5 h-1.5 rounded-full bg-gray-800 shadow-inner z-10" />
+                  <div className="absolute bottom-1 right-1 w-1.5 h-1.5 rounded-full bg-gray-800 shadow-inner z-10" />
 
-                {/* Card Image Container */}
-                <div className="relative aspect-[2/3] p-3">
-                  <div className="relative w-full h-full overflow-hidden rounded border-2 border-red-900/60 shadow-lg">
-                    <Image
-                      src={card.imageUrl}
-                      alt={card.name}
-                      fill
-                      className="object-cover transition-transform duration-300 group-hover:scale-110"
-                    />
-                    
-                    {/* Dark Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-red-900/70 via-transparent to-transparent" />
-                    
-                    {/* Banned Icon */}
-                    <div className="absolute top-2 right-2 rounded-full bg-red-600/90 p-1.5 shadow-lg border border-red-800">
-                      <Ban className="h-3 w-3 text-white" />
-                    </div>
+                  {/* Card Image Container */}
+                  <div className="relative aspect-[2/3] p-3">
+                    <div className="relative w-full h-full overflow-hidden rounded border-2 border-red-900/60 shadow-lg">
+                      <Image
+                        src={card.imageUrl}
+                        alt={card.name}
+                        fill
+                        className="object-cover transition-transform duration-300 group-hover:scale-110"
+                      />
+                      
+                      {/* Dark Overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-red-900/70 via-transparent to-transparent" />
+                      
+                      {/* Banned Icon */}
+                      <div className="absolute top-2 right-2 rounded-full bg-red-600/90 p-1.5 shadow-lg border border-red-800">
+                        <Ban className="h-3 w-3 text-white" />
+                      </div>
 
-                    {/* Hover Effect */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-red-900/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-2">
-                      <p className="font-mn-lon text-xs text-white font-semibold">
-                        {hasDetails(card) ? 'ดูรายละเอียด' : 'ขยายดู'}
-                      </p>
+                      {/* Hover Effect */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-red-900/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-2">
+                        <p className="font-mn-lon text-xs text-white font-semibold">
+                          {hasDetails(card) ? 'ดูรายละเอียด' : 'ขยายดู'}
+                        </p>
+                      </div>
                     </div>
                   </div>
+
+                  {/* Blood Splatter on Hover */}
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity duration-500"
+                       style={{
+                         background: `radial-gradient(circle at 30% 40%, rgba(220, 38, 38, 0.6) 0%, transparent 50%)`
+                       }}
+                  />
                 </div>
 
-                {/* Blood Splatter on Hover */}
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity duration-500"
-                     style={{
-                       background: `radial-gradient(circle at 30% 40%, rgba(220, 38, 38, 0.6) 0%, transparent 50%)`
-                     }}
-                />
-              </div>
+                {/* Card Print Badge */}
+                {card.print && (
+                  <div className="absolute -right-2 -top-2 z-20 flex h-7 w-auto px-2 items-center justify-center rounded-full border-2 border-red-950 bg-gradient-to-br from-red-600 to-red-800 text-xs font-bold text-white shadow-lg">
+                    {card.print}
+                  </div>
+                )}
 
-              {/* Card ID Badge */}
-              <div className="absolute -right-2 -top-2 z-20 flex h-7 w-7 items-center justify-center rounded-full border-2 border-red-950 bg-gradient-to-br from-red-600 to-red-800 text-xs font-bold text-white shadow-lg">
-                {card.id}
+                {/* Shadow below board */}
+                <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-3/4 h-3 bg-black/60 blur-xl rounded-full" />
               </div>
-
-              {/* Shadow below board */}
-              <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-3/4 h-3 bg-black/60 blur-xl rounded-full" />
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Card Detail Modal */}

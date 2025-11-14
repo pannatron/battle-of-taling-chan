@@ -187,9 +187,6 @@ export default function BannedCardsPage() {
               className="group relative"
               style={{ animationDelay: `${index * 100}ms` }}
             >
-              {/* Hanging Chain */}
-              <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-0.5 h-6 bg-gradient-to-b from-gray-700 via-gray-600 to-gray-500 shadow-lg" />
-              <div className="absolute -top-8 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-gray-600 shadow-xl border border-gray-500" />
 
               {/* Wooden Board Card */}
               <div
