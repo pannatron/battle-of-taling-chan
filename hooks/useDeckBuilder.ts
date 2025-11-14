@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Card as CardType } from '@/types/card';
-import { searchCards, getDistinctCardValues, createDeck } from '@/lib/api';
+import { searchCards, getDistinctCardValues, createDeck, getAllCards } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
 import { isOnlyOneCard } from '@/lib/deckCardUtils';
+import { getDeckSinCardWarnings } from '@/lib/sinCardValidation';
 
 export interface DeckCard extends CardType {
   quantity: number;
@@ -16,6 +17,7 @@ export function useDeckBuilder() {
   const { user } = useUser();
   const [searchResults, setSearchResults] = useState<CardType[]>([]);
   const [selectedCards, setSelectedCards] = useState<DeckCard[]>([]);
+  const [allCards, setAllCards] = useState<CardType[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -41,6 +43,7 @@ export function useDeckBuilder() {
 
   useEffect(() => {
     loadFilterOptions();
+    loadAllCards();
   }, []);
 
   useEffect(() => {
@@ -63,6 +66,15 @@ export function useDeckBuilder() {
     setRarities(raritiesData);
     setSeries(seriesData);
     setColors(colorsData);
+  };
+
+  const loadAllCards = async () => {
+    try {
+      const cards = await getAllCards();
+      setAllCards(cards);
+    } catch (error) {
+      console.error('Failed to load all cards:', error);
+    }
   };
 
   const loadNameSuggestions = async (searchTerm: string) => {
@@ -211,6 +223,10 @@ export function useDeckBuilder() {
     return totalCards >= maxDeckSize;
   };
 
+  const getSinCardWarnings = () => {
+    return getDeckSinCardWarnings(selectedCards, allCards);
+  };
+
   return {
     searchResults,
     selectedCards,
@@ -251,5 +267,7 @@ export function useDeckBuilder() {
     getSideDeckOnlyOneCount,
     getMaxDeckSize,
     isMainDeckFull,
+    allCards,
+    getSinCardWarnings,
   };
 }

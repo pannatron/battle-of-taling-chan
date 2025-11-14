@@ -411,8 +411,13 @@ export async function updateCardSinStatusByName(
     sinCardDate?: Date;
     sinCardLimit?: number;
     sinCardCondition?: string;
+    sinCardConditionType?: string;
+    sinCardChooseOneGroup?: string[];
+    sinCardRequiredAvatars?: string[];
+    sinCardRequiredSymbols?: string[];
+    sinCardSharedNameGroup?: string;
   }
-): Promise<{ modifiedCount: number; cards: Card[] } | null> {
+): Promise<{ modifiedCount: number; cards: Card[]; relatedCards?: Card[] } | null> {
   try {
     const response = await fetch(`${API_BASE_URL}/cards/by-name/${encodeURIComponent(cardName)}/sin-status`, {
       method: 'PATCH',

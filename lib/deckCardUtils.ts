@@ -1,5 +1,6 @@
 import { DeckCard } from '@/hooks/useDeckBuilder';
 import { Card as CardType } from '@/types/card';
+import { validateSinCardConditions } from './sinCardValidation';
 
 // Helper function to check if card is Only One
 export function isOnlyOneCard(ex: string | undefined): boolean {
@@ -21,8 +22,18 @@ export function addCardToDeck(
   getSideDeckOnlyOneCount: () => number,
   getOnlyOneCardCount: () => number,
   getMaxDeckSize: () => number,
-  isMainDeckFull: () => boolean
+  isMainDeckFull: () => boolean,
+  allCards: CardType[] = []
 ): DeckCard[] {
+  // Validate sin card conditions first (if we have all cards data)
+  if (allCards.length > 0) {
+    const validationResult = validateSinCardConditions(card, selectedCards, allCards);
+    if (!validationResult.isValid) {
+      alert(validationResult.errorMessage || 'ไม่สามารถใส่การ์ดนี้ได้');
+      return selectedCards;
+    }
+  }
+
   const isLifeCard = card.type === 'Life' || targetDeck === 'life';
   const isOnlyOne = isOnlyOneCard(card.ex);
   const isSideDeck = targetDeck === 'side';
