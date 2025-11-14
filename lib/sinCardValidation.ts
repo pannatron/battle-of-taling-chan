@@ -220,15 +220,24 @@ function validateSharedNameLimit(
     return { isValid: true };
   }
 
-  // Count total cards in the same shared name group
+  // Count total cards in the same shared name group (excluding life and side deck)
   let totalCount = 0;
   let cardNames: string[] = [];
 
   for (const deckCard of selectedCards) {
+    // Skip life cards and side deck cards
+    if (deckCard.isLifeCard || deckCard.isSideDeck) continue;
+    
     const fullCard = allCards.find(c => c._id === deckCard._id);
     if (!fullCard) continue;
 
-    if (fullCard.sinCardSharedNameGroup === card.sinCardSharedNameGroup) {
+    // Check bidirectional matching: either same group OR they point to each other
+    const isSameGroup = fullCard.sinCardSharedNameGroup === card.sinCardSharedNameGroup;
+    const isReciprocalMatch = 
+      fullCard.sinCardSharedNameGroup === card.name || 
+      card.sinCardSharedNameGroup === fullCard.name;
+
+    if (isSameGroup || isReciprocalMatch) {
       totalCount += deckCard.quantity;
       if (!cardNames.includes(fullCard.name)) {
         cardNames.push(fullCard.name);
@@ -237,24 +246,23 @@ function validateSharedNameLimit(
   }
 
   // Check if adding this card would exceed the limit
-  const existingCard = selectedCards.find(c => c._id === card._id);
+  const existingCard = selectedCards.find(c => c._id === card._id && !c.isLifeCard && !c.isSideDeck);
   const currentCardCount = existingCard?.quantity || 0;
 
-  // Check if specific card has a limit
-  const cardLimit = card.sinCardLimit !== undefined ? card.sinCardLimit : 4;
-  
-  if (currentCardCount >= cardLimit) {
+  // Check if specific card has a sinCardLimit (independent of shared group)
+  if (card.sinCardLimit !== undefined && currentCardCount >= card.sinCardLimit) {
     return {
       isValid: false,
-      errorMessage: `การ์ด "${card.name}" ถูกจำกัดที่ ${cardLimit} ใบ`,
+      errorMessage: `การ์ด "${card.name}" ถูกจำกัดที่ ${card.sinCardLimit} ใบ`,
     };
   }
 
-  // Check shared group limit (default 4 cards total)
-  if (totalCount >= 4) {
+  // Check shared group limit (default 4 cards total for the entire group)
+  // We need to check if adding 1 more card would exceed the limit
+  if (totalCount + 1 > 4) {
     return {
       isValid: false,
-      errorMessage: `ไม่สามารถใส่ "${card.name}" ได้ เพราะการ์ดที่มีชื่อเดียวกัน (${cardNames.join(', ')}) รวมกันแล้วครบ 4 ใบแล้ว`,
+      errorMessage: `ไม่สามารถใส่ "${card.name}" ได้ เพราะการ์ดที่มีชื่อเดียวกัน (${cardNames.join(', ')}) รวมกันจะเกิน 4 ใบ (ปัจจุบัน ${totalCount} ใบ)`,
     };
   }
 
