@@ -1,4 +1,6 @@
+import { useState, useEffect } from 'react';
 import { Card as CardType } from '@/types/card';
+import { DeckCard } from '@/hooks/useDeckBuilder';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,9 +14,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { X, Save } from 'lucide-react';
+import { X, Save, ImageIcon } from 'lucide-react';
 import Image from 'next/image';
 import { getRarityColor } from '@/lib/deckCardUtils';
+import { getAllCards } from '@/lib/api';
 
 interface DeckFiltersProps {
   nameFilter: string;
@@ -39,6 +42,9 @@ interface DeckFiltersProps {
   setDeckArchetype: (value: string) => void;
   deckDescription: string;
   setDeckDescription: (value: string) => void;
+  selectedCards: DeckCard[];
+  coverCardId: string;
+  setCoverCardId: (value: string) => void;
   handleSaveDeck: () => void;
   saving: boolean;
   hasCards: boolean;
@@ -67,6 +73,9 @@ export function DeckFilters({
   setDeckArchetype,
   deckDescription,
   setDeckDescription,
+  selectedCards,
+  coverCardId,
+  setCoverCardId,
   handleSaveDeck,
   saving,
   hasCards,
@@ -83,6 +92,42 @@ export function DeckFilters({
     setNameFilter(cardName);
     setShowSuggestions(false);
   };
+
+  const [allVariants, setAllVariants] = useState<CardType[]>([]);
+  const [loadingVariants, setLoadingVariants] = useState(false);
+
+  // Fetch all variants when a cover card is selected
+  useEffect(() => {
+    const fetchAllVariants = async () => {
+      if (!coverCardId || coverCardId === 'none') {
+        setAllVariants([]);
+        return;
+      }
+
+      const selectedCard = selectedCards.find(card => card._id === coverCardId);
+      if (!selectedCard) return;
+
+      setLoadingVariants(true);
+      try {
+        const allCards = await getAllCards();
+        const variants = allCards.filter(
+          (card: CardType) => card.name === selectedCard.name
+        );
+        setAllVariants(variants);
+      } catch (error) {
+        console.error('Failed to fetch card variants:', error);
+        // Fallback to cards in deck only
+        const deckVariants = selectedCards.filter(
+          card => card.name === selectedCard.name
+        );
+        setAllVariants(deckVariants as CardType[]);
+      } finally {
+        setLoadingVariants(false);
+      }
+    };
+
+    fetchAllVariants();
+  }, [coverCardId, selectedCards]);
 
   return (
     <Card className="border-2 lg:sticky lg:top-4">
@@ -268,6 +313,127 @@ export function DeckFilters({
               className="text-sm"
             />
           </div>
+
+          {selectedCards.length > 0 && (() => {
+            // Group cards by name
+            const cardsByName = selectedCards.reduce((acc, card) => {
+              if (!acc[card.name]) {
+                acc[card.name] = [];
+              }
+              acc[card.name].push(card);
+              return acc;
+            }, {} as Record<string, typeof selectedCards>);
+
+            const uniqueNames = Object.keys(cardsByName).sort();
+            const selectedCoverCard = selectedCards.find(card => card._id === coverCardId);
+
+            return (
+              <div className="space-y-1.5">
+                <Label htmlFor="coverCard" className="text-xs flex items-center gap-1">
+                  <ImageIcon className="h-3 w-3" />
+                  Cover Card
+                </Label>
+                <Select value={coverCardId} onValueChange={setCoverCardId}>
+                  <SelectTrigger id="coverCard" className="h-8 text-sm">
+                    <SelectValue placeholder="Select cover card..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    {uniqueNames.map((name) => {
+                      const cardsWithName = cardsByName[name];
+                      const firstCard = cardsWithName[0];
+                      return (
+                        <SelectItem key={firstCard._id} value={firstCard._id}>
+                          <div className="flex items-center gap-2">
+                            {firstCard.imageUrl ? (
+                              <div className="relative w-6 h-9 flex-shrink-0">
+                                <Image
+                                  src={firstCard.imageUrl}
+                                  alt={name}
+                                  fill
+                                  className="object-contain rounded"
+                                  sizes="24px"
+                                />
+                              </div>
+                            ) : (
+                              <div className="w-6 h-9 flex-shrink-0 bg-muted rounded flex items-center justify-center text-[8px] text-muted-foreground">
+                                N/A
+                              </div>
+                            )}
+                            <span className="truncate">{name}</span>
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+                
+                {/* Cover Card Preview with Art Variant Selection */}
+                {coverCardId && coverCardId !== 'none' && (() => {
+                  const currentCard = selectedCoverCard || allVariants.find(v => v._id === coverCardId);
+                  
+                  return (
+                    <div className="mt-2">
+                      <div className="flex items-start gap-2">
+                        {/* Preview Image */}
+                        <div className="relative w-24 h-36 rounded-lg overflow-hidden border-2 border-primary shadow-lg flex-shrink-0">
+                          {currentCard?.imageUrl ? (
+                            <Image
+                              src={currentCard.imageUrl}
+                              alt={currentCard.name}
+                              fill
+                              className="object-contain"
+                              sizes="96px"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-muted flex items-center justify-center text-xs text-muted-foreground">
+                              {loadingVariants ? 'Loading...' : 'No Image'}
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Art Variant Selector */}
+                        {allVariants.length > 0 && (
+                          <div className="flex-1">
+                            <Label className="text-[10px] text-muted-foreground mb-1 block">
+                              Art Variant ({allVariants.length} available)
+                            </Label>
+                            <div className="space-y-1 max-h-40 overflow-y-auto">
+                              {loadingVariants ? (
+                                <div className="text-xs text-muted-foreground px-2 py-1">
+                                  Loading variants...
+                                </div>
+                              ) : (
+                                allVariants.map((variant) => (
+                                  <button
+                                    key={variant._id}
+                                    type="button"
+                                    onClick={() => setCoverCardId(variant._id)}
+                                    className={`w-full text-left px-2 py-1 rounded text-xs transition-colors ${
+                                      variant._id === coverCardId
+                                        ? 'bg-primary text-primary-foreground font-medium'
+                                        : 'bg-muted hover:bg-muted/80'
+                                    }`}
+                                  >
+                                    {variant.rare}
+                                    {variant.series && (
+                                      <span className="text-[10px] opacity-70 ml-1">
+                                        ({variant.series})
+                                      </span>
+                                    )}
+                                  </button>
+                                ))
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            );
+          })()}
 
           <Button
             className="w-full bg-gradient-to-r from-primary via-accent to-secondary font-bold"

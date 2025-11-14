@@ -34,6 +34,7 @@ export function useDeckBuilder() {
   const [deckName, setDeckName] = useState('');
   const [deckArchetype, setDeckArchetype] = useState('');
   const [deckDescription, setDeckDescription] = useState('');
+  const [coverCardId, setCoverCardId] = useState<string>('');
 
   // Filter options
   const [types, setTypes] = useState<string[]>([]);
@@ -164,6 +165,7 @@ export function useDeckBuilder() {
       description: deckDescription,
       cardIds,
       sideDeckIds,
+      coverCardId: coverCardId && coverCardId !== 'none' ? coverCardId : undefined,
       wins: 0,
       views: 0,
       likes: 0,
@@ -252,6 +254,8 @@ export function useDeckBuilder() {
     setDeckArchetype,
     deckDescription,
     setDeckDescription,
+    coverCardId,
+    setCoverCardId,
     types,
     rarities,
     series,

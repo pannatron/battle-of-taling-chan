@@ -28,12 +28,15 @@ export function validateSinCardConditions(
   }
 
   // Check custom limit restrictions (can be combined with other restrictions)
+  // This applies to ALL cards with the same name, regardless of rarity or level
   if (card.sinCardLimit !== undefined) {
-    const existingCard = selectedCards.find(c => c._id === card._id);
-    const currentCount = existingCard?.quantity || 0;
+    // Count all cards with the same name (including different rarities/levels)
+    const totalSameNameCount = selectedCards
+      .filter(c => c.name === card.name && !c.isLifeCard && !c.isSideDeck)
+      .reduce((total, c) => total + c.quantity, 0);
     
-    if (currentCount >= card.sinCardLimit) {
-      errors.push(`การ์ด "${card.name}" ถูกจำกัดที่ ${card.sinCardLimit} ใบ`);
+    if (totalSameNameCount >= card.sinCardLimit) {
+      errors.push(`การ์ด "${card.name}" ถูกจำกัดที่ ${card.sinCardLimit} ใบ (รวมทุก rarity และทุกระดับ)`);
     }
   }
 
@@ -52,7 +55,7 @@ export function validateSinCardConditions(
         break;
       }
       case 'requires_avatar_symbol': {
-        const result = validateRequiresAvatarSymbol(card, selectedCards);
+        const result = validateRequiresAvatarSymbol(card, selectedCards, allCards);
         if (!result.isValid) {
           if (result.errorMessages) {
             errors.push(...result.errorMessages);
@@ -72,6 +75,19 @@ export function validateSinCardConditions(
           }
         }
         break;
+      }
+    }
+  }
+
+  // REVERSE CHECK: If adding an Avatar card, check if deck has cards with requires_avatar_symbol
+  // If so, the new Avatar must have the required symbols
+  if (card.type === 'Avatar') {
+    const result = validateAvatarAgainstRequiredSymbols(card, selectedCards, allCards);
+    if (!result.isValid) {
+      if (result.errorMessages) {
+        errors.push(...result.errorMessages);
+      } else if (result.errorMessage) {
+        errors.push(result.errorMessage);
       }
     }
   }
@@ -125,41 +141,68 @@ function validateChooseOne(
 /**
  * Type 2: Requires Avatar Symbol - Any avatar with the required symbol
  * sinCardRequiredAvatars is just for displaying examples, not for restriction
+ * NOTE: We need to pass allCards to get full card data including symbol and mainEffect
  */
 function validateRequiresAvatarSymbol(
   card: Card,
-  selectedCards: DeckCard[]
+  selectedCards: DeckCard[],
+  allCards: Card[]
 ): SinCardValidationResult {
   // If no required symbols specified, card is valid
   if (!card.sinCardRequiredSymbols || card.sinCardRequiredSymbols.length === 0) {
     return { isValid: true };
   }
 
-  // Check if deck has ANY avatar (not limited to requiredAvatars list) with the required symbol
-  const hasAvatarWithRequiredSymbol = selectedCards.some(deckCard => {
-    // Check if the card is an avatar type
-    if (deckCard.type !== 'Avatar') return false;
-
-    // Check if avatar has the required symbol in its symbol field
-    const hasSymbolInAvatarSymbol = card.sinCardRequiredSymbols?.some(requiredSymbol =>
-      deckCard.symbol?.toLowerCase().includes(requiredSymbol.toLowerCase())
-    );
-
-    // Check if main effect contains the required symbol keyword
-    const hasSymbolInMainEffect = card.sinCardRequiredSymbols?.some(requiredSymbol =>
-      deckCard.mainEffect?.toLowerCase().includes(requiredSymbol.toLowerCase())
-    );
-
-    return hasSymbolInAvatarSymbol || hasSymbolInMainEffect;
-  });
-
-  if (!hasAvatarWithRequiredSymbol) {
+  // Get all Avatar cards from deck (excluding the card being added if it's already there)
+  const avatarCardsInDeck = selectedCards.filter(deckCard => deckCard.type === 'Avatar');
+  
+  // If there are no avatars in deck AND the card itself is not an Avatar with required symbol
+  if (avatarCardsInDeck.length === 0) {
+    // Check if the card being added is an Avatar with the required symbol
+    if (card.type === 'Avatar') {
+      const cardHasSymbolInAvatarSymbol = card.sinCardRequiredSymbols.some(requiredSymbol =>
+        card.symbol?.toLowerCase().includes(requiredSymbol.toLowerCase())
+      );
+      const cardHasSymbolInMainEffect = card.sinCardRequiredSymbols.some(requiredSymbol =>
+        card.mainEffect?.toLowerCase().includes(requiredSymbol.toLowerCase())
+      );
+      
+      // If the card itself has the required symbol, it's valid (first Avatar in deck)
+      if (cardHasSymbolInAvatarSymbol || cardHasSymbolInMainEffect) {
+        return { isValid: true };
+      }
+    }
+    
+    // No avatars and card doesn't have required symbol
     const requiredSymbolsList = card.sinCardRequiredSymbols.join(', ');
     const exampleAvatars = card.sinCardRequiredAvatars?.join(', ') || 'ที่มี Symbol ดังกล่าว';
     return {
       isValid: false,
       errorMessage: `ไม่สามารถใส่ "${card.name}" ได้ ต้องมี Avatar ที่มี Symbol: "${requiredSymbolsList}" (ตัวอย่าง: ${exampleAvatars})`,
     };
+  }
+
+  // Check if ALL avatars in deck have the required symbols
+  for (const deckCard of avatarCardsInDeck) {
+    // Get full card data from allCards to access all fields
+    const fullCard = allCards.find(c => c._id === deckCard._id);
+    if (!fullCard) continue;
+
+    // Check if this avatar has ALL required symbols
+    const hasAllRequiredSymbols = card.sinCardRequiredSymbols.every(requiredSymbol => {
+      const hasSymbolInField = fullCard.symbol?.toLowerCase().includes(requiredSymbol.toLowerCase());
+      const hasSymbolInEffect = fullCard.mainEffect?.toLowerCase().includes(requiredSymbol.toLowerCase());
+      return hasSymbolInField || hasSymbolInEffect;
+    });
+
+    // If this avatar doesn't have all required symbols, card cannot be added
+    if (!hasAllRequiredSymbols) {
+      const requiredSymbolsList = card.sinCardRequiredSymbols.join(', ');
+      return {
+        isValid: false,
+        errorMessage: `ไม่สามารถใส่ "${card.name}" ได้ เพราะ Avatar "${fullCard.name}" ใน Deck ไม่มี Symbol: "${requiredSymbolsList}" (Avatar ทุกใบต้องมี Symbol ที่ต้องการ)`,
+      };
+    }
   }
 
   return { isValid: true };
@@ -213,6 +256,58 @@ function validateSharedNameLimit(
       isValid: false,
       errorMessage: `ไม่สามารถใส่ "${card.name}" ได้ เพราะการ์ดที่มีชื่อเดียวกัน (${cardNames.join(', ')}) รวมกันแล้วครบ 4 ใบแล้ว`,
     };
+  }
+
+  return { isValid: true };
+}
+
+/**
+ * REVERSE CHECK: Validate if an Avatar card meets the symbol requirements of any requires_avatar_symbol cards in deck
+ */
+function validateAvatarAgainstRequiredSymbols(
+  avatarCard: Card,
+  selectedCards: DeckCard[],
+  allCards: Card[]
+): SinCardValidationResult {
+  // Find all cards in deck that have requires_avatar_symbol condition
+  const cardsWithSymbolRequirement: { card: Card; requiredSymbols: string[] }[] = [];
+  
+  for (const deckCard of selectedCards) {
+    const fullCard = allCards.find(c => c._id === deckCard._id);
+    if (fullCard && 
+        fullCard.sinCardConditionType === 'requires_avatar_symbol' && 
+        fullCard.sinCardRequiredSymbols && 
+        fullCard.sinCardRequiredSymbols.length > 0) {
+      cardsWithSymbolRequirement.push({
+        card: fullCard,
+        requiredSymbols: fullCard.sinCardRequiredSymbols
+      });
+    }
+  }
+
+  // If no cards with symbol requirement, Avatar is valid
+  if (cardsWithSymbolRequirement.length === 0) {
+    return { isValid: true };
+  }
+
+  // Check if the Avatar has ALL required symbols from ALL cards with requirements
+  const allRequiredSymbols = new Set<string>();
+  cardsWithSymbolRequirement.forEach(req => {
+    req.requiredSymbols.forEach(symbol => allRequiredSymbols.add(symbol.toLowerCase()));
+  });
+
+  // Check if avatar has all required symbols
+  for (const requiredSymbol of allRequiredSymbols) {
+    const hasSymbolInField = avatarCard.symbol?.toLowerCase().includes(requiredSymbol);
+    const hasSymbolInEffect = avatarCard.mainEffect?.toLowerCase().includes(requiredSymbol);
+    
+    if (!hasSymbolInField && !hasSymbolInEffect) {
+      const cardNames = cardsWithSymbolRequirement.map(req => req.card.name).join(', ');
+      return {
+        isValid: false,
+        errorMessage: `ไม่สามารถใส่ "${avatarCard.name}" ได้ เพราะ Deck มีการ์ด "${cardNames}" ที่ต้องการ Avatar ที่มี Symbol: "${Array.from(allRequiredSymbols).join(', ')}"`,
+      };
+    }
   }
 
   return { isValid: true };

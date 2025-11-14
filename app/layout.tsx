@@ -1,13 +1,18 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Geist, Geist_Mono } from "next/font/google"
+import { Geist, Geist_Mono, Noto_Sans_Thai } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { ClerkProvider } from "@clerk/nextjs"
 import { ThemeProvider } from "@/components/theme-provider"
+import { Toaster } from "@/components/ui/toaster"
 import "./globals.css"
 
 const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
+const notoSansThai = Noto_Sans_Thai({ 
+  subsets: ["thai", "latin"],
+  variable: "--font-noto-sans-thai"
+})
 
 export const metadata: Metadata = {
   title: "Battle of Taling Chan - TCG Deck Builder & Marketplace",
@@ -75,7 +80,7 @@ export default function RootLayout({
       }}
     >
       <html lang="th" suppressHydrationWarning>
-        <body className={`font-sans antialiased`}>
+        <body className={`${notoSansThai.variable} font-sans antialiased`}>
           <ThemeProvider
             attribute="class"
             defaultTheme="system"
@@ -83,6 +88,7 @@ export default function RootLayout({
             storageKey="theme"
           >
             {children}
+            <Toaster />
           </ThemeProvider>
           <Analytics />
         </body>

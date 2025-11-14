@@ -51,7 +51,8 @@ export default function DeckBuilderPage() {
       deckBuilder.getSideDeckOnlyOneCount,
       deckBuilder.getOnlyOneCardCount,
       deckBuilder.getMaxDeckSize,
-      deckBuilder.isMainDeckFull
+      deckBuilder.isMainDeckFull,
+      deckBuilder.allCards
     );
     deckBuilder.setSelectedCards(newCards);
   };
@@ -158,6 +159,9 @@ export default function DeckBuilderPage() {
               setDeckArchetype={deckBuilder.setDeckArchetype}
               deckDescription={deckBuilder.deckDescription}
               setDeckDescription={deckBuilder.setDeckDescription}
+              selectedCards={deckBuilder.selectedCards}
+              coverCardId={deckBuilder.coverCardId}
+              setCoverCardId={deckBuilder.setCoverCardId}
               handleSaveDeck={deckBuilder.handleSaveDeck}
               saving={deckBuilder.saving}
               hasCards={deckBuilder.selectedCards.length > 0}

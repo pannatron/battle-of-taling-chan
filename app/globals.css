@@ -118,6 +118,7 @@
 @theme inline {
   --font-sans: "Geist", "Geist Fallback";
   --font-mono: "Geist Mono", "Geist Mono Fallback";
+  --font-noto-sans-thai: var(--font-noto-sans-thai);
   --font-thai: "PANIDino", sans-serif;
   --font-horror: "Nosifer", cursive;
   --font-creepy: "Creepster", cursive;

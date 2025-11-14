@@ -1,6 +1,7 @@
 import { DeckCard } from '@/hooks/useDeckBuilder';
 import { Card as CardType } from '@/types/card';
 import { validateSinCardConditions } from './sinCardValidation';
+import { toast } from '@/hooks/use-toast';
 
 // Helper function to check if card is Only One
 export function isOnlyOneCard(ex: string | undefined): boolean {
@@ -10,6 +11,20 @@ export function isOnlyOneCard(ex: string | undefined): boolean {
          normalizedEx === '#only1' || 
          normalizedEx === 'only1' || 
          normalizedEx === 'onlyone';
+}
+
+// Helper function to get total count of cards with the same name (including different levels)
+export function getCardCountByName(cardName: string, selectedCards: DeckCard[]): number {
+  return selectedCards
+    .filter((c) => c.name === cardName && !c.isLifeCard && !c.isSideDeck)
+    .reduce((total, card) => total + card.quantity, 0);
+}
+
+// Helper function to get total count of cards with the same name in side deck
+export function getCardCountByNameInSideDeck(cardName: string, selectedCards: DeckCard[]): number {
+  return selectedCards
+    .filter((c) => c.name === cardName && c.isSideDeck)
+    .reduce((total, card) => total + card.quantity, 0);
 }
 
 export function addCardToDeck(
@@ -33,7 +48,11 @@ export function addCardToDeck(
       const errorMessage = validationResult.errorMessages 
         ? validationResult.errorMessages.join('\n\n') 
         : (validationResult.errorMessage || 'ไม่สามารถใส่การ์ดนี้ได้');
-      alert(errorMessage);
+      toast({ 
+        variant: "destructive", 
+        title: "ไม่สามารถเพิ่มการ์ดได้", 
+        description: errorMessage 
+      });
       return selectedCards;
     }
   }
@@ -46,14 +65,22 @@ export function addCardToDeck(
   if (isLifeCard) {
     const totalLifeCards = getLifeCardCount();
     if (totalLifeCards >= 5) {
-      alert('ไลฟ์การ์ดเต็มแล้ว! (จำกัด 5 ใบ)');
+      toast({ 
+        variant: "destructive", 
+        title: "ไม่สามารถเพิ่มการ์ดได้", 
+        description: 'ไลฟ์การ์ดเต็มแล้ว! (จำกัด 5 ใบ)' 
+      });
       return selectedCards;
     }
 
     const existingCard = selectedCards.find((c) => c._id === card._id && c.isLifeCard);
     if (existingCard) {
       if (existingCard.quantity >= 1) {
-        alert('ใส่ไลฟ์การ์ดใบนี้ได้แค่ 1 ใบ');
+        toast({ 
+          variant: "destructive", 
+          title: "ไม่สามารถเพิ่มการ์ดได้", 
+          description: 'ใส่ไลฟ์การ์ดใบนี้ได้แค่ 1 ใบ' 
+        });
         return selectedCards;
       }
     } else {
@@ -65,7 +92,11 @@ export function addCardToDeck(
   // Side deck logic
   if (isSideDeck) {
     if (!isMainDeckFull()) {
-      alert('ต้องเติมเด็คหลักให้เต็มก่อน (' + getMaxDeckSize() + ' ใบ) ถึงจะเพิ่มการ์ดในไซด์เด็คได้');
+      toast({ 
+        variant: "destructive", 
+        title: "ไม่สามารถเพิ่มการ์ดได้", 
+        description: 'ต้องเติมเด็คหลักให้เต็มก่อน (' + getMaxDeckSize() + ' ใบ) ถึงจะเพิ่มการ์ดในไซด์เด็คได้' 
+      });
       return selectedCards;
     }
 
@@ -75,30 +106,61 @@ export function addCardToDeck(
 
     if (isCardOnlyOne) {
       if (sideDeckOnlyOneCount >= 1) {
-        alert('ไซด์เด็คมี Only One การ์ดได้แค่ 1 ใบ');
+        toast({ 
+          variant: "destructive", 
+          title: "ไม่สามารถเพิ่มการ์ดได้", 
+          description: 'ไซด์เด็คมี Only One การ์ดได้แค่ 1 ใบ' 
+        });
         return selectedCards;
       }
       if (totalSideDeck >= 11) {
-        alert('ไซด์เด็คเต็มแล้ว! (จำกัด 11 ใบ)');
+        toast({ 
+          variant: "destructive", 
+          title: "ไม่สามารถเพิ่มการ์ดได้", 
+          description: 'ไซด์เด็คเต็มแล้ว! (จำกัด 11 ใบ)' 
+        });
         return selectedCards;
       }
     } else {
       const maxRegularCards = sideDeckOnlyOneCount > 0 ? 10 : 11;
       const regularCardsCount = totalSideDeck - sideDeckOnlyOneCount;
       if (regularCardsCount >= maxRegularCards) {
-        alert(`ไซด์เด็คมีการ์ดธรรมดาเต็มแล้ว! (จำกัด ${maxRegularCards} ใบ)`);
+        toast({ 
+          variant: "destructive", 
+          title: "ไม่สามารถเพิ่มการ์ดได้", 
+          description: `ไซด์เด็คมีการ์ดธรรมดาเต็มแล้ว! (จำกัด ${maxRegularCards} ใบ)` 
+        });
         return selectedCards;
       }
+    }
+
+    // Check for cards with the same name in side deck (including different levels) - 4 card limit by name
+    const totalSameNameCardsInSideDeck = getCardCountByNameInSideDeck(card.name, selectedCards);
+    if (totalSameNameCardsInSideDeck >= 4) {
+      toast({ 
+        variant: "destructive", 
+        title: "ไม่สามารถเพิ่มการ์ดได้", 
+        description: `ไม่สามารถใส่การ์ด "${card.name}" ในไซด์เด็คได้เพิ่ม เพราะมีการ์ดชื่อเดียวกันในไซด์เด็คแล้ว 4 ใบ (รวมทุกระดับ)` 
+      });
+      return selectedCards;
     }
 
     const existingCard = selectedCards.find((c) => c._id === card._id && c.isSideDeck);
     if (existingCard) {
       if (isCardOnlyOne) {
-        alert('ใส่ Only One การ์ดได้แค่ 1 ใบในไซด์เด็ค');
+        toast({ 
+          variant: "destructive", 
+          title: "ไม่สามารถเพิ่มการ์ดได้", 
+          description: 'ใส่ Only One การ์ดได้แค่ 1 ใบในไซด์เด็ค' 
+        });
         return selectedCards;
       }
       if (existingCard.quantity >= 4) {
-        alert('ใส่การ์ดใบนี้ได้สูงสุด 4 ใบในไซด์เด็ค');
+        toast({ 
+          variant: "destructive", 
+          title: "ไม่สามารถเพิ่มการ์ดได้", 
+          description: 'ใส่การ์ดใบนี้ได้สูงสุด 4 ใบในไซด์เด็ค' 
+        });
         return selectedCards;
       }
       return selectedCards.map((c) =>
@@ -113,13 +175,21 @@ export function addCardToDeck(
   if (isOnlyOne) {
     const totalOnlyOne = getOnlyOneCardCount();
     if (totalOnlyOne >= 1) {
-      alert('Only One การ์ดเต็มแล้ว! (จำกัด 1 ใบ)');
+      toast({ 
+        variant: "destructive", 
+        title: "ไม่สามารถเพิ่มการ์ดได้", 
+        description: 'Only One การ์ดเต็มแล้ว! (จำกัด 1 ใบ)' 
+      });
       return selectedCards;
     }
 
     const existingCard = selectedCards.find((c) => c._id === card._id && isOnlyOneCard(c.ex));
     if (existingCard) {
-      alert('ใส่ Only One การ์ดได้แค่ 1 ใบ');
+      toast({ 
+        variant: "destructive", 
+        title: "ไม่สามารถเพิ่มการ์ดได้", 
+        description: 'ใส่ Only One การ์ดได้แค่ 1 ใบ' 
+      });
       return selectedCards;
     } else {
       return [...selectedCards, { ...card, quantity: 1, isLifeCard: false }];
@@ -135,22 +205,45 @@ export function addCardToDeck(
   if (totalCards >= maxDeckSize) {
     // If main deck is full but life cards are not complete (< 5)
     if (totalLifeCards < 5) {
-      alert('เด็คหลักเต็มแล้ว! กรุณาเติมไลฟ์การ์ดให้ครบ 5 ใบก่อน');
+      toast({ 
+        variant: "destructive", 
+        title: "ไม่สามารถเพิ่มการ์ดได้", 
+        description: 'เด็คหลักเต็มแล้ว! กรุณาเติมไลฟ์การ์ดให้ครบ 5 ใบก่อน' 
+      });
       return selectedCards;
     }
     // If both main deck and life cards are full, show message
-    alert(`เด็คเต็มแล้ว! (จำกัด ${maxDeckSize} ใบ) ถ้าต้องการเพิ่มการ์ด สามารถเพิ่มในไซด์เด็คได้`);
+    toast({ 
+      variant: "destructive", 
+      title: "ไม่สามารถเพิ่มการ์ดได้", 
+      description: `เด็คเต็มแล้ว! (จำกัด ${maxDeckSize} ใบ) ถ้าต้องการเพิ่มการ์ด สามารถเพิ่มในไซด์เด็คได้` 
+    });
     return selectedCards;
   }
 
-  const existingCard = selectedCards.find((c) => c._id === card._id && !c.isLifeCard);
+  // Check for cards with the same name (including different levels) - 4 card limit by name
+  const totalSameNameCards = getCardCountByName(card.name, selectedCards);
+  if (totalSameNameCards >= 4) {
+    toast({ 
+      variant: "destructive", 
+      title: "ไม่สามารถเพิ่มการ์ดได้", 
+      description: `ไม่สามารถใส่การ์ด "${card.name}" ได้เพิ่ม เพราะมีการ์ดชื่อเดียวกันในเด็คแล้ว 4 ใบ (รวมทุกระดับ)` 
+    });
+    return selectedCards;
+  }
+
+  const existingCard = selectedCards.find((c) => c._id === card._id && !c.isLifeCard && !c.isSideDeck);
   if (existingCard) {
     if (existingCard.quantity >= 4) {
-      alert('ใส่การ์ดใบนี้ได้สูงสุด 4 ใบ');
+      toast({ 
+        variant: "destructive", 
+        title: "ไม่สามารถเพิ่มการ์ดได้", 
+        description: 'ใส่การ์ดใบนี้ได้สูงสุด 4 ใบ' 
+      });
       return selectedCards;
     }
     return selectedCards.map((c) =>
-      c._id === card._id && !c.isLifeCard ? { ...c, quantity: c.quantity + 1 } : c
+      c._id === card._id && !c.isLifeCard && !c.isSideDeck ? { ...c, quantity: c.quantity + 1 } : c
     );
   } else {
     return [...selectedCards, { ...card, quantity: 1, isLifeCard: false }];
