@@ -19,6 +19,7 @@ export function Hero() {
 
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isTransitioning, setIsTransitioning] = useState(false)
+  const [showSinButton, setShowSinButton] = useState(true)
 
   const scrollToSinCards = () => {
     // เริ่มเอฟเฟกต์ transition
@@ -38,6 +39,7 @@ export function Hero() {
     }, 600)
   };
 
+  // Character carousel effect
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentIndex((prevIndex) => (prevIndex + 1) % characters.length)
@@ -45,6 +47,30 @@ export function Hero() {
 
     return () => clearInterval(interval)
   }, [characters.length])
+
+  // Scroll detection to hide/show sin button
+  useEffect(() => {
+    const handleScroll = () => {
+      const sinCardsSection = document.getElementById('sin-cards-section');
+      if (sinCardsSection) {
+        const sinCardsSectionTop = sinCardsSection.getBoundingClientRect().top;
+        const windowHeight = window.innerHeight;
+        
+        // ซ่อนปุ่มเมื่อ sin cards section เข้ามาในหน้าจอ (ประมาณ 20% ของหน้าจอ)
+        if (sinCardsSectionTop < windowHeight * 0.8) {
+          setShowSinButton(false);
+        } else {
+          setShowSinButton(true);
+        }
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    // เช็คตอน mount ด้วย
+    handleScroll();
+
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   return (
     <>
@@ -262,14 +288,19 @@ export function Hero() {
           </div>
         </div>
 
-        {/* บาป Button - Fixed Bottom Right - Simple GIF Only */}
-        <div className="fixed bottom-8 right-8 z-50">
+        {/* บาป Button - Fixed Bottom Right - แสดง/ซ่อนตาม scroll position */}
+        <div 
+          className={`fixed bottom-8 right-8 z-50 transition-all duration-500 ${
+            showSinButton && !isTransitioning 
+              ? 'opacity-100 translate-y-0' 
+              : 'opacity-0 translate-y-4 pointer-events-none'
+          }`}
+        >
           <button
             onClick={scrollToSinCards}
             disabled={isTransitioning}
             className="cursor-pointer transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {/* Replace this src with your actual GIF file path */}
             <img 
               src="/sin-button.gif" 
               alt="บาป"
