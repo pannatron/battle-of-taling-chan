@@ -123,38 +123,24 @@ function validateChooseOne(
 }
 
 /**
- * Type 2: Requires Avatar Symbol - Certain avatars require specific symbols
+ * Type 2: Requires Avatar Symbol - Any avatar with the required symbol
+ * sinCardRequiredAvatars is just for displaying examples, not for restriction
  */
 function validateRequiresAvatarSymbol(
   card: Card,
   selectedCards: DeckCard[]
 ): SinCardValidationResult {
-  if (!card.sinCardRequiredAvatars || card.sinCardRequiredAvatars.length === 0) {
-    return { isValid: true };
-  }
-
-  // Check if any of the required avatars are in the deck
-  const hasRequiredAvatar = selectedCards.some(deckCard =>
-    card.sinCardRequiredAvatars?.some(requiredAvatar =>
-      deckCard.name.toLowerCase().includes(requiredAvatar.toLowerCase())
-    )
-  );
-
-  if (!hasRequiredAvatar) {
-    return { isValid: true };
-  }
-
-  // If required avatars are present, check for required symbols
+  // If no required symbols specified, card is valid
   if (!card.sinCardRequiredSymbols || card.sinCardRequiredSymbols.length === 0) {
     return { isValid: true };
   }
 
-  // Check if deck has any avatar with the required symbol
-  const hasRequiredSymbol = selectedCards.some(deckCard => {
+  // Check if deck has ANY avatar (not limited to requiredAvatars list) with the required symbol
+  const hasAvatarWithRequiredSymbol = selectedCards.some(deckCard => {
     // Check if the card is an avatar type
     if (deckCard.type !== 'Avatar') return false;
 
-    // Check if avatar has the required symbol
+    // Check if avatar has the required symbol in its symbol field
     const hasSymbolInAvatarSymbol = card.sinCardRequiredSymbols?.some(requiredSymbol =>
       deckCard.symbol?.toLowerCase().includes(requiredSymbol.toLowerCase())
     );
@@ -167,11 +153,12 @@ function validateRequiresAvatarSymbol(
     return hasSymbolInAvatarSymbol || hasSymbolInMainEffect;
   });
 
-  if (!hasRequiredSymbol) {
+  if (!hasAvatarWithRequiredSymbol) {
     const requiredSymbolsList = card.sinCardRequiredSymbols.join(', ');
+    const exampleAvatars = card.sinCardRequiredAvatars?.join(', ') || 'ที่มี Symbol ดังกล่าว';
     return {
       isValid: false,
-      errorMessage: `ไม่สามารถใส่ "${card.name}" ได้ เพราะต้องมี Avatar Symbol หรือ Main Effect ที่มีคำว่า "${requiredSymbolsList}"`,
+      errorMessage: `ไม่สามารถใส่ "${card.name}" ได้ ต้องมี Avatar ที่มี Symbol: "${requiredSymbolsList}" (ตัวอย่าง: ${exampleAvatars})`,
     };
   }
 
@@ -289,31 +276,24 @@ export function getDeckSinCardWarnings(
     const fullCard = allCards.find(c => c._id === deckCard._id);
     if (
       fullCard?.sinCardConditionType === 'requires_avatar_symbol' &&
-      fullCard.sinCardRequiredAvatars &&
       fullCard.sinCardRequiredSymbols
     ) {
-      const hasRequiredAvatar = selectedCards.some(dc =>
-        fullCard.sinCardRequiredAvatars?.some(ra =>
-          dc.name.toLowerCase().includes(ra.toLowerCase())
-        )
-      );
+      // Check if deck has ANY avatar with the required symbol
+      const hasAvatarWithRequiredSymbol = selectedCards.some(dc => {
+        if (dc.type !== 'Avatar') return false;
+        const hasSymbol = fullCard.sinCardRequiredSymbols?.some(
+          rs =>
+            dc.symbol?.toLowerCase().includes(rs.toLowerCase()) ||
+            dc.mainEffect?.toLowerCase().includes(rs.toLowerCase())
+        );
+        return hasSymbol;
+      });
 
-      if (hasRequiredAvatar) {
-        const hasRequiredSymbol = selectedCards.some(dc => {
-          if (dc.type !== 'Avatar') return false;
-          const hasSymbol = fullCard.sinCardRequiredSymbols?.some(
-            rs =>
-              dc.symbol?.toLowerCase().includes(rs.toLowerCase()) ||
-              dc.mainEffect?.toLowerCase().includes(rs.toLowerCase())
-          );
-          return hasSymbol;
-        });
-
-        if (!hasRequiredSymbol) {
-          warnings.push(
-            `⚠️ การ์ด "${fullCard.name}" ต้องการ Avatar Symbol: ${fullCard.sinCardRequiredSymbols.join(', ')}`
-          );
-        }
+      if (!hasAvatarWithRequiredSymbol) {
+        const exampleAvatars = fullCard.sinCardRequiredAvatars?.join(', ') || 'ที่มี Symbol ดังกล่าว';
+        warnings.push(
+          `⚠️ การ์ด "${fullCard.name}" ต้องการ Avatar ที่มี Symbol: ${fullCard.sinCardRequiredSymbols.join(', ')} (ตัวอย่าง: ${exampleAvatars})`
+        );
       }
     }
   }

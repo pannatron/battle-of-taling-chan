@@ -15,6 +15,9 @@ interface RelatedCardInfo {
   name: string;
   imageUrl: string;
   print: string;
+  limit?: number;
+  displayIndex?: number;
+  totalDisplay?: number;
 }
 
 interface ConditionalCardDisplay extends Card {
@@ -234,7 +237,32 @@ export default function ConditionalCardsPage() {
               displayConditionType = 'special';
               conditionTitle = 'ต้องมี Avatar Symbol';
               if (card.sinCardRequiredAvatars && card.sinCardRequiredSymbols) {
-                conditionDescription = `ถ้ามี Avatar: ${card.sinCardRequiredAvatars.join(', ')} จะต้องมี Symbol: ${card.sinCardRequiredSymbols.join(', ')} ใน Avatar Symbol หรือ Main Effect`;
+                conditionDescription = `ต้องมี Avatar (ใดก็ได้) ที่มี Symbol: ${card.sinCardRequiredSymbols.join(', ')} ใน Avatar Symbol หรือ Main Effect`;
+                
+                // Load example avatar images
+                relatedCardsInfo = [];
+                for (const avatarName of card.sinCardRequiredAvatars) {
+                  // Find avatar card by name (search in all cards, prefer lowest rarity)
+                  const avatarCards = allCardsData.filter(c => 
+                    c.type === 'Avatar' && 
+                    c.name.toLowerCase().includes(avatarName.toLowerCase())
+                  );
+                  
+                  if (avatarCards.length > 0) {
+                    // Sort by rarity (prefer common cards)
+                    const sorted = avatarCards.sort((a, b) => {
+                      const priorityA = rarityPriority[a.rare || ''] || 999;
+                      const priorityB = rarityPriority[b.rare || ''] || 999;
+                      return priorityA - priorityB;
+                    });
+                    
+                    relatedCardsInfo.push({
+                      name: sorted[0].name,
+                      imageUrl: sorted[0].imageUrl || '/character/1.png',
+                      print: sorted[0].print
+                    });
+                  }
+                }
               }
               break;
               
@@ -242,32 +270,122 @@ export default function ConditionalCardsPage() {
               displayConditionType = 'pair-required';
               conditionTitle = 'จำกัดปริมาณรวมกัน';
               if (card.sinCardSharedNameGroup) {
-                // Find other cards in the same group from conditionalCards (already filtered to lowest rarity)
-                const groupCards = conditionalCards.filter(c => 
-                  c.sinCardSharedNameGroup === card.sinCardSharedNameGroup && 
-                  c._id !== card._id
-                );
+                console.log('🔍 Processing card:', card.name, 'with sinCardSharedNameGroup:', card.sinCardSharedNameGroup);
+                
+                // Find ALL cards in the same group - search BOTH directions:
+                // 1. Cards whose sinCardSharedNameGroup matches this card's sinCardSharedNameGroup
+                // 2. Cards whose name matches this card's sinCardSharedNameGroup (reverse relationship)
+                // 3. Cards whose sinCardSharedNameGroup matches this card's name
+                const groupCards = allCardsData.filter(c => {
+                  if (c.name === card.name) return false; // Exclude cards with the same name
+                  
+                  // Search in both directions
+                  return (
+                    // Same group name
+                    c.sinCardSharedNameGroup === card.sinCardSharedNameGroup ||
+                    // This card's group is the other card's name
+                    c.name === card.sinCardSharedNameGroup ||
+                    // Other card's group is this card's name
+                    c.sinCardSharedNameGroup === card.name
+                  );
+                });
+                
+                console.log('📦 Found groupCards:', groupCards.length, 'cards');
+                console.log('📦 Group cards:', groupCards.map(c => `${c.name} (${c.rare})`));
                 
                 // Get unique names from group cards
                 const groupCardNames = new Set<string>();
                 groupCards.forEach(c => {
-                  if (c.name !== card.name) {
-                    groupCardNames.add(c.name);
+                  groupCardNames.add(c.name);
+                });
+                
+                console.log('📝 Unique names:', Array.from(groupCardNames));
+                
+                // For each unique name, find the lowest rarity version
+                const uniqueGroupCards: Card[] = [];
+                Array.from(groupCardNames).forEach(name => {
+                  const cardsWithName = groupCards.filter(c => c.name === name);
+                  if (cardsWithName.length > 0) {
+                    // Sort by rarity (prefer common cards)
+                    const sorted = cardsWithName.sort((a, b) => {
+                      const priorityA = rarityPriority[a.rare || ''] || 999;
+                      const priorityB = rarityPriority[b.rare || ''] || 999;
+                      return priorityA - priorityB;
+                    });
+                    uniqueGroupCards.push(sorted[0]);
                   }
                 });
                 
-                // Map names to selected cards (which are already lowest rarity)
-                const uniqueGroupCards = Array.from(groupCardNames)
-                  .map(name => nameToSelectedCardMap[name])
-                  .filter((c): c is Card => !!c);
+                console.log('✅ Final uniqueGroupCards:', uniqueGroupCards.map(c => `${c.name} (${c.rare})`));
                 
                 if (uniqueGroupCards.length > 0) {
-                  conditionDescription = `การ์ดนี้และการ์ดในกลุ่มเดียวกัน (${uniqueGroupCards.map(c => c.name).join(', ')}) สามารถใส่รวมกันได้ไม่เกิน 4 ใบ`;
-                  relatedCardsInfo = uniqueGroupCards.map(c => ({
-                    name: c.name,
-                    imageUrl: c.imageUrl || '/character/1.png',
-                    print: c.print
-                  }));
+                  // Include current card in the calculation
+                  const allCardsInGroup = [card, ...uniqueGroupCards];
+                  
+                  // Calculate limits and display info
+                  const cardDisplayInfo: Array<{ card: Card; limit: number; displayCount: number }> = [];
+                  let remainingSlots = 4;
+                  
+                  // First, allocate slots based on limits
+                  allCardsInGroup.forEach(c => {
+                    const limit = c.sinCardLimit || 4; // Default to 4 if no limit
+                    const allocatedSlots = Math.min(limit, remainingSlots);
+                    cardDisplayInfo.push({
+                      card: c,
+                      limit: limit,
+                      displayCount: allocatedSlots
+                    });
+                    remainingSlots -= allocatedSlots;
+                  });
+                  
+                  console.log('📊 Card display info:', cardDisplayInfo.map(info => 
+                    `${info.card.name}: limit=${info.limit}, display=${info.displayCount}`
+                  ));
+                  
+                  // Create description
+                  const cardNames = uniqueGroupCards.map(c => c.name).join(', ');
+                  conditionDescription = `การ์ดนี้และการ์ดในกลุ่มเดียวกัน (${cardNames}) สามารถใส่รวมกันได้ไม่เกิน 4 ใบ`;
+                  
+                  // Create related cards info with display counts
+                  // For the current card, we'll add it to the display separately
+                  // For related cards, we create multiple entries based on displayCount
+                  const tempRelatedCardsInfo: RelatedCardInfo[] = [];
+                  
+                  // Add current card copies (skip the first one as it's shown separately)
+                  const currentCardInfo = cardDisplayInfo.find(info => info.card._id === card._id);
+                  if (currentCardInfo) {
+                    for (let i = 0; i < currentCardInfo.displayCount; i++) {
+                      tempRelatedCardsInfo.push({
+                        name: card.name,
+                        imageUrl: card.imageUrl || '/character/1.png',
+                        print: card.print,
+                        limit: currentCardInfo.limit,
+                        displayIndex: i + 1,
+                        totalDisplay: currentCardInfo.displayCount
+                      });
+                    }
+                  }
+                  
+                  // Add related cards copies
+                  cardDisplayInfo.forEach(info => {
+                    if (info.card._id !== card._id) {
+                      for (let i = 0; i < info.displayCount; i++) {
+                        tempRelatedCardsInfo.push({
+                          name: info.card.name,
+                          imageUrl: info.card.imageUrl || '/character/1.png',
+                          print: info.card.print,
+                          limit: info.limit,
+                          displayIndex: i + 1,
+                          totalDisplay: info.displayCount
+                        });
+                      }
+                    }
+                  });
+                  
+                  relatedCardsInfo = tempRelatedCardsInfo;
+                  console.log('✅ relatedCardsInfo created with', relatedCardsInfo.length, 'card displays');
+                } else {
+                  console.log('❌ No unique group cards found');
                 }
               }
               break;
@@ -302,6 +420,15 @@ export default function ConditionalCardsPage() {
 
   const getConditionTypeCount = (type: 'exclusive' | 'choose-one' | 'pair-required' | 'special') => {
     return cards.filter(card => card.displayConditionType === type).length;
+  };
+
+  // Function to handle clicking on a related card
+  const handleRelatedCardClick = (cardName: string) => {
+    // Find the card in the cards array by name
+    const clickedCard = cards.find(card => card.name === cardName);
+    if (clickedCard) {
+      setSelectedCard(clickedCard);
+    }
   };
 
   return (
@@ -669,17 +796,11 @@ export default function ConditionalCardsPage() {
                                 className="object-cover"
                               />
                               {/* Badge for current card */}
-                              <div className="absolute top-2 left-2 bg-red-600 text-white px-2 py-1 rounded-md text-xs font-bold font-mn-lon shadow-lg">
-                                เลือกใส่ได้
-                              </div>
+                            <div className="absolute top-2 left-2 bg-red-600 text-white px-2 py-1 rounded-md text-xs font-bold font-mn-lon shadow-lg">
+                              เลือกใส่ได้
                             </div>
-                            <p className="font-mn-lon mt-2 text-sm font-semibold text-red-300 text-center">
-                              {selectedCard.name}
-                            </p>
-                            <p className="font-mn-lon text-xs text-red-400/70 text-center">
-                              ({selectedCard.print})
-                            </p>
                           </div>
+                        </div>
                         </div>
                         
                         {/* Divider "หรือ" */}
@@ -710,81 +831,80 @@ export default function ConditionalCardsPage() {
                                   เลือกใส่ได้
                                 </div>
                               </div>
-                              <p className="font-mn-lon mt-2 text-sm font-semibold text-red-200 text-center">
-                                {relatedCard.name}
-                              </p>
-                              <p className="font-mn-lon text-xs text-red-400/70 text-center">
-                                ({relatedCard.print})
-                              </p>
                             </div>
                           </div>
                         ))}
                       </div>
                     </div>
                   ) : selectedCard.relatedCardsInfo && selectedCard.relatedCardsInfo.length > 0 ? (
-                    <div className="flex flex-col gap-6">
-                      {/* Cards Row */}
-                      <div className="flex flex-wrap items-start justify-center gap-4 md:gap-6">
-                        {/* Current Card */}
-                        <div className="flex-shrink-0">
-                          <div className="relative w-48 md:w-56">
-                            <div className="relative aspect-[2/3] overflow-hidden rounded-xl border-4 border-red-600/80 shadow-2xl">
-                              <Image
-                                src={selectedCard.imageUrl || '/character/1.png'}
-                                alt={selectedCard.name}
-                                fill
-                                className="object-cover"
-                              />
-                            </div>
-                            <p className="font-mn-lon mt-2 text-sm font-semibold text-red-300 text-center">
-                              {selectedCard.name}
-                            </p>
-                            <p className="font-mn-lon text-xs text-red-400/70 text-center">
-                              ({selectedCard.print})
-                            </p>
-                          </div>
-                        </div>
-                        
-                        {/* Divider */}
-                        <div className="flex items-center justify-center self-center">
-                          <div 
-                            className="rounded-full px-4 py-2 text-sm font-bold text-white shadow-lg font-mn-lon"
-                            style={{
-                              background: 'linear-gradient(135deg, #7f1d1d 0%, #991b1b 50%, #7f1d1d 100%)',
-                              border: '2px solid #450a0a'
-                            }}
-                          >
-                            +
-                          </div>
-                        </div>
-                        
-                        {/* Related Cards */}
-                        {selectedCard.relatedCardsInfo.map((relatedCard, idx) => (
-                          <div key={idx} className="flex-shrink-0">
-                            <div className="relative w-48 md:w-56">
-                              <div className="relative aspect-[2/3] overflow-hidden rounded-xl border-4 border-red-900/60 shadow-2xl">
-                                <Image
-                                  src={relatedCard.imageUrl}
-                                  alt={relatedCard.name}
-                                  fill
-                                  className="object-cover"
-                                />
+                  <div className="flex flex-col gap-6">
+                    {/* Overlapping Cards Display */}
+                    <div className="flex justify-center items-center px-4">
+                      <div className="relative flex items-center" style={{ height: "320px", minWidth: "200px" }}>
+                        {selectedCard.relatedCardsInfo?.map((relatedCard, idx) => {
+                          const totalCards = selectedCard.relatedCardsInfo?.length ?? 0;
+
+                          const offsetPerCard = 60; // ระยะห่างการ์ดแต่ละใบ
+                          const totalWidth = (totalCards - 1) * offsetPerCard;
+                          const centerOffset = totalWidth / 2;
+
+                          const leftPos = idx * offsetPerCard - centerOffset;
+
+                          const rotation = -15 + (idx * (30 / (totalCards - 1 || 1)));
+
+                          return (
+                            <div
+                              key={idx}
+                              className="absolute transition-transform hover:scale-110 hover:z-50 cursor-pointer"
+                              style={{
+                                left: `${leftPos}px`,
+                                transform: `rotate(${rotation}deg)`,
+                                zIndex: idx,
+                                transformOrigin: "bottom center",
+                              }}
+                              onClick={() => handleRelatedCardClick(relatedCard.name)}
+                            >
+                              <div className="relative w-44 md:w-52">
+                                <div className="relative aspect-[2/3] overflow-hidden rounded-xl hover:ring-4 hover:ring-red-500/50 transition-all">
+                                  <Image
+                                    src={relatedCard.imageUrl}
+                                    alt={relatedCard.name}
+                                    fill
+                                    className="object-cover"
+                                  />
+
+                                  {relatedCard.limit && relatedCard.limit < 4 && (
+                                    <div className="absolute top-2 left-2 bg-red-900/90 text-white px-2 py-1 rounded-md text-xs font-bold font-mn-lon shadow-lg">
+                                      ใส่ได้ {relatedCard.limit} ใบ
+                                    </div>
+                                  )}
+                                  
+                                  {/* Click indicator overlay */}
+                                  <div className="absolute inset-0 bg-red-600/0 hover:bg-red-600/20 transition-colors flex items-center justify-center opacity-0 hover:opacity-100">
+                                    <div className="bg-red-900/90 rounded-full p-2 shadow-lg">
+                                      <Link2 className="h-4 w-4 text-white" />
+                                    </div>
+                                  </div>
+                                </div>
                               </div>
-                              <p className="font-mn-lon mt-2 text-sm font-semibold text-red-200 text-center">
-                                {relatedCard.name}
-                              </p>
-                              <p className="font-mn-lon text-xs text-red-400/70 text-center">
-                                ({relatedCard.print})
-                              </p>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
+
+                    {/* Info text below cards */}
+                    <div className="text-center">
+                      <p className="font-mn-lon text-sm text-red-300/80">
+                        แสดงการ์ดทั้งหมด {selectedCard.relatedCardsInfo.length} ใบที่สามารถใส่รวมกันได้
+                      </p>
+                    </div>
+                  </div>
+
                   ) : (
                     <div className="flex justify-center">
                       <div className="relative w-64 md:w-80">
-                        <div className="relative aspect-[2/3] overflow-hidden rounded-xl border-4 border-red-900/60 shadow-2xl">
+                      <div className="relative aspect-[2/3] overflow-hidden rounded-xl border-none shadow-2xl">
                           <Image
                             src={selectedCard.imageUrl || '/character/1.png'}
                             alt={selectedCard.name}

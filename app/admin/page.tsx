@@ -67,6 +67,20 @@ export default function AdminPage() {
   const [showCardIdRecommendations, setShowCardIdRecommendations] = useState(false);
   const [selectedCardIds, setSelectedCardIds] = useState<string[]>([]);
   
+  // Avatar and Symbol search states
+  const [avatarSearch, setAvatarSearch] = useState('');
+  const [showAvatarRecommendations, setShowAvatarRecommendations] = useState(false);
+  const [selectedAvatars, setSelectedAvatars] = useState<string[]>([]);
+  
+  const [symbolSearch, setSymbolSearch] = useState('');
+  const [showSymbolRecommendations, setShowSymbolRecommendations] = useState(false);
+  const [selectedSymbols, setSelectedSymbols] = useState<string[]>([]);
+  
+  // Shared Name Group search states
+  const [sharedNameSearch, setSharedNameSearch] = useState('');
+  const [showSharedNameRecommendations, setShowSharedNameRecommendations] = useState(false);
+  const [selectedSharedNames, setSelectedSharedNames] = useState<string[]>([]);
+  
   // Available filter options
   const [types, setTypes] = useState<string[]>([]);
   const [rarities, setRarities] = useState<string[]>([]);
@@ -172,8 +186,14 @@ export default function AdminPage() {
     setSelectedCardIds(card.sinCardChooseOneGroup || []);
     setCardIdSearch('');
     setSinCardRequiredAvatars(card.sinCardRequiredAvatars?.join(',') || '');
+    setSelectedAvatars(card.sinCardRequiredAvatars || []);
+    setAvatarSearch('');
     setSinCardRequiredSymbols(card.sinCardRequiredSymbols?.join(',') || '');
+    setSelectedSymbols(card.sinCardRequiredSymbols || []);
+    setSymbolSearch('');
     setSinCardSharedNameGroup(card.sinCardSharedNameGroup || '');
+    setSelectedSharedNames(card.sinCardSharedNameGroup ? card.sinCardSharedNameGroup.split(',').map(s => s.trim()).filter(Boolean) : []);
+    setSharedNameSearch('');
     
     setMessage('');
     
@@ -885,31 +905,239 @@ export default function AdminPage() {
                           <div className="bg-purple-50 dark:bg-purple-950 p-4 rounded border border-purple-200 dark:border-purple-800 space-y-3">
                             <div>
                               <Label htmlFor="requiredAvatars">Avatar ที่ต้องตรวจสอบ</Label>
-                              <Input
-                                id="requiredAvatars"
-                                type="text"
-                                placeholder="เช่น: ไกรลาส,พระราม"
-                                value={sinCardRequiredAvatars}
-                                onChange={(e) => setSinCardRequiredAvatars(e.target.value)}
-                                className="mt-2"
-                              />
-                              <p className="text-xs text-gray-500 mt-1">
-                                ใส่ชื่อ Avatar ที่จะทำให้เกิดข้อกำหนด (คั่นด้วย comma)
+                              
+                              {/* Selected Avatars Display */}
+                              {selectedAvatars.length > 0 && (
+                                <div className="mt-2 flex flex-wrap gap-2">
+                                  {selectedAvatars.map((avatarName) => (
+                                    <div key={avatarName} className="flex items-center gap-2 bg-white dark:bg-gray-800 px-3 py-1 rounded border">
+                                      <span className="text-sm">{avatarName}</span>
+                                      <button
+                                        onClick={() => {
+                                          const newAvatars = selectedAvatars.filter(a => a !== avatarName);
+                                          setSelectedAvatars(newAvatars);
+                                          setSinCardRequiredAvatars(newAvatars.join(','));
+                                        }}
+                                        className="text-red-500 hover:text-red-700"
+                                      >
+                                        <X className="h-3 w-3" />
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                              
+                              {/* Search Input */}
+                              <div className="relative mt-2">
+                                <Input
+                                  id="requiredAvatars"
+                                  type="text"
+                                  placeholder="ค้นหา Avatar ด้วยชื่อ..."
+                                  value={avatarSearch}
+                                  onChange={(e) => {
+                                    setAvatarSearch(e.target.value);
+                                    setShowAvatarRecommendations(e.target.value.length > 0);
+                                  }}
+                                  onFocus={() => setShowAvatarRecommendations(avatarSearch.length > 0)}
+                                  className="w-full"
+                                />
+                                
+                                {/* Recommendations Dropdown */}
+                                {showAvatarRecommendations && avatarSearch.length > 0 && (
+                                  <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                                    {Array.from(new Set(
+                                      cards
+                                        .filter(card => 
+                                          card.type === 'Avatar' &&
+                                          !selectedAvatars.includes(card.name) &&
+                                          card.name.toLowerCase().includes(avatarSearch.toLowerCase())
+                                        )
+                                        .map(card => card.name)
+                                    ))
+                                      .slice(0, 10)
+                                      .map(avatarName => (
+                                        <div
+                                          key={avatarName}
+                                          onClick={() => {
+                                            const newAvatars = [...selectedAvatars, avatarName];
+                                            setSelectedAvatars(newAvatars);
+                                            setSinCardRequiredAvatars(newAvatars.join(','));
+                                            setAvatarSearch('');
+                                            setShowAvatarRecommendations(false);
+                                          }}
+                                          className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-200 dark:border-gray-700 last:border-b-0"
+                                        >
+                                          <div className="font-semibold text-sm">{avatarName}</div>
+                                          <div className="text-xs text-gray-600 dark:text-gray-400">
+                                            Avatar Card
+                                          </div>
+                                        </div>
+                                      ))}
+                                    {Array.from(new Set(
+                                      cards
+                                        .filter(card => 
+                                          card.type === 'Avatar' &&
+                                          !selectedAvatars.includes(card.name) &&
+                                          card.name.toLowerCase().includes(avatarSearch.toLowerCase())
+                                        )
+                                        .map(card => card.name)
+                                    )).length === 0 && (
+                                      <div className="px-4 py-2 text-sm text-gray-500">
+                                        ไม่พบ Avatar ที่ตรงกัน
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                              
+                              <p className="text-xs text-gray-500 mt-2">
+                                ค้นหาและเลือก Avatar ที่จะทำให้เกิดข้อกำหนด
                               </p>
+                              
+                              {/* Manual Input (Optional) */}
+                              <details className="mt-3">
+                                <summary className="text-xs text-gray-600 dark:text-gray-400 cursor-pointer hover:text-gray-800 dark:hover:text-gray-200">
+                                  หรือใส่ชื่อ Avatar ด้วยตนเอง (สำหรับผู้ใช้ขั้นสูง)
+                                </summary>
+                                <Input
+                                  type="text"
+                                  placeholder="เช่น: ไกรลาส,พระราม"
+                                  value={sinCardRequiredAvatars}
+                                  onChange={(e) => {
+                                    setSinCardRequiredAvatars(e.target.value);
+                                    setSelectedAvatars(e.target.value.split(',').map(s => s.trim()).filter(Boolean));
+                                  }}
+                                  className="mt-2"
+                                />
+                              </details>
                             </div>
                             <div>
                               <Label htmlFor="requiredSymbols">Symbol ที่จำเป็นต้องมี</Label>
-                              <Input
-                                id="requiredSymbols"
-                                type="text"
-                                placeholder="เช่น: ไฟ,น้ำ"
-                                value={sinCardRequiredSymbols}
-                                onChange={(e) => setSinCardRequiredSymbols(e.target.value)}
-                                className="mt-2"
-                              />
-                              <p className="text-xs text-gray-500 mt-1">
-                                ใส่ Symbol ที่ต้องมีใน Avatar Symbol หรือ Main Effect (คั่นด้วย comma)
+                              
+                              {/* Selected Symbols Display */}
+                              {selectedSymbols.length > 0 && (
+                                <div className="mt-2 flex flex-wrap gap-2">
+                                  {selectedSymbols.map((symbolName) => (
+                                    <div key={symbolName} className="flex items-center gap-2 bg-white dark:bg-gray-800 px-3 py-1 rounded border">
+                                      <span className="text-sm">{symbolName}</span>
+                                      <button
+                                        onClick={() => {
+                                          const newSymbols = selectedSymbols.filter(s => s !== symbolName);
+                                          setSelectedSymbols(newSymbols);
+                                          setSinCardRequiredSymbols(newSymbols.join(','));
+                                        }}
+                                        className="text-red-500 hover:text-red-700"
+                                      >
+                                        <X className="h-3 w-3" />
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                              
+                              {/* Search Input */}
+                              <div className="relative mt-2">
+                                <Input
+                                  id="requiredSymbols"
+                                  type="text"
+                                  placeholder="ค้นหา Symbol เช่น: ไฟ, น้ำ, ลม..."
+                                  value={symbolSearch}
+                                  onChange={(e) => {
+                                    setSymbolSearch(e.target.value);
+                                    setShowSymbolRecommendations(e.target.value.length > 0);
+                                  }}
+                                  onFocus={() => setShowSymbolRecommendations(symbolSearch.length > 0)}
+                                  className="w-full"
+                                />
+                                
+                                {/* Recommendations Dropdown */}
+                                {showSymbolRecommendations && symbolSearch.length > 0 && (
+                                  <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                                    {(() => {
+                                      // Extract unique symbols from cards
+                                      const symbols = new Set<string>();
+                                      cards.forEach(card => {
+                                        // Extract from symbol field (Avatar Symbol)
+                                        if (card.symbol) {
+                                          const matches = card.symbol.match(/[ก-๙a-zA-Z]+/g);
+                                          matches?.forEach((m: string) => {
+                                            if (m.length > 1) symbols.add(m);
+                                          });
+                                        }
+                                        // Extract from Main Effect
+                                        if (card.mainEffect) {
+                                          const matches = card.mainEffect.match(/Symbol:\s*([ก-๙a-zA-Z,\s]+)/gi);
+                                          matches?.forEach((match: string) => {
+                                            const symbolList = match.replace(/Symbol:\s*/i, '').split(/[,\s]+/);
+                                            symbolList.forEach((s: string) => {
+                                              const cleaned = s.trim();
+                                              if (cleaned.length > 1) symbols.add(cleaned);
+                                            });
+                                          });
+                                        }
+                                        // Also check color as potential symbol
+                                        if (card.color && card.color !== 'Colorless') {
+                                          symbols.add(card.color);
+                                        }
+                                      });
+                                      
+                                      const filteredSymbols = Array.from(symbols)
+                                        .filter(s => 
+                                          !selectedSymbols.includes(s) &&
+                                          s.toLowerCase().includes(symbolSearch.toLowerCase())
+                                        )
+                                        .sort()
+                                        .slice(0, 10);
+                                      
+                                      return filteredSymbols.length > 0 ? (
+                                        filteredSymbols.map(symbolName => (
+                                          <div
+                                            key={symbolName}
+                                            onClick={() => {
+                                              const newSymbols = [...selectedSymbols, symbolName];
+                                              setSelectedSymbols(newSymbols);
+                                              setSinCardRequiredSymbols(newSymbols.join(','));
+                                              setSymbolSearch('');
+                                              setShowSymbolRecommendations(false);
+                                            }}
+                                            className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-200 dark:border-gray-700 last:border-b-0"
+                                          >
+                                            <div className="font-semibold text-sm">{symbolName}</div>
+                                            <div className="text-xs text-gray-600 dark:text-gray-400">
+                                              Symbol
+                                            </div>
+                                          </div>
+                                        ))
+                                      ) : (
+                                        <div className="px-4 py-2 text-sm text-gray-500">
+                                          ไม่พบ Symbol ที่ตรงกัน
+                                        </div>
+                                      );
+                                    })()}
+                                  </div>
+                                )}
+                              </div>
+                              
+                              <p className="text-xs text-gray-500 mt-2">
+                                ค้นหาและเลือก Symbol ที่ต้องมีใน Avatar Symbol หรือ Main Effect
                               </p>
+                              
+                              {/* Manual Input (Optional) */}
+                              <details className="mt-3">
+                                <summary className="text-xs text-gray-600 dark:text-gray-400 cursor-pointer hover:text-gray-800 dark:hover:text-gray-200">
+                                  หรือใส่ Symbol ด้วยตนเอง (สำหรับผู้ใช้ขั้นสูง)
+                                </summary>
+                                <Input
+                                  type="text"
+                                  placeholder="เช่น: ไฟ,น้ำ"
+                                  value={sinCardRequiredSymbols}
+                                  onChange={(e) => {
+                                    setSinCardRequiredSymbols(e.target.value);
+                                    setSelectedSymbols(e.target.value.split(',').map(s => s.trim()).filter(Boolean));
+                                  }}
+                                  className="mt-2"
+                                />
+                              </details>
                             </div>
                             <div className="bg-purple-100 dark:bg-purple-900 p-3 rounded">
                               <p className="text-xs font-semibold mb-1">📝 คำอธิบาย:</p>
@@ -924,27 +1152,130 @@ export default function AdminPage() {
                         {sinCardConditionType === 'shared_name_limit' && (
                           <div className="bg-orange-50 dark:bg-orange-950 p-4 rounded border border-orange-200 dark:border-orange-800 space-y-3">
                             <div>
-                              <Label htmlFor="sharedNameGroup">Shared Name Group ID</Label>
-                              <Input
-                                id="sharedNameGroup"
-                                type="text"
-                                placeholder="เช่น: card_group_1"
-                                value={sinCardSharedNameGroup}
-                                onChange={(e) => setSinCardSharedNameGroup(e.target.value)}
-                                className="mt-2"
-                              />
-                              <p className="text-xs text-gray-500 mt-1">
-                                ใส่ ID กลุ่มสำหรับการ์ดที่จะนับรวมกัน
+                              <Label htmlFor="sharedNameGroup">ชื่อการ์ดที่จะนับรวมกัน</Label>
+                              
+                              {/* Selected Card Names Display */}
+                              {selectedSharedNames.length > 0 && (
+                                <div className="mt-2 flex flex-wrap gap-2">
+                                  {selectedSharedNames.map((cardName) => (
+                                    <div key={cardName} className="flex items-center gap-2 bg-white dark:bg-gray-800 px-3 py-1 rounded border">
+                                      <span className="text-sm">{cardName}</span>
+                                      <button
+                                        onClick={() => {
+                                          const newNames = selectedSharedNames.filter(n => n !== cardName);
+                                          setSelectedSharedNames(newNames);
+                                          setSinCardSharedNameGroup(newNames.join(','));
+                                        }}
+                                        className="text-red-500 hover:text-red-700"
+                                      >
+                                        <X className="h-3 w-3" />
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                              
+                              {/* Search Input */}
+                              <div className="relative mt-2">
+                                <Input
+                                  id="sharedNameGroup"
+                                  type="text"
+                                  placeholder="ค้นหาชื่อการ์ดด้วยชื่อ, พิมพ์, หรือซีรีส์..."
+                                  value={sharedNameSearch}
+                                  onChange={(e) => {
+                                    setSharedNameSearch(e.target.value);
+                                    setShowSharedNameRecommendations(e.target.value.length > 0);
+                                  }}
+                                  onFocus={() => setShowSharedNameRecommendations(sharedNameSearch.length > 0)}
+                                  className="w-full"
+                                />
+                                
+                                {/* Recommendations Dropdown */}
+                                {showSharedNameRecommendations && sharedNameSearch.length > 0 && (
+                                  <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                                    {(() => {
+                                      // Get unique card names
+                                      const uniqueNames = Array.from(new Set(
+                                        cards
+                                          .filter(card => 
+                                            !selectedSharedNames.includes(card.name) &&
+                                            (card.name.toLowerCase().includes(sharedNameSearch.toLowerCase()) ||
+                                             card.print.toLowerCase().includes(sharedNameSearch.toLowerCase()) ||
+                                             card.series.toLowerCase().includes(sharedNameSearch.toLowerCase()))
+                                          )
+                                          .map(card => card.name)
+                                      )).slice(0, 15);
+                                      
+                                      return uniqueNames.length > 0 ? (
+                                        uniqueNames.map(cardName => {
+                                          // Get one card as representative
+                                          const representativeCard = cards.find(c => c.name === cardName);
+                                          if (!representativeCard) return null;
+                                          
+                                          // Count how many versions exist
+                                          const versionCount = cards.filter(c => c.name === cardName).length;
+                                          
+                                          return (
+                                            <div
+                                              key={cardName}
+                                              onClick={() => {
+                                                const newNames = [...selectedSharedNames, cardName];
+                                                setSelectedSharedNames(newNames);
+                                                setSinCardSharedNameGroup(newNames.join(','));
+                                                setSharedNameSearch('');
+                                                setShowSharedNameRecommendations(false);
+                                              }}
+                                              className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-200 dark:border-gray-700 last:border-b-0"
+                                            >
+                                              <div className="font-semibold text-sm">{cardName}</div>
+                                              <div className="text-xs text-gray-600 dark:text-gray-400">
+                                                {representativeCard.series} - {versionCount} เวอร์ชัน
+                                              </div>
+                                            </div>
+                                          );
+                                        })
+                                      ) : (
+                                        <div className="px-4 py-2 text-sm text-gray-500">
+                                          ไม่พบชื่อการ์ดที่ตรงกัน
+                                        </div>
+                                      );
+                                    })()}
+                                  </div>
+                                )}
+                              </div>
+                              
+                              <p className="text-xs text-gray-500 mt-2">
+                                ค้นหาและเลือกชื่อการ์ดที่จะนับรวมกัน - การ์ดทุกเวอร์ชันที่มีชื่อเดียวกันจะถูกนับรวม
                               </p>
+                              
+                              {/* Manual Input (Optional) */}
+                              <details className="mt-3">
+                                <summary className="text-xs text-gray-600 dark:text-gray-400 cursor-pointer hover:text-gray-800 dark:hover:text-gray-200">
+                                  หรือใส่ชื่อการ์ดด้วยตนเอง (สำหรับผู้ใช้ขั้นสูง)
+                                </summary>
+                                <Input
+                                  type="text"
+                                  placeholder="เช่น: ไกรลาส,พระราม"
+                                  value={sinCardSharedNameGroup}
+                                  onChange={(e) => {
+                                    setSinCardSharedNameGroup(e.target.value);
+                                    setSelectedSharedNames(e.target.value.split(',').map(s => s.trim()).filter(Boolean));
+                                  }}
+                                  className="mt-2"
+                                />
+                              </details>
                             </div>
                             <div className="bg-orange-100 dark:bg-orange-900 p-3 rounded">
                               <p className="text-xs font-semibold mb-1">📝 คำอธิบาย:</p>
                               <p className="text-xs mb-2">
-                                การ์ดที่มี Shared Name Group เดียวกันจะถูกนับรวมกันไม่เกิน 4 ใบ
+                                การ์ดทุกเวอร์ชันที่มีชื่อเหล่านี้จะถูกนับรวมกันไม่เกิน 4 ใบในเด็ค
                               </p>
                               <p className="text-xs font-semibold">ตัวอย่าง:</p>
                               <p className="text-xs">
-                                การ์ด X (limit 1) และ Y (ไม่มี limit) ที่มี group เดียวกัน จะใส่ได้: X 1ใบ + Y 3ใบ = รวม 4ใบ
+                                ถ้าเลือก "ไกรลาส" และ "อินทรีย์" - ผู้เล่นสามารถใส่ไกรลาสทุกเวอร์ชันและอินทรีย์ทุกเวอร์ชันรวมกันได้สูงสุด 4 ใบ
+                              </p>
+                              <p className="text-xs mt-1">
+                                เช่น: ไกรลาส (N) 2 ใบ + ไกรลาส (R) 1 ใบ + อินทรีย์ (N) 1 ใบ = รวม 4 ใบ ✓
                               </p>
                             </div>
                           </div>
