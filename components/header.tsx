@@ -40,31 +40,17 @@ export function Header() {
           >
             Deck Builder
           </Link>
-          <Link
-            href="/tournaments"
-            className="relative text-sm font-medium text-muted-foreground transition-colors hover:text-foreground after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-gradient-to-r after:from-primary after:to-accent after:transition-all hover:after:w-full"
-          >
-            Tournaments
-          </Link>
-          <Link
-            href="/marketplace"
-            className="relative flex items-center gap-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-gradient-to-r after:from-primary after:to-accent after:transition-all hover:after:w-full"
-          >
-            Marketplace
-            <Sparkles className="h-3 w-3 text-accent" />
-          </Link>
-          <Link
-            href="/about"
-            className="relative text-sm font-medium text-muted-foreground transition-colors hover:text-foreground after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-gradient-to-r after:from-primary after:to-accent after:transition-all hover:after:w-full"
-          >
-            About
-          </Link>
-          <Link
-            href="/admin"
-            className="relative text-sm font-medium text-muted-foreground transition-colors hover:text-foreground after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-gradient-to-r after:from-primary after:to-accent after:transition-all hover:after:w-full"
-          >
-            Admin
-          </Link>
+          <div className="relative flex flex-col items-center gap-0 text-sm font-medium text-muted-foreground/50 cursor-not-allowed">
+            <span>Tournaments</span>
+            <span className="text-[10px] text-accent/70">(Coming Soon)</span>
+          </div>
+          <div className="relative flex flex-col items-center gap-0 text-sm font-medium text-muted-foreground/50 cursor-not-allowed">
+            <span className="flex items-center gap-1">
+              Marketplace
+              <Sparkles className="h-3 w-3 text-accent/50" />
+            </span>
+            <span className="text-[10px] text-accent/70">(Coming Soon)</span>
+          </div>
         </nav>
 
         <div className="flex items-center justify-end gap-2 sm:gap-3">
@@ -101,22 +87,17 @@ export function Header() {
             <Link href="/deck-builder" className="text-sm font-medium text-muted-foreground hover:text-foreground">
               Deck Builder
             </Link>
-            <Link href="/tournaments" className="text-sm font-medium text-muted-foreground hover:text-foreground">
-              Tournaments
-            </Link>
-            <Link
-              href="/marketplace"
-              className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground"
-            >
-              Marketplace
-              <Sparkles className="h-3 w-3 text-accent" />
-            </Link>
-            <Link href="/about" className="text-sm font-medium text-muted-foreground hover:text-foreground">
-              About
-            </Link>
-            <Link href="/admin" className="text-sm font-medium text-muted-foreground hover:text-foreground">
-              Admin
-            </Link>
+            <div className="flex flex-col items-start gap-0 text-sm font-medium text-muted-foreground/50 cursor-not-allowed">
+              <span>Tournaments</span>
+              <span className="text-[10px] text-accent/70">(Coming Soon)</span>
+            </div>
+            <div className="flex flex-col items-start gap-0 text-sm font-medium text-muted-foreground/50 cursor-not-allowed">
+              <span className="flex items-center gap-1">
+                Marketplace
+                <Sparkles className="h-3 w-3 text-accent/50" />
+              </span>
+              <span className="text-[10px] text-accent/70">(Coming Soon)</span>
+            </div>
             <SignedOut>
               <div className="flex flex-col gap-2 pt-2">
                 <SignInButton mode="modal">
