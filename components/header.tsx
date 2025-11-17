@@ -40,6 +40,12 @@ export function Header() {
           >
             Deck Builder
           </Link>
+          <Link
+            href="/game/lobby"
+            className="relative text-sm font-medium text-muted-foreground transition-colors hover:text-foreground after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-gradient-to-r after:from-primary after:to-accent after:transition-all hover:after:w-full"
+          >
+            Lobby
+          </Link>
           <div className="relative flex flex-col items-center gap-0 text-sm font-medium text-muted-foreground/50 cursor-not-allowed">
             <span>Tournaments</span>
             <span className="text-[10px] text-accent/70">(Coming Soon)</span>
@@ -86,6 +92,9 @@ export function Header() {
             </Link>
             <Link href="/deck-builder" className="text-sm font-medium text-muted-foreground hover:text-foreground">
               Deck Builder
+            </Link>
+            <Link href="/game/lobby" className="text-sm font-medium text-muted-foreground hover:text-foreground">
+              Lobby
             </Link>
             <div className="flex flex-col items-start gap-0 text-sm font-medium text-muted-foreground/50 cursor-not-allowed">
               <span>Tournaments</span>

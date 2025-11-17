@@ -2,24 +2,32 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useUser } from '@clerk/nextjs';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Eye, Heart, TrendingUp, Zap, Home, Plus, Search, Sparkles } from "lucide-react";
-import { getAllDecks, getUserDecks, toggleDeckFavorite } from "@/lib/api";
+import { Eye, Heart, TrendingUp, Zap, Home, Plus, Search, Sparkles, CheckCircle2 } from "lucide-react";
+import { getAllDecks, getUserDecks, toggleDeckFavorite, selectDeck } from "@/lib/api";
 import { Deck } from "@/types/deck";
+import { useToast } from "@/hooks/use-toast";
 
 function DecksContent() {
   const { user } = useUser();
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const { toast } = useToast();
   const [allDecks, setAllDecks] = useState<Deck[]>([]);
   const [myDecks, setMyDecks] = useState<Deck[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'all' | 'my'>('all');
   const [loading, setLoading] = useState(true);
+  const [selectingDeck, setSelectingDeck] = useState<string | null>(null);
+
+  // Get roomId from query params if user is selecting deck for a game
+  const roomId = searchParams.get('roomId');
+  const fromGame = roomId !== null;
 
   const loadDecks = async () => {
     setLoading(true);
@@ -74,6 +82,91 @@ function DecksContent() {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
+
+  const handleSelectDeckForGame = async (deckId: string) => {
+    console.log('handleSelectDeckForGame called', { deckId, userId: user?.id, roomId });
+    
+    if (!user) {
+      console.error('No user found');
+      toast({
+        title: 'Error',
+        description: 'Please sign in first',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    if (!roomId) {
+      console.error('No roomId found');
+      toast({
+        title: 'Error',
+        description: 'No room ID provided',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setSelectingDeck(deckId);
+    try {
+      console.log('Calling selectDeck API...');
+      const result = await selectDeck(roomId, {
+        userId: user.id,
+        deckId,
+      });
+      console.log('Deck selected successfully:', result);
+      
+      // Verify that the deck was actually set by fetching the room again
+      console.log('Verifying deck selection...');
+      let verified = false;
+      let attempts = 0;
+      const maxAttempts = 10;
+      
+      while (!verified && attempts < maxAttempts) {
+        attempts++;
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        try {
+          const { getGameRoom } = await import('@/lib/api');
+          const room = await getGameRoom(roomId);
+          const player = room?.players?.find((p: any) => p.userId === user.id);
+          
+          if (player?.deckId === deckId) {
+            console.log('Deck verified successfully!', player);
+            verified = true;
+          } else {
+            console.log(`Verification attempt ${attempts}: deckId not yet updated`, player);
+          }
+        } catch (verifyError) {
+          console.error('Error verifying deck:', verifyError);
+        }
+      }
+      
+      if (verified) {
+        toast({
+          title: 'Success',
+          description: 'Deck selected for game!',
+        });
+        
+        // Navigate back to the game room
+        router.push(`/game/room/${roomId}`);
+      } else {
+        toast({
+          title: 'Warning',
+          description: 'Deck selected but verification timed out. Please check the room.',
+        });
+        router.push(`/game/room/${roomId}`);
+      }
+    } catch (error) {
+      console.error('Error selecting deck:', error);
+      toast({
+        title: 'Error',
+        description: `Failed to select deck: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: 'destructive',
+      });
+    } finally {
+      setSelectingDeck(null);
+    }
+  };
 
   const handleToggleFavorite = async (deckId: string) => {
     if (!user) {
@@ -168,18 +261,31 @@ function DecksContent() {
           </button>
         </div>
 
-        <Link href={`/decks/${deck._id}`}>
+        {fromGame ? (
           <Button
-            className="group/btn relative w-full overflow-hidden border-border/40 bg-card/50 font-semibold backdrop-blur-sm hover:border-glow"
-            variant="outline"
+            className="group/btn relative w-full overflow-hidden border-border/40 bg-primary font-semibold hover:bg-primary/90"
+            onClick={() => handleSelectDeckForGame(deck._id)}
+            disabled={selectingDeck === deck._id}
           >
             <span className="relative z-10 flex items-center gap-2">
-              View Deck
-              <Zap className="h-4 w-4 transition-transform group-hover/btn:rotate-12" />
+              {selectingDeck === deck._id ? 'Selecting...' : 'Select This Deck'}
+              <CheckCircle2 className="h-4 w-4" />
             </span>
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-accent/10 opacity-0 transition-opacity group-hover/btn:opacity-100" />
           </Button>
-        </Link>
+        ) : (
+          <Link href={`/decks/${deck._id}`}>
+            <Button
+              className="group/btn relative w-full overflow-hidden border-border/40 bg-card/50 font-semibold backdrop-blur-sm hover:border-glow"
+              variant="outline"
+            >
+              <span className="relative z-10 flex items-center gap-2">
+                View Deck
+                <Zap className="h-4 w-4 transition-transform group-hover/btn:rotate-12" />
+              </span>
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-accent/10 opacity-0 transition-opacity group-hover/btn:opacity-100" />
+            </Button>
+          </Link>
+        )}
       </CardContent>
     </Card>
   );
@@ -195,35 +301,48 @@ function DecksContent() {
         <div className="container relative mx-auto px-4 md:px-6">
           {/* Navigation Buttons */}
           <div className="mb-8 flex flex-wrap gap-3">
-            <Link href="/">
-              <Button variant="outline" className="gap-2">
+            {fromGame ? (
+              <Button
+                variant="outline"
+                className="gap-2"
+                onClick={() => router.push(`/game/room/${roomId}`)}
+              >
                 <Home className="h-4 w-4" />
-                Home
+                Back to Game Room
               </Button>
-            </Link>
-            <Link href="/deck-builder">
-              <Button variant="outline" className="gap-2">
-                <Sparkles className="h-4 w-4" />
-                Deck Builder
-              </Button>
-            </Link>
-            <Link href="/deck-builder">
-              <Button className="gap-2">
-                <Plus className="h-4 w-4" />
-                Create Deck
-              </Button>
-            </Link>
+            ) : (
+              <>
+                <Link href="/">
+                  <Button variant="outline" className="gap-2">
+                    <Home className="h-4 w-4" />
+                    Home
+                  </Button>
+                </Link>
+                <Link href="/deck-builder">
+                  <Button variant="outline" className="gap-2">
+                    <Sparkles className="h-4 w-4" />
+                    Deck Builder
+                  </Button>
+                </Link>
+                <Link href="/deck-builder">
+                  <Button className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    Create Deck
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Header */}
           <div className="mb-8">
             <h1 className="mb-3 text-balance text-4xl font-bold tracking-tight md:text-5xl lg:text-6xl">
               <span className="bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-transparent">
-                Battle Decks
+                {fromGame ? 'Select Your Deck' : 'Battle Decks'}
               </span>
             </h1>
             <p className="text-pretty text-lg text-muted-foreground md:text-xl">
-              Discover and share winning deck strategies
+              {fromGame ? 'Choose a deck for your game' : 'Discover and share winning deck strategies'}
             </p>
           </div>
 

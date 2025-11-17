@@ -437,3 +437,384 @@ export async function updateCardSinStatusByName(
     return null;
   }
 }
+
+// Game Room API functions
+export async function createGameRoom(data: {
+  roomName: string;
+  userId: string;
+  username: string;
+}): Promise<any> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/game/rooms`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to create game room');
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error('Error creating game room:', error);
+    throw error;
+  }
+}
+
+export async function getGameRooms(): Promise<any[]> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/game/rooms`, {
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch game rooms');
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error('Error fetching game rooms:', error);
+    return [];
+  }
+}
+
+export async function getGameRoom(roomId: string): Promise<any | null> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/game/rooms/${roomId}`, {
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch game room ${roomId}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error(`Error fetching game room ${roomId}:`, error);
+    return null;
+  }
+}
+
+export async function joinGameRoom(roomId: string, data: {
+  userId: string;
+  username: string;
+}): Promise<any> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/game/rooms/${roomId}/join`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to join game room ${roomId}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error(`Error joining game room ${roomId}:`, error);
+    throw error;
+  }
+}
+
+export async function takeSeat(roomId: string, data: {
+  userId: string;
+  seat: number;
+}): Promise<any> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/game/rooms/${roomId}/take-seat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `Failed to take seat in room ${roomId}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error(`Error taking seat in room ${roomId}:`, error);
+    throw error;
+  }
+}
+
+export async function selectDeck(roomId: string, data: {
+  userId: string;
+  deckId: string;
+}): Promise<any> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/game/rooms/${roomId}/select-deck`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `Failed to select deck in room ${roomId}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error(`Error selecting deck in room ${roomId}:`, error);
+    throw error;
+  }
+}
+
+export async function setPlayerReady(roomId: string, data: {
+  userId: string;
+  isReady?: boolean;
+}): Promise<any> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/game/rooms/${roomId}/ready`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `Failed to set ready in room ${roomId}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error(`Error setting ready in room ${roomId}:`, error);
+    throw error;
+  }
+}
+
+export async function leaveGameRoom(roomId: string, data: {
+  userId: string;
+}): Promise<any> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/game/rooms/${roomId}/leave`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to leave game room ${roomId}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error(`Error leaving game room ${roomId}:`, error);
+    throw error;
+  }
+}
+
+export async function drawCard(roomId: string, data: {
+  userId: string;
+}): Promise<any> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/game/rooms/${roomId}/draw`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `Failed to draw card in room ${roomId}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error(`Error drawing card in room ${roomId}:`, error);
+    throw error;
+  }
+}
+
+export async function playCard(roomId: string, data: {
+  userId: string;
+  cardInstanceId: string;
+}): Promise<any> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/game/rooms/${roomId}/play`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `Failed to play card in room ${roomId}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error(`Error playing card in room ${roomId}:`, error);
+    throw error;
+  }
+}
+
+export async function discardCard(roomId: string, data: {
+  userId: string;
+  cardInstanceId: string;
+}): Promise<any> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/game/rooms/${roomId}/discard`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `Failed to discard card in room ${roomId}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error(`Error discarding card in room ${roomId}:`, error);
+    throw error;
+  }
+}
+
+export async function moveFieldCardToHell(roomId: string, data: {
+  userId: string;
+  cardInstanceId: string;
+}): Promise<any> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/game/rooms/${roomId}/field-to-hell`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `Failed to move field card to hell in room ${roomId}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error(`Error moving field card to hell in room ${roomId}:`, error);
+    throw error;
+  }
+}
+
+export async function moveFieldCardToHand(roomId: string, data: {
+  userId: string;
+  cardInstanceId: string;
+}): Promise<any> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/game/rooms/${roomId}/field-to-hand`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `Failed to move field card to hand in room ${roomId}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error(`Error moving field card to hand in room ${roomId}:`, error);
+    throw error;
+  }
+}
+
+export async function moveFieldCardToDeck(roomId: string, data: {
+  userId: string;
+  cardInstanceId: string;
+}): Promise<any> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/game/rooms/${roomId}/field-to-deck`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `Failed to move field card to deck in room ${roomId}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error(`Error moving field card to deck in room ${roomId}:`, error);
+    throw error;
+  }
+}
+
+export async function searchCardFromDeck(roomId: string, data: {
+  userId: string;
+  cardId: string;
+}): Promise<any> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/game/rooms/${roomId}/search-deck`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `Failed to search card from deck in room ${roomId}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error(`Error searching card from deck in room ${roomId}:`, error);
+    throw error;
+  }
+}
+
+export async function searchCardFromHell(roomId: string, data: {
+  userId: string;
+  cardInstanceId: string;
+}): Promise<any> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/game/rooms/${roomId}/search-hell`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `Failed to search card from hell in room ${roomId}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error(`Error searching card from hell in room ${roomId}:`, error);
+    throw error;
+  }
+}
