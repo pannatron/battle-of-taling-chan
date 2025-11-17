@@ -397,86 +397,100 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
           </div>
 
 
-          {/* Opponent's Magic Zone */}
-          <div>
-            <p className="text-sm text-muted-foreground mb-2">Magic Zone ({opponentPlayer?.magicZone?.length || 0}/4)</p>
-            <div className="flex items-center justify-between max-w-3xl mx-auto">
-              {/* Left Side - 2 Magic slots */}
-              <div className="grid grid-cols-2 gap-2 w-[40%]">
-                {[0, 1].map((slotIdx) => {
-                  const magicCard = opponentPlayer?.magicZone?.[slotIdx];
-                  const cardData = magicCard ? findCardData(magicCard.cardId, opponentCards) : null;
-                  
-                  return (
-                    <div key={slotIdx} className="relative">
-                      <div className={`relative aspect-[2/3] rounded-lg overflow-hidden border-2 ${
-                        magicCard ? 'border-purple-500 hover:border-purple-400' : 'border-dashed border-purple-500/25'
-                      } bg-purple-500/5 transition-all ${magicCard ? 'hover:scale-150 hover:z-20' : ''}`}>
-                        {magicCard && cardData?.imageUrl ? (
-                          <Image
-                            src={cardData.imageUrl}
-                            alt={cardData.name || 'Card'}
-                            fill
-                            className="object-cover"
-                          />
-                        ) : magicCard ? (
-                          <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                            <div className="text-center">
-                              <Layers className="h-6 w-6 mx-auto mb-1" />
-                              <p className="text-xs">Loading...</p>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                            <Layers className="h-6 w-6 opacity-30" />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+{/* Opponent's Magic Zone */}
+<div>
+  <p className="text-sm text-muted-foreground mb-2">
+    Magic Zone ({opponentPlayer?.magicZone?.length || 0}/4)
+  </p>
 
-              {/* Center Gap */}
-              <div className="w-[20%]"></div>
+  {/* ใช้ layout เดียวกับ Your Magic Zone */}
+  <div className="relative flex items-center max-w-4xl">
+    {/* Left Side - 2 Magic slots */}
+    <div className="grid grid-cols-2 gap-3 w-[40%]">
+      {[0, 1].map((slotIdx) => {
+        const magicCard = opponentPlayer?.magicZone?.[slotIdx];
+        const cardData = magicCard ? findCardData(magicCard.cardId, opponentCards) : null;
 
-              {/* Right Side - 2 Magic slots */}
-              <div className="grid grid-cols-2 gap-2 w-[40%]">
-                {[2, 3].map((slotIdx) => {
-                  const magicCard = opponentPlayer?.magicZone?.[slotIdx];
-                  const cardData = magicCard ? findCardData(magicCard.cardId, opponentCards) : null;
-                  
-                  return (
-                    <div key={slotIdx} className="relative">
-                      <div className={`relative aspect-[2/3] rounded-lg overflow-hidden border-2 ${
-                        magicCard ? 'border-purple-500 hover:border-purple-400' : 'border-dashed border-purple-500/25'
-                      } bg-purple-500/5 transition-all ${magicCard ? 'hover:scale-150 hover:z-20' : ''}`}>
-                        {magicCard && cardData?.imageUrl ? (
-                          <Image
-                            src={cardData.imageUrl}
-                            alt={cardData.name || 'Card'}
-                            fill
-                            className="object-cover"
-                          />
-                        ) : magicCard ? (
-                          <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                            <div className="text-center">
-                              <Layers className="h-6 w-6 mx-auto mb-1" />
-                              <p className="text-xs">Loading...</p>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                            <Layers className="h-6 w-6 opacity-30" />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+        return (
+          <div key={slotIdx} className="relative">
+            <div
+              className={`w-full relative aspect-[2/3] rounded-lg overflow-hidden border-2 ${
+                magicCard
+                  ? 'border-purple-500 hover:border-purple-400'
+                  : 'border-dashed border-purple-500/25'
+              } bg-purple-500/5 transition-all ${
+                magicCard ? 'hover:scale-150 hover:z-20' : ''
+              }`}
+            >
+              {magicCard && cardData?.imageUrl ? (
+                <Image
+                  src={cardData.imageUrl}
+                  alt={cardData.name || 'Card'}
+                  fill
+                  className="object-cover"
+                />
+              ) : magicCard ? (
+                <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                  <div className="text-center">
+                    <Layers className="h-6 w-6 mx-auto mb-1" />
+                    <p className="text-xs">Loading...</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                  <Layers className="h-6 w-6 opacity-30" />
+                </div>
+              )}
             </div>
           </div>
+        );
+      })}
+    </div>
+
+    {/* Right Side - 2 Magic slots */}
+    <div className="grid grid-cols-2 gap-3 w-[40%] ml-auto">
+      {[2, 3].map((slotIdx) => {
+        const magicCard = opponentPlayer?.magicZone?.[slotIdx];
+        const cardData = magicCard ? findCardData(magicCard.cardId, opponentCards) : null;
+
+        return (
+          <div key={slotIdx} className="relative">
+            <div
+              className={`w-full relative aspect-[2/3] rounded-lg overflow-hidden border-2 ${
+                magicCard
+                  ? 'border-purple-500 hover:border-purple-400'
+                  : 'border-dashed border-purple-500/25'
+              } bg-purple-500/5 transition-all ${
+                magicCard ? 'hover:scale-150 hover:z-20' : ''
+              }`}
+            >
+              {magicCard && cardData?.imageUrl ? (
+                <Image
+                  src={cardData.imageUrl}
+                  alt={cardData.name || 'Card'}
+                  fill
+                  className="object-cover"
+                />
+              ) : magicCard ? (
+                <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                  <div className="text-center">
+                    <Layers className="h-6 w-6 mx-auto mb-1" />
+                    <p className="text-xs">Loading...</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                  <Layers className="h-6 w-6 opacity-30" />
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  </div>
+</div>
+
 
           {/* Opponent's Avatar Zone & Construct Zone - Side by Side */}
           <div className="flex gap-6">
