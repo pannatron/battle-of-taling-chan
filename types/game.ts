@@ -17,6 +17,7 @@ export interface GamePlayer {
   magicZone?: GameCard[];
   avatarZone?: GameCard[];
   landZone?: GameCard[];
+  constructZone?: GameCard[];
 }
 
 export interface Spectator {
