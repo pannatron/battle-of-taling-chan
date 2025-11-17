@@ -9,7 +9,7 @@ import { GamePlayer } from '@/types/game';
 import { Card as CardType } from '@/types/card';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
-import { drawCard, playCard, discardCard, moveFieldCardToHell, moveFieldCardToHand, moveFieldCardToDeck, searchCardFromDeck, searchCardFromHell, shuffleDeck, flipLifeCard } from '@/lib/api';
+import { drawCard, playCard, discardCard, moveFieldCardToHell, moveFieldCardToHand, moveFieldCardToDeck, searchCardFromDeck, searchCardFromHell, shuffleDeck, flipLifeCard, moveAvatarToOpponentField, toggleCardRotation } from '@/lib/api';
 
 interface GameBoardProps {
   roomId: string;
@@ -34,8 +34,6 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
   const [selectedZone, setSelectedZone] = useState<'avatar' | 'magic' | 'land' | 'field' | 'construct' | null>(null);
   const [moveCardMode, setMoveCardMode] = useState(false);
   const [cardToMove, setCardToMove] = useState<string | null>(null);
-  // Track rotation state for each field card: { [cardInstanceId]: boolean} - true means horizontal
-  const [rotatedCards, setRotatedCards] = useState<{ [key: string]: boolean }>({});
 
   const player1 = gameRoom.players[0];
   const player2 = gameRoom.players[1];
@@ -160,11 +158,26 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
     }
   };
 
-  const toggleCardRotation = (cardInstanceId: string) => {
-    setRotatedCards(prev => ({
-      ...prev,
-      [cardInstanceId]: !prev[cardInstanceId]
-    }));
+  const handleToggleCardRotation = async (cardInstanceId: string) => {
+    if (!user || actionInProgress) return;
+    
+    setActionInProgress(true);
+    try {
+      await toggleCardRotation(roomId, { userId: user.id, cardInstanceId });
+      toast({
+        title: 'Success',
+        description: 'Card rotated',
+      });
+      onRefresh();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to rotate card',
+        variant: 'destructive',
+      });
+    } finally {
+      setActionInProgress(false);
+    }
   };
 
   const handleMoveFieldCardToHell = async (cardInstanceId: string) => {
@@ -326,6 +339,29 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
     }
   };
 
+  const handleMoveAvatarToOpponentField = async (cardInstanceId: string) => {
+    if (!user || actionInProgress) return;
+    
+    setActionInProgress(true);
+    try {
+      await moveAvatarToOpponentField(roomId, { userId: user.id, cardInstanceId });
+      toast({
+        title: 'Success',
+        description: 'Avatar moved to opponent field',
+      });
+      setSelectedMagicCard(null);
+      onRefresh();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to move avatar to opponent field',
+        variant: 'destructive',
+      });
+    } finally {
+      setActionInProgress(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Wrapper with relative positioning for land zone */}
@@ -412,11 +448,20 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                   const avatarCard = opponentPlayer?.avatarZone?.[slotIdx];
                   const cardData = avatarCard ? findCardData(avatarCard.cardId, opponentCards) : null;
                   
+                  // Read rotation state from server data
+                  const isRotated = avatarCard?.rotated || false;
+                  
                   return (
                     <div key={slotIdx} className="relative">
-                      <div className={`relative aspect-[2/3] rounded-lg overflow-hidden border-2 ${
-                        avatarCard ? 'border-blue-500 hover:border-blue-400' : 'border-dashed border-blue-500/25'
-                      } bg-blue-500/5 transition-all ${avatarCard ? 'hover:scale-150 hover:z-20' : ''}`}>
+                      <div 
+                        className={`relative aspect-[2/3] rounded-lg overflow-hidden border-2 ${
+                          avatarCard ? 'border-blue-500 hover:border-blue-400' : 'border-dashed border-blue-500/25'
+                        } bg-blue-500/5 transition-all ${avatarCard ? 'hover:scale-150 hover:z-20' : ''}`}
+                        style={{
+                          transform: isRotated ? 'rotate(90deg)' : 'rotate(0deg)',
+                          transition: 'transform 0.3s ease-in-out, scale 0.2s ease-in-out'
+                        }}
+                      >
                         {avatarCard && cardData?.imageUrl ? (
                           <Image
                             src={cardData.imageUrl}
@@ -542,11 +587,20 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                   const avatarCard = opponentPlayer?.avatarZone?.[slotIdx];
                   const cardData = avatarCard ? findCardData(avatarCard.cardId, opponentCards) : null;
                   
+                  // Read rotation state from server data
+                  const isRotated = avatarCard?.rotated || false;
+                  
                   return (
                     <div key={slotIdx} className="relative">
-                      <div className={`relative aspect-[2/3] rounded-lg overflow-hidden border-2 ${
-                        avatarCard ? 'border-blue-500 hover:border-blue-400' : 'border-dashed border-blue-500/25'
-                      } bg-blue-500/5 transition-all ${avatarCard ? 'hover:scale-150 hover:z-20' : ''}`}>
+                      <div 
+                        className={`relative aspect-[2/3] rounded-lg overflow-hidden border-2 ${
+                          avatarCard ? 'border-blue-500 hover:border-blue-400' : 'border-dashed border-blue-500/25'
+                        } bg-blue-500/5 transition-all ${avatarCard ? 'hover:scale-150 hover:z-20' : ''}`}
+                        style={{
+                          transform: isRotated ? 'rotate(90deg)' : 'rotate(0deg)',
+                          transition: 'transform 0.3s ease-in-out, scale 0.2s ease-in-out'
+                        }}
+                      >
                         {avatarCard && cardData?.imageUrl ? (
                           <Image
                             src={cardData.imageUrl}
@@ -679,11 +733,20 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => toggleCardRotation(selectedMagicCard)}
+                      onClick={() => handleToggleCardRotation(selectedMagicCard)}
                       className="bg-blue-600 hover:bg-blue-700 text-white"
+                      disabled={actionInProgress}
                     >
                       <RotateCw className="h-4 w-4 mr-1" />
                       Rotate
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700"
+                      onClick={() => handleMoveAvatarToOpponentField(selectedMagicCard)}
+                      disabled={actionInProgress}
+                    >
+                      Move to Opponent Field
                     </Button>
                     <Button
                       size="sm"
@@ -768,7 +831,8 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                       const cardData = avatarCard ? findCardData(avatarCard.cardId, currentUserCards) : null;
                       const isSelected = selectedMagicCard === avatarCard?.id;
                       
-                      const isRotated = rotatedCards[avatarCard?.id || ''];
+                      // Read rotation state from server data (field name is 'rotated', not 'isRotated')
+                      const isRotated = avatarCard?.rotated || false;
                       
                       return (
                         <div key={slotIdx} className="relative">
@@ -831,7 +895,8 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                       const cardData = avatarCard ? findCardData(avatarCard.cardId, currentUserCards) : null;
                       const isSelected = selectedMagicCard === avatarCard?.id;
                       
-                      const isRotated = rotatedCards[avatarCard?.id || ''];
+                      // Read rotation state from server data (field name is 'rotated', not 'isRotated')
+                      const isRotated = avatarCard?.rotated || false;
                       
                       return (
                         <div key={slotIdx} className="relative">

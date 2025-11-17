@@ -868,3 +868,53 @@ export async function flipLifeCard(roomId: string, data: {
     throw error;
   }
 }
+
+export async function moveAvatarToOpponentField(roomId: string, data: {
+  userId: string;
+  cardInstanceId: string;
+}): Promise<any> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/game/rooms/${roomId}/move-avatar-to-opponent`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `Failed to move avatar to opponent field in room ${roomId}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error(`Error moving avatar to opponent field in room ${roomId}:`, error);
+    throw error;
+  }
+}
+
+export async function toggleCardRotation(roomId: string, data: {
+  userId: string;
+  cardInstanceId: string;
+}): Promise<any> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/game/rooms/${roomId}/toggle-rotation`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `Failed to toggle card rotation in room ${roomId}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error(`Error toggling card rotation in room ${roomId}:`, error);
+    throw error;
+  }
+}
