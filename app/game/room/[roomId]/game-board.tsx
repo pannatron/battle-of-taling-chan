@@ -9,7 +9,7 @@ import { GamePlayer } from '@/types/game';
 import { Card as CardType } from '@/types/card';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
-import { drawCard, playCard, discardCard, moveFieldCardToHell, moveFieldCardToHand, moveFieldCardToDeck, searchCardFromDeck, searchCardFromHell } from '@/lib/api';
+import { drawCard, playCard, discardCard, moveFieldCardToHell, moveFieldCardToHand, moveFieldCardToDeck, searchCardFromDeck, searchCardFromHell, shuffleDeck } from '@/lib/api';
 
 interface GameBoardProps {
   roomId: string;
@@ -274,6 +274,28 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
       toast({
         title: 'Error',
         description: error.message || 'Failed to search card from hell',
+        variant: 'destructive',
+      });
+    } finally {
+      setActionInProgress(false);
+    }
+  };
+
+  const handleShuffleDeck = async () => {
+    if (!user || actionInProgress) return;
+    
+    setActionInProgress(true);
+    try {
+      await shuffleDeck(roomId, { userId: user.id });
+      toast({
+        title: 'Success',
+        description: 'Deck shuffled',
+      });
+      onRefresh();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to shuffle deck',
         variant: 'destructive',
       });
     } finally {
@@ -747,7 +769,7 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
               {/* Current User's Magic Zone */}
               <div>
                 <p className="text-sm text-muted-foreground mb-2">Your Magic Zone ({currentUserPlayer?.magicZone?.length || 0}/4)</p>
-                {selectedMagicCard && (
+                {selectedMagicCard && currentUserPlayer?.magicZone?.find((c: any) => c.id === selectedMagicCard) && (
                   <div className="mb-2 flex gap-2 bg-purple-500/10 p-2 rounded-lg flex-wrap">
                     <Button
                       size="sm"
@@ -993,6 +1015,16 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                   >
                     <Search className="h-3 w-3 mr-1" />
                     Search
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={handleShuffleDeck}
+                    disabled={actionInProgress || !currentUserPlayer?.deck?.length}
+                    className="w-full text-xs"
+                  >
+                    <RotateCw className="h-3 w-3 mr-1" />
+                    Shuffle
                   </Button>
                 </div>
               </div>
