@@ -400,8 +400,10 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
           {/* Opponent's Magic Zone */}
           <div>
             <p className="text-sm text-muted-foreground mb-2">Magic Zone ({opponentPlayer?.magicZone?.length || 0}/4)</p>
-            <div className="grid grid-cols-4 gap-2">
-                {[0, 1, 2, 3].map((slotIdx) => {
+            <div className="flex items-center justify-between max-w-3xl mx-auto">
+              {/* Left Side - 2 Magic slots */}
+              <div className="grid grid-cols-2 gap-2 w-[40%]">
+                {[0, 1].map((slotIdx) => {
                   const magicCard = opponentPlayer?.magicZone?.[slotIdx];
                   const cardData = magicCard ? findCardData(magicCard.cardId, opponentCards) : null;
                   
@@ -433,6 +435,46 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                     </div>
                   );
                 })}
+              </div>
+
+              {/* Center Gap */}
+              <div className="w-[20%]"></div>
+
+              {/* Right Side - 2 Magic slots */}
+              <div className="grid grid-cols-2 gap-2 w-[40%]">
+                {[2, 3].map((slotIdx) => {
+                  const magicCard = opponentPlayer?.magicZone?.[slotIdx];
+                  const cardData = magicCard ? findCardData(magicCard.cardId, opponentCards) : null;
+                  
+                  return (
+                    <div key={slotIdx} className="relative">
+                      <div className={`relative aspect-[2/3] rounded-lg overflow-hidden border-2 ${
+                        magicCard ? 'border-purple-500 hover:border-purple-400' : 'border-dashed border-purple-500/25'
+                      } bg-purple-500/5 transition-all ${magicCard ? 'hover:scale-150 hover:z-20' : ''}`}>
+                        {magicCard && cardData?.imageUrl ? (
+                          <Image
+                            src={cardData.imageUrl}
+                            alt={cardData.name || 'Card'}
+                            fill
+                            className="object-cover"
+                          />
+                        ) : magicCard ? (
+                          <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                            <div className="text-center">
+                              <Layers className="h-6 w-6 mx-auto mb-1" />
+                              <p className="text-xs">Loading...</p>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                            <Layers className="h-6 w-6 opacity-30" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
@@ -1146,60 +1188,120 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                       </Button>
                     </div>
                   )}
-                  <div className="grid grid-cols-4 gap-2">
-                    {[0, 1, 2, 3].map((slotIdx) => {
-                      const magicCard = currentUserPlayer?.magicZone?.[slotIdx];
-                      const cardData = magicCard ? findCardData(magicCard.cardId, currentUserCards) : null;
-                      const isSelected = selectedMagicCard === magicCard?.id;
-                      
-                      return (
-                        <div key={slotIdx} className="relative">
-                          <button
-                            onClick={() => {
-                              if (magicCard) {
-                                setSelectedMagicCard(isSelected ? null : magicCard.id);
-                              }
-                            }}
-                            disabled={!magicCard}
-                            className={`w-full relative aspect-[2/3] rounded-lg overflow-hidden border-2 ${
-                              isSelected ? 'border-purple-300 ring-4 ring-purple-300' : 
-                              magicCard ? 'border-purple-500 hover:border-purple-400' : 'border-dashed border-purple-500/25'
-                            } bg-purple-500/5 transition-all ${
-                              magicCard && !isSelected ? 'hover:scale-150 hover:z-20' : ''
-                            } ${magicCard ? 'cursor-pointer' : 'cursor-default'}`}
-                          >
-                            {magicCard && cardData?.imageUrl ? (
-                              <>
-                                <Image
-                                  src={cardData.imageUrl}
-                                  alt={cardData.name || 'Card'}
-                                  fill
-                                  className="object-cover"
-                                />
-                                {isSelected && (
-                                  <div className="absolute inset-0 bg-purple-500/20 flex items-center justify-center pointer-events-none">
-                                    <div className="bg-purple-500 text-white px-2 py-1 rounded text-xs font-bold">
-                                      SELECTED
+                  <div className="relative flex items-center max-w-4xl">
+                    {/* Left Side - 2 Magic slots */}
+                    <div className="grid grid-cols-2 gap-3 w-[40%]">
+                      {[0, 1].map((slotIdx) => {
+                        const magicCard = currentUserPlayer?.magicZone?.[slotIdx];
+                        const cardData = magicCard ? findCardData(magicCard.cardId, currentUserCards) : null;
+                        const isSelected = selectedMagicCard === magicCard?.id;
+                        
+                        return (
+                          <div key={slotIdx} className="relative">
+                            <button
+                              onClick={() => {
+                                if (magicCard) {
+                                  setSelectedMagicCard(isSelected ? null : magicCard.id);
+                                }
+                              }}
+                              disabled={!magicCard}
+                              className={`w-full relative aspect-[2/3] rounded-lg overflow-hidden border-2 ${
+                                isSelected ? 'border-purple-300 ring-4 ring-purple-300' : 
+                                magicCard ? 'border-purple-500 hover:border-purple-400' : 'border-dashed border-purple-500/25'
+                              } bg-purple-500/5 transition-all ${
+                                magicCard && !isSelected ? 'hover:scale-150 hover:z-20' : ''
+                              } ${magicCard ? 'cursor-pointer' : 'cursor-default'}`}
+                            >
+                              {magicCard && cardData?.imageUrl ? (
+                                <>
+                                  <Image
+                                    src={cardData.imageUrl}
+                                    alt={cardData.name || 'Card'}
+                                    fill
+                                    className="object-cover"
+                                  />
+                                  {isSelected && (
+                                    <div className="absolute inset-0 bg-purple-500/20 flex items-center justify-center pointer-events-none">
+                                      <div className="bg-purple-500 text-white px-2 py-1 rounded text-xs font-bold">
+                                        SELECTED
+                                      </div>
                                     </div>
+                                  )}
+                                </>
+                              ) : magicCard ? (
+                                <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                                  <div className="text-center">
+                                    <Layers className="h-6 w-6 mx-auto mb-1" />
+                                    <p className="text-xs">Loading...</p>
                                   </div>
-                                )}
-                              </>
-                            ) : magicCard ? (
-                              <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                                <div className="text-center">
-                                  <Layers className="h-6 w-6 mx-auto mb-1" />
-                                  <p className="text-xs">Loading...</p>
                                 </div>
-                              </div>
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                                <Layers className="h-6 w-6 opacity-30" />
-                              </div>
-                            )}
-                          </button>
-                        </div>
-                      );
-                    })}
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                                  <Layers className="h-6 w-6 opacity-30" />
+                                </div>
+                              )}
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Right Side - 2 Magic slots */}
+                    <div className="grid grid-cols-2 gap-3 w-[40%] ml-auto">
+                      {[2, 3].map((slotIdx) => {
+                        const magicCard = currentUserPlayer?.magicZone?.[slotIdx];
+                        const cardData = magicCard ? findCardData(magicCard.cardId, currentUserCards) : null;
+                        const isSelected = selectedMagicCard === magicCard?.id;
+                        
+                        return (
+                          <div key={slotIdx} className="relative">
+                            <button
+                              onClick={() => {
+                                if (magicCard) {
+                                  setSelectedMagicCard(isSelected ? null : magicCard.id);
+                                }
+                              }}
+                              disabled={!magicCard}
+                              className={`w-full relative aspect-[2/3] rounded-lg overflow-hidden border-2 ${
+                                isSelected ? 'border-purple-300 ring-4 ring-purple-300' : 
+                                magicCard ? 'border-purple-500 hover:border-purple-400' : 'border-dashed border-purple-500/25'
+                              } bg-purple-500/5 transition-all ${
+                                magicCard && !isSelected ? 'hover:scale-150 hover:z-20' : ''
+                              } ${magicCard ? 'cursor-pointer' : 'cursor-default'}`}
+                            >
+                              {magicCard && cardData?.imageUrl ? (
+                                <>
+                                  <Image
+                                    src={cardData.imageUrl}
+                                    alt={cardData.name || 'Card'}
+                                    fill
+                                    className="object-cover"
+                                  />
+                                  {isSelected && (
+                                    <div className="absolute inset-0 bg-purple-500/20 flex items-center justify-center pointer-events-none">
+                                      <div className="bg-purple-500 text-white px-2 py-1 rounded text-xs font-bold">
+                                        SELECTED
+                                      </div>
+                                    </div>
+                                  )}
+                                </>
+                              ) : magicCard ? (
+                                <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                                  <div className="text-center">
+                                    <Layers className="h-6 w-6 mx-auto mb-1" />
+                                    <p className="text-xs">Loading...</p>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                                  <Layers className="h-6 w-6 opacity-30" />
+                                </div>
+                              )}
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
 
@@ -1372,25 +1474,59 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                     </div>
                   </div>
                 )}
-                <div className="grid grid-cols-5 gap-2">
+                {/* Hand Cards - Overlapping Fan Layout */}
+                <div className="relative flex justify-center items-end" style={{ height: '280px', paddingBottom: '20px' }}>
                   {currentUserPlayer?.hand?.map((cardInHand: any, idx: number) => {
                     const cardData = findCardData(cardInHand.cardId, currentUserCards);
                     const isSelected = selectedCard?.id === cardInHand.id;
+                    const totalCards = currentUserPlayer?.hand?.length || 1;
+                    
+                    // Calculate fan positions (right-side up - narrow at top, wide at bottom)
+                    const spreadAngle = Math.min(40, totalCards * 8); // Max spread of 40 degrees
+                    const angleStep = totalCards > 1 ? spreadAngle / (totalCards - 1) : 0;
+                    const rotation = spreadAngle/2 - (idx * angleStep); // Inverted rotation
+                    
+                    // Horizontal offset for overlap effect
+                    const baseOffset = -60; // Overlap amount in pixels
+                    const centerOffset = ((totalCards - 1) * baseOffset) / 2;
+                    const xPosition = (idx * baseOffset) - centerOffset;
+                    
+                    // Vertical offset for arc effect (cards at edges are lower)
+                    const yOffset = Math.abs(rotation) * 1.5; // Positive to move cards down at edges
                     
                     return (
                       <button
                         key={cardInHand.id}
                         onClick={() => setSelectedCard(isSelected ? null : { id: cardInHand.id, index: idx })}
-                        className={`relative aspect-[2/3] rounded-lg overflow-hidden border-2 ${
+                        className={`absolute w-40 aspect-[2/3] rounded-lg overflow-hidden border-2 ${
                           isSelected ? 'border-yellow-500 ring-4 ring-yellow-300' : 'border-primary'
-                        } shadow-lg hover:scale-105 transition-transform cursor-pointer`}
+                        } shadow-lg cursor-pointer transition-all duration-300 ease-out`}
+                        style={{
+                          left: '50%',
+                          bottom: '0',
+                          transform: `translateX(calc(-50% + ${xPosition}px)) translateY(${yOffset}px) rotate(${rotation}deg)`,
+                          zIndex: isSelected ? 100 : 10 + idx,
+                          transformOrigin: 'bottom center',
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!isSelected) {
+                            e.currentTarget.style.transform = `translateX(calc(-50% + ${xPosition}px)) translateY(-60px) rotate(0deg) scale(1.1)`;
+                            e.currentTarget.style.zIndex = '99';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!isSelected) {
+                            e.currentTarget.style.transform = `translateX(calc(-50% + ${xPosition}px)) translateY(${yOffset}px) rotate(${rotation}deg)`;
+                            e.currentTarget.style.zIndex = String(10 + idx);
+                          }
+                        }}
                       >
                         {cardData?.imageUrl ? (
                           <Image
                             src={cardData.imageUrl}
                             alt={cardData.name || 'Card'}
                             fill
-                            className="object-cover"
+                            className="object-cover pointer-events-none"
                           />
                         ) : (
                           <div className="w-full h-full bg-muted flex items-center justify-center">
@@ -1398,7 +1534,7 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                           </div>
                         )}
                         {isSelected && (
-                          <div className="absolute inset-0 bg-yellow-500/20 flex items-center justify-center">
+                          <div className="absolute inset-0 bg-yellow-500/20 flex items-center justify-center pointer-events-none">
                             <div className="bg-yellow-500 text-white px-2 py-1 rounded text-xs font-bold">
                               SELECTED
                             </div>
