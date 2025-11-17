@@ -155,6 +155,15 @@ export function useDeckBuilder() {
         }
       });
 
+    const lifeCardIds: string[] = [];
+    selectedCards
+      .filter((card) => card.isLifeCard)
+      .forEach((card) => {
+        for (let i = 0; i < card.quantity; i++) {
+          lifeCardIds.push(card._id);
+        }
+      });
+
     // Get author name from user
     const authorName = user.fullName || user.username || user.emailAddresses[0]?.emailAddress.split('@')[0] || 'Anonymous';
 
@@ -165,6 +174,7 @@ export function useDeckBuilder() {
       description: deckDescription,
       cardIds,
       sideDeckIds,
+      lifeCardIds,
       coverCardId: coverCardId && coverCardId !== 'none' ? coverCardId : undefined,
       wins: 0,
       views: 0,

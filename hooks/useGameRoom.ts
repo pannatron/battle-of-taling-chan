@@ -50,6 +50,9 @@ export function useGameRoom(roomId: string | null) {
       
       console.log('Received game room event:', event);
 
+      // Save scroll position before updating state
+      const scrollY = window.scrollY;
+
       switch (event.type) {
         case 'room-update':
           setGameRoom(event.data);
@@ -75,6 +78,11 @@ export function useGameRoom(roomId: string | null) {
         default:
           console.log('Unknown event type:', event.type);
       }
+
+      // Restore scroll position after state update
+      setTimeout(() => {
+        window.scrollTo({ top: scrollY, behavior: 'instant' as ScrollBehavior });
+      }, 50);
     });
 
     // Handle connection state changes

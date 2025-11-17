@@ -647,6 +647,7 @@ export async function drawCard(roomId: string, data: {
 export async function playCard(roomId: string, data: {
   userId: string;
   cardInstanceId: string;
+  zone?: string;
 }): Promise<any> {
   try {
     const response = await fetch(`${API_BASE_URL}/game/rooms/${roomId}/play`, {

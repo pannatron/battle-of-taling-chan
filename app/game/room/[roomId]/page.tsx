@@ -32,10 +32,22 @@ export default function GameRoomPage() {
   useEffect(() => {
     const fetchRoom = async () => {
       try {
-        setLoading(true);
+        // Save scroll position before fetching
+        const scrollY = window.scrollY;
+        
+        // Only show loading on initial load
+        if (refetchTrigger === 0) {
+          setLoading(true);
+        }
+        
         const room = await getGameRoom(roomId);
         setGameRoom(room);
         console.log('Room data fetched:', room);
+        
+        // Restore scroll position after DOM updates
+        setTimeout(() => {
+          window.scrollTo({ top: scrollY, behavior: 'auto' });
+        }, 0);
       } catch (error) {
         console.error('Error fetching room:', error);
         toast({
@@ -44,7 +56,9 @@ export default function GameRoomPage() {
           variant: 'destructive',
         });
       } finally {
-        setLoading(false);
+        if (refetchTrigger === 0) {
+          setLoading(false);
+        }
       }
     };
 
@@ -58,6 +72,9 @@ export default function GameRoomPage() {
         return;
       }
 
+      // Save scroll position before fetching
+      const scrollY = window.scrollY;
+      
       setLoadingCards(true);
       const cardCache: { [playerId: string]: CardType[] } = {};
 
@@ -85,6 +102,21 @@ export default function GameRoomPage() {
             allCardIds.push(...player.hell.map(c => c.cardId));
           }
           
+          // Collect card IDs from magic zone
+          if (player.magicZone && player.magicZone.length > 0) {
+            allCardIds.push(...player.magicZone.map((c: any) => c.cardId));
+          }
+          
+          // Collect card IDs from avatar zone
+          if (player.avatarZone && player.avatarZone.length > 0) {
+            allCardIds.push(...player.avatarZone.map((c: any) => c.cardId));
+          }
+          
+          // Collect card IDs from land zone
+          if (player.landZone && player.landZone.length > 0) {
+            allCardIds.push(...player.landZone.map((c: any) => c.cardId));
+          }
+          
           // Fetch all unique card data
           if (allCardIds.length > 0) {
             const uniqueCardIds = [...new Set(allCardIds)];
@@ -98,6 +130,11 @@ export default function GameRoomPage() {
           }
         }
         setPlayerCards(cardCache);
+        
+        // Restore scroll position after DOM updates
+        setTimeout(() => {
+          window.scrollTo({ top: scrollY, behavior: 'auto' });
+        }, 0);
       } catch (error) {
         console.error('Error fetching card data:', error);
       } finally {

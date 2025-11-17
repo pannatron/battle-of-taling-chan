@@ -24,6 +24,7 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
   const { toast } = useToast();
   const [selectedCard, setSelectedCard] = useState<{ id: string; index: number } | null>(null);
   const [selectedFieldCard, setSelectedFieldCard] = useState<string | null>(null);
+  const [selectedMagicCard, setSelectedMagicCard] = useState<string | null>(null);
   const [actionInProgress, setActionInProgress] = useState(false);
   const [showDeckActions, setShowDeckActions] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
@@ -80,7 +81,7 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
     
     setActionInProgress(true);
     try {
-      await playCard(roomId, { userId: user.id, cardInstanceId });
+      await playCard(roomId, { userId: user.id, cardInstanceId, zone });
       toast({
         title: 'Success',
         description: `Card played to ${zone || 'field'}`,
@@ -314,63 +315,69 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
             </div>
           </div>
 
+
           {/* Opponent's Magic Zone */}
           <div>
-            <p className="text-sm text-muted-foreground mb-2">Magic Zone (0/4)</p>
+            <p className="text-sm text-muted-foreground mb-2">Magic Zone ({opponentPlayer?.magicZone?.length || 0}/4)</p>
             <div className="grid grid-cols-4 gap-3 max-w-3xl">
-              {[0, 1, 2, 3].map((slotIdx) => (
-                <div key={slotIdx} className="relative">
-                  <div className="relative aspect-[2/3] rounded-lg overflow-hidden border-2 border-dashed border-purple-500/25 bg-purple-500/5 transition-all">
-                    <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                      <Layers className="h-6 w-6 opacity-30" />
+              {[0, 1, 2, 3].map((slotIdx) => {
+                const magicCard = opponentPlayer?.magicZone?.[slotIdx];
+                const cardData = magicCard ? findCardData(magicCard.cardId, opponentCards) : null;
+                
+                return (
+                  <div key={slotIdx} className="relative">
+                    <div className={`relative aspect-[2/3] rounded-lg overflow-hidden border-2 ${
+                      magicCard ? 'border-purple-500 hover:border-purple-400' : 'border-dashed border-purple-500/25'
+                    } bg-purple-500/5 transition-all ${magicCard ? 'hover:scale-150 hover:z-20' : ''}`}>
+                      {magicCard && cardData?.imageUrl ? (
+                        <Image
+                          src={cardData.imageUrl}
+                          alt={cardData.name || 'Card'}
+                          fill
+                          className="object-cover"
+                        />
+                      ) : magicCard ? (
+                        <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                          <div className="text-center">
+                            <Layers className="h-6 w-6 mx-auto mb-1" />
+                            <p className="text-xs">Loading...</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                          <Layers className="h-6 w-6 opacity-30" />
+                        </div>
+                      )}
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
-          {/* Opponent's Field */}
+          {/* Opponent's Avatar Zone with Land in Center */}
           <div>
-            <p className="text-sm text-muted-foreground mb-2">Field ({opponentPlayer?.field?.length || 0}/4)</p>
+            <p className="text-sm text-muted-foreground mb-2">Avatar Zone ({opponentPlayer?.avatarZone?.length || 0}/4)</p>
             <div className="relative flex items-center max-w-4xl">
-              {/* Left Side - 2 slots */}
+              {/* Left Side - 2 Avatar slots */}
               <div className="grid grid-cols-2 gap-3 w-[40%]">
                 {[0, 1].map((slotIdx) => {
-                  const fieldCard = opponentPlayer?.field?.[slotIdx];
-                  const cardData = fieldCard ? findCardData(fieldCard.cardId, opponentCards) : null;
-                  const isRotated = fieldCard && rotatedCards[fieldCard.id];
+                  const avatarCard = opponentPlayer?.avatarZone?.[slotIdx];
+                  const cardData = avatarCard ? findCardData(avatarCard.cardId, opponentCards) : null;
                   
                   return (
-                    <div key={slotIdx} className={`relative ${isRotated ? 'col-span-1' : ''}`}>
-                      <div 
-                        className={`relative rounded-lg overflow-hidden border-2 ${
-                          fieldCard ? 'border-primary hover:border-primary/80' : 'border-dashed border-muted-foreground/25'
-                        } bg-muted/20 transition-all duration-200 ${
-                          fieldCard ? 'hover:scale-150 hover:z-20' : ''
-                        } ${
-                          isRotated 
-                            ? 'aspect-[3/2]' 
-                            : 'aspect-[2/3]'
-                        }`}
-                      >
-                        {fieldCard && cardData?.imageUrl ? (
-                          <>
-                            <Image
-                              src={cardData.imageUrl}
-                              alt={cardData.name || 'Card'}
-                              fill
-                              className={isRotated ? 'object-contain rotate-90' : 'object-cover'}
-                            />
-                            <button
-                              onClick={() => toggleCardRotation(fieldCard.id)}
-                              className="absolute top-1 right-1 bg-black/50 hover:bg-black/70 text-white p-1 rounded transition-colors z-10"
-                              title="Rotate card"
-                            >
-                              <RotateCw className="h-3 w-3" />
-                            </button>
-                          </>
-                        ) : fieldCard ? (
+                    <div key={slotIdx} className="relative">
+                      <div className={`relative aspect-[2/3] rounded-lg overflow-hidden border-2 ${
+                        avatarCard ? 'border-blue-500 hover:border-blue-400' : 'border-dashed border-blue-500/25'
+                      } bg-blue-500/5 transition-all ${avatarCard ? 'hover:scale-150 hover:z-20' : ''}`}>
+                        {avatarCard && cardData?.imageUrl ? (
+                          <Image
+                            src={cardData.imageUrl}
+                            alt={cardData.name || 'Card'}
+                            fill
+                            className="object-cover"
+                          />
+                        ) : avatarCard ? (
                           <div className="w-full h-full flex items-center justify-center text-muted-foreground">
                             <div className="text-center">
                               <Layers className="h-6 w-6 mx-auto mb-1" />
@@ -379,7 +386,7 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                           </div>
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                            <Layers className="h-6 w-6" />
+                            <Layers className="h-6 w-6 opacity-30" />
                           </div>
                         )}
                       </div>
@@ -388,57 +395,119 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                 })}
               </div>
 
-              {/* Land Zone - Absolute positioned in the center, spanning across both sides */}
+              {/* Land Zone - Absolute positioned in the center */}
               <div className="absolute left-1/2 top-1/2 -translate-x-1/2 translate-y-0 flex items-center justify-center z-20">
-                <div className="relative w-48 aspect-[2/3] rounded-lg overflow-hidden border-4 border-amber-600 bg-gradient-to-br from-amber-950/90 via-yellow-900/90 to-amber-950/90 shadow-2xl">
-                  <div className="w-full h-full flex items-center justify-center">
-                    <div className="text-center">
-                      <Layers className="h-10 w-10 mx-auto mb-2 opacity-40 text-amber-500" />
-                      <p className="text-base font-bold text-amber-500">LAND</p>
-                    </div>
+                {/* Combine both players' land zone cards */}
+                {(currentUserPlayer?.landZone?.length > 0 || opponentPlayer?.landZone?.length > 0) ? (
+                  <div className="flex gap-1">
+                    {/* Display current user's land zone cards */}
+                    {currentUserPlayer?.landZone?.map((landCard: any, idx: number) => {
+                      const cardData = landCard ? findCardData(landCard.cardId, currentUserCards) : null;
+                      const isSelected = selectedFieldCard === landCard?.id;
+                      
+                      return (
+                        <div key={`user-land-${idx}`} className="relative">
+                          <button
+                            onClick={() => {
+                              if (landCard) {
+                                setSelectedFieldCard(isSelected ? null : landCard.id);
+                              }
+                            }}
+                            disabled={!landCard}
+                            className={`relative w-32 aspect-[2/3] rounded-lg overflow-hidden border-4 ${
+                              isSelected ? 'border-yellow-400 ring-4 ring-yellow-300' : 'border-amber-600 hover:border-amber-400'
+                            } shadow-2xl transition-all ${
+                              landCard && !isSelected ? 'hover:scale-110 hover:z-30' : ''
+                            } ${landCard ? 'cursor-pointer' : 'cursor-default'}`}
+                          >
+                            {cardData?.imageUrl ? (
+                              <>
+                                <Image
+                                  src={cardData.imageUrl}
+                                  alt={cardData.name || 'Land Card'}
+                                  fill
+                                  className="object-cover"
+                                />
+                                {isSelected && (
+                                  <div className="absolute inset-0 bg-amber-500/20 flex items-center justify-center pointer-events-none">
+                                    <div className="bg-amber-500 text-white px-2 py-1 rounded text-xs font-bold">
+                                      SELECTED
+                                    </div>
+                                  </div>
+                                )}
+                              </>
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-muted-foreground bg-gradient-to-br from-amber-950/90 via-yellow-900/90 to-amber-950/90">
+                                <div className="text-center">
+                                  <Layers className="h-6 w-6 mx-auto mb-1" />
+                                  <p className="text-xs">Loading...</p>
+                                </div>
+                              </div>
+                            )}
+                          </button>
+                        </div>
+                      );
+                    })}
+                    {/* Display opponent's land zone cards */}
+                    {opponentPlayer?.landZone?.map((landCard: any, idx: number) => {
+                      const cardData = landCard ? findCardData(landCard.cardId, opponentCards) : null;
+                      
+                      return (
+                        <div key={`opp-land-${idx}`} className="relative">
+                          <div className="relative w-32 aspect-[2/3] rounded-lg overflow-hidden border-4 border-amber-600 shadow-2xl hover:scale-110 transition-all hover:z-30">
+                            {cardData?.imageUrl ? (
+                              <Image
+                                src={cardData.imageUrl}
+                                alt={cardData.name || 'Land Card'}
+                                fill
+                                className="object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-muted-foreground bg-gradient-to-br from-amber-950/90 via-yellow-900/90 to-amber-950/90">
+                                <div className="text-center">
+                                  <Layers className="h-6 w-6 mx-auto mb-1" />
+                                  <p className="text-xs">Loading...</p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                  {/* Decorative glow */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-amber-400/10 via-transparent to-amber-400/10 pointer-events-none"></div>
-                </div>
+                ) : (
+                  <div className="relative w-48 aspect-[2/3] rounded-lg overflow-hidden border-4 border-amber-600 bg-gradient-to-br from-amber-950/90 via-yellow-900/90 to-amber-950/90 shadow-2xl">
+                    <div className="w-full h-full flex items-center justify-center">
+                      <div className="text-center">
+                        <Layers className="h-10 w-10 mx-auto mb-2 opacity-40 text-amber-500" />
+                        <p className="text-base font-bold text-amber-500">LAND</p>
+                      </div>
+                    </div>
+                    {/* Decorative glow */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-amber-400/10 via-transparent to-amber-400/10 pointer-events-none"></div>
+                  </div>
+                )}
               </div>
 
-              {/* Right Side - 2 slots */}
+              {/* Right Side - 2 Avatar slots */}
               <div className="grid grid-cols-2 gap-3 w-[40%] ml-auto">
                 {[2, 3].map((slotIdx) => {
-                  const fieldCard = opponentPlayer?.field?.[slotIdx];
-                  const cardData = fieldCard ? findCardData(fieldCard.cardId, opponentCards) : null;
-                  const isRotated = fieldCard && rotatedCards[fieldCard.id];
+                  const avatarCard = opponentPlayer?.avatarZone?.[slotIdx];
+                  const cardData = avatarCard ? findCardData(avatarCard.cardId, opponentCards) : null;
                   
                   return (
-                    <div key={slotIdx} className={`relative ${isRotated ? 'col-span-1' : ''}`}>
-                      <div 
-                        className={`relative rounded-lg overflow-hidden border-2 ${
-                          fieldCard ? 'border-primary hover:border-primary/80' : 'border-dashed border-muted-foreground/25'
-                        } bg-muted/20 transition-all duration-200 ${
-                          fieldCard ? 'hover:scale-150 hover:z-20' : ''
-                        } ${
-                          isRotated 
-                            ? 'aspect-[3/2]' 
-                            : 'aspect-[2/3]'
-                        }`}
-                      >
-                        {fieldCard && cardData?.imageUrl ? (
-                          <>
-                            <Image
-                              src={cardData.imageUrl}
-                              alt={cardData.name || 'Card'}
-                              fill
-                              className={isRotated ? 'object-contain rotate-90' : 'object-cover'}
-                            />
-                            <button
-                              onClick={() => toggleCardRotation(fieldCard.id)}
-                              className="absolute top-1 right-1 bg-black/50 hover:bg-black/70 text-white p-1 rounded transition-colors z-10"
-                              title="Rotate card"
-                            >
-                              <RotateCw className="h-3 w-3" />
-                            </button>
-                          </>
-                        ) : fieldCard ? (
+                    <div key={slotIdx} className="relative">
+                      <div className={`relative aspect-[2/3] rounded-lg overflow-hidden border-2 ${
+                        avatarCard ? 'border-blue-500 hover:border-blue-400' : 'border-dashed border-blue-500/25'
+                      } bg-blue-500/5 transition-all ${avatarCard ? 'hover:scale-150 hover:z-20' : ''}`}>
+                        {avatarCard && cardData?.imageUrl ? (
+                          <Image
+                            src={cardData.imageUrl}
+                            alt={cardData.name || 'Card'}
+                            fill
+                            className="object-cover"
+                          />
+                        ) : avatarCard ? (
                           <div className="w-full h-full flex items-center justify-center text-muted-foreground">
                             <div className="text-center">
                               <Layers className="h-6 w-6 mx-auto mb-1" />
@@ -447,7 +516,7 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                           </div>
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                            <Layers className="h-6 w-6" />
+                            <Layers className="h-6 w-6 opacity-30" />
                           </div>
                         )}
                       </div>
@@ -478,19 +547,54 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
           <div className="flex gap-4">
             {/* Main Play Area */}
             <div className="flex-1 space-y-4">
-              {/* Current User's Field */}
+              {/* Current User's Avatar Zone with Land in Center */}
               <div>
-                <p className="text-sm text-muted-foreground mb-2">Your Field ({currentUserPlayer?.field?.length || 0}/4)</p>
-                {selectedFieldCard && !moveCardMode && (
-                  <div className="mb-2 flex gap-2 bg-secondary/10 p-2 rounded-lg flex-wrap">
+                <p className="text-sm text-muted-foreground mb-2">Your Avatar Zone ({currentUserPlayer?.avatarZone?.length || 0}/4)</p>
+                {selectedMagicCard && currentUserPlayer?.avatarZone?.find((c: any) => c.id === selectedMagicCard) && (
+                  <div className="mb-2 flex gap-2 bg-blue-500/10 p-2 rounded-lg flex-wrap">
                     <Button
                       size="sm"
-                      onClick={() => startMoveCard(selectedFieldCard)}
+                      variant="destructive"
+                      onClick={() => {
+                        handleMoveFieldCardToHell(selectedMagicCard);
+                        setSelectedMagicCard(null);
+                      }}
                       disabled={actionInProgress}
-                      className="bg-indigo-600 hover:bg-indigo-700"
                     >
-                      Move Card
+                      To Hell
                     </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        handleMoveFieldCardToHand(selectedMagicCard);
+                        setSelectedMagicCard(null);
+                      }}
+                      disabled={actionInProgress}
+                    >
+                      To Hand
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => {
+                        handleMoveFieldCardToDeck(selectedMagicCard);
+                        setSelectedMagicCard(null);
+                      }}
+                      disabled={actionInProgress}
+                    >
+                      To Deck
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setSelectedMagicCard(null)}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                )}
+                {selectedFieldCard && currentUserPlayer?.landZone?.find((c: any) => c.id === selectedFieldCard) && (
+                  <div className="mb-2 flex gap-2 bg-amber-500/10 p-2 rounded-lg flex-wrap">
                     <Button
                       size="sm"
                       variant="destructive"
@@ -523,68 +627,38 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                     </Button>
                   </div>
                 )}
-                {moveCardMode && cardToMove && (
-                  <div className="mb-2 p-3 bg-indigo-500/20 border-2 border-indigo-500 rounded-lg">
-                    <p className="text-sm font-semibold mb-2">Move Mode: Click on a zone slot to move the card</p>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={cancelMoveMode}
-                    >
-                      Cancel Move
-                    </Button>
-                  </div>
-                )}
-                <div className="relative flex items-center justify-between max-w-4xl">
-                  {/* Left Side - 2 slots */}
+                <div className="relative flex items-center max-w-4xl">
+                  {/* Left Side - 2 Avatar slots */}
                   <div className="grid grid-cols-2 gap-3 w-[40%]">
                     {[0, 1].map((slotIdx) => {
-                      const fieldCard = currentUserPlayer?.field?.[slotIdx];
-                      const cardData = fieldCard ? findCardData(fieldCard.cardId, currentUserCards) : null;
-                      const isRotated = fieldCard && rotatedCards[fieldCard.id];
-                      const isSelected = selectedFieldCard === fieldCard?.id;
+                      const avatarCard = currentUserPlayer?.avatarZone?.[slotIdx];
+                      const cardData = avatarCard ? findCardData(avatarCard.cardId, currentUserCards) : null;
+                      const isSelected = selectedMagicCard === avatarCard?.id;
                       
                       return (
-                        <div key={slotIdx} className={`relative ${isRotated ? 'col-span-1' : ''}`}>
+                        <div key={slotIdx} className="relative">
                           <button
                             onClick={() => {
-                              if (moveCardMode && !fieldCard) {
-                                handleMoveCardBetweenZones('', slotIdx);
-                              } else if (fieldCard) {
-                                setSelectedFieldCard(isSelected ? null : fieldCard.id);
+                              if (avatarCard) {
+                                setSelectedMagicCard(isSelected ? null : avatarCard.id);
                               }
                             }}
-                            disabled={!fieldCard && !moveCardMode}
-                            className={`w-full relative rounded-lg overflow-hidden border-2 ${
-                              isSelected ? 'border-blue-500 ring-4 ring-blue-300' : 
-                              moveCardMode && !fieldCard ? 'border-indigo-500 border-dashed animate-pulse' :
-                              fieldCard ? 'border-primary hover:border-primary/80' : 'border-dashed border-muted-foreground/25'
-                            } bg-muted/20 transition-all duration-200 ${
-                              fieldCard && !isSelected ? 'hover:scale-150 hover:z-20' : ''
-                            } ${
-                              isRotated 
-                                ? 'aspect-[3/2]' 
-                                : 'aspect-[2/3]'
-                            } ${fieldCard || moveCardMode ? 'cursor-pointer' : 'cursor-default'}`}
+                            disabled={!avatarCard}
+                            className={`w-full relative aspect-[2/3] rounded-lg overflow-hidden border-2 ${
+                              isSelected ? 'border-blue-300 ring-4 ring-blue-300' : 
+                              avatarCard ? 'border-blue-500 hover:border-blue-400' : 'border-dashed border-blue-500/25'
+                            } bg-blue-500/5 transition-all ${
+                              avatarCard && !isSelected ? 'hover:scale-150 hover:z-20' : ''
+                            } ${avatarCard ? 'cursor-pointer' : 'cursor-default'}`}
                           >
-                            {fieldCard && cardData?.imageUrl ? (
+                            {avatarCard && cardData?.imageUrl ? (
                               <>
                                 <Image
                                   src={cardData.imageUrl}
                                   alt={cardData.name || 'Card'}
                                   fill
-                                  className={isRotated ? 'object-contain rotate-90' : 'object-cover'}
+                                  className="object-cover"
                                 />
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    toggleCardRotation(fieldCard.id);
-                                  }}
-                                  className="absolute top-1 right-1 bg-black/50 hover:bg-black/70 text-white p-1 rounded transition-colors z-10"
-                                  title="Rotate card"
-                                >
-                                  <RotateCw className="h-3 w-3" />
-                                </button>
                                 {isSelected && (
                                   <div className="absolute inset-0 bg-blue-500/20 flex items-center justify-center pointer-events-none">
                                     <div className="bg-blue-500 text-white px-2 py-1 rounded text-xs font-bold">
@@ -593,7 +667,7 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                                   </div>
                                 )}
                               </>
-                            ) : fieldCard ? (
+                            ) : avatarCard ? (
                               <div className="w-full h-full flex items-center justify-center text-muted-foreground">
                                 <div className="text-center">
                                   <Layers className="h-6 w-6 mx-auto mb-1" />
@@ -602,7 +676,7 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                               </div>
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                                <Layers className="h-6 w-6" />
+                                <Layers className="h-6 w-6 opacity-30" />
                               </div>
                             )}
                           </button>
@@ -611,55 +685,37 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                     })}
                   </div>
 
-                  {/* Right Side - 2 slots */}
-                  <div className="grid grid-cols-2 gap-3 w-[40%]">
+                  {/* Right Side - 2 Avatar slots */}
+                  <div className="grid grid-cols-2 gap-3 w-[40%] ml-auto">
                     {[2, 3].map((slotIdx) => {
-                      const fieldCard = currentUserPlayer?.field?.[slotIdx];
-                      const cardData = fieldCard ? findCardData(fieldCard.cardId, currentUserCards) : null;
-                      const isRotated = fieldCard && rotatedCards[fieldCard.id];
-                      const isSelected = selectedFieldCard === fieldCard?.id;
+                      const avatarCard = currentUserPlayer?.avatarZone?.[slotIdx];
+                      const cardData = avatarCard ? findCardData(avatarCard.cardId, currentUserCards) : null;
+                      const isSelected = selectedMagicCard === avatarCard?.id;
                       
                       return (
-                        <div key={slotIdx} className={`relative ${isRotated ? 'col-span-1' : ''}`}>
+                        <div key={slotIdx} className="relative">
                           <button
                             onClick={() => {
-                              if (moveCardMode && !fieldCard) {
-                                handleMoveCardBetweenZones('', slotIdx);
-                              } else if (fieldCard) {
-                                setSelectedFieldCard(isSelected ? null : fieldCard.id);
+                              if (avatarCard) {
+                                setSelectedMagicCard(isSelected ? null : avatarCard.id);
                               }
                             }}
-                            disabled={!fieldCard && !moveCardMode}
-                            className={`w-full relative rounded-lg overflow-hidden border-2 ${
-                              isSelected ? 'border-blue-500 ring-4 ring-blue-300' : 
-                              moveCardMode && !fieldCard ? 'border-indigo-500 border-dashed animate-pulse' :
-                              fieldCard ? 'border-primary hover:border-primary/80' : 'border-dashed border-muted-foreground/25'
-                            } bg-muted/20 transition-all duration-200 ${
-                              fieldCard && !isSelected ? 'hover:scale-150 hover:z-20' : ''
-                            } ${
-                              isRotated 
-                                ? 'aspect-[3/2]' 
-                                : 'aspect-[2/3]'
-                            } ${fieldCard || moveCardMode ? 'cursor-pointer' : 'cursor-default'}`}
+                            disabled={!avatarCard}
+                            className={`w-full relative aspect-[2/3] rounded-lg overflow-hidden border-2 ${
+                              isSelected ? 'border-blue-300 ring-4 ring-blue-300' : 
+                              avatarCard ? 'border-blue-500 hover:border-blue-400' : 'border-dashed border-blue-500/25'
+                            } bg-blue-500/5 transition-all ${
+                              avatarCard && !isSelected ? 'hover:scale-150 hover:z-20' : ''
+                            } ${avatarCard ? 'cursor-pointer' : 'cursor-default'}`}
                           >
-                            {fieldCard && cardData?.imageUrl ? (
+                            {avatarCard && cardData?.imageUrl ? (
                               <>
                                 <Image
                                   src={cardData.imageUrl}
                                   alt={cardData.name || 'Card'}
                                   fill
-                                  className={isRotated ? 'object-contain rotate-90' : 'object-cover'}
+                                  className="object-cover"
                                 />
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    toggleCardRotation(fieldCard.id);
-                                  }}
-                                  className="absolute top-1 right-1 bg-black/50 hover:bg-black/70 text-white p-1 rounded transition-colors z-10"
-                                  title="Rotate card"
-                                >
-                                  <RotateCw className="h-3 w-3" />
-                                </button>
                                 {isSelected && (
                                   <div className="absolute inset-0 bg-blue-500/20 flex items-center justify-center pointer-events-none">
                                     <div className="bg-blue-500 text-white px-2 py-1 rounded text-xs font-bold">
@@ -668,7 +724,7 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                                   </div>
                                 )}
                               </>
-                            ) : fieldCard ? (
+                            ) : avatarCard ? (
                               <div className="w-full h-full flex items-center justify-center text-muted-foreground">
                                 <div className="text-center">
                                   <Layers className="h-6 w-6 mx-auto mb-1" />
@@ -677,7 +733,7 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                               </div>
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                                <Layers className="h-6 w-6" />
+                                <Layers className="h-6 w-6 opacity-30" />
                               </div>
                             )}
                           </button>
@@ -690,17 +746,104 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
 
               {/* Current User's Magic Zone */}
               <div>
-                <p className="text-sm text-muted-foreground mb-2">Magic Zone (0/4)</p>
+                <p className="text-sm text-muted-foreground mb-2">Your Magic Zone ({currentUserPlayer?.magicZone?.length || 0}/4)</p>
+                {selectedMagicCard && (
+                  <div className="mb-2 flex gap-2 bg-purple-500/10 p-2 rounded-lg flex-wrap">
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => {
+                        handleMoveFieldCardToHell(selectedMagicCard);
+                        setSelectedMagicCard(null);
+                      }}
+                      disabled={actionInProgress}
+                    >
+                      To Hell
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        handleMoveFieldCardToHand(selectedMagicCard);
+                        setSelectedMagicCard(null);
+                      }}
+                      disabled={actionInProgress}
+                    >
+                      To Hand
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => {
+                        handleMoveFieldCardToDeck(selectedMagicCard);
+                        setSelectedMagicCard(null);
+                      }}
+                      disabled={actionInProgress}
+                    >
+                      To Deck
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setSelectedMagicCard(null)}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                )}
                 <div className="grid grid-cols-4 gap-3 max-w-3xl">
-                  {[0, 1, 2, 3].map((slotIdx) => (
-                    <div key={slotIdx} className="relative">
-                      <div className="relative aspect-[2/3] rounded-lg overflow-hidden border-2 border-dashed border-purple-500/25 bg-purple-500/5 transition-all">
-                        <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                          <Layers className="h-6 w-6 opacity-30" />
-                        </div>
+                  {[0, 1, 2, 3].map((slotIdx) => {
+                    const magicCard = currentUserPlayer?.magicZone?.[slotIdx];
+                    const cardData = magicCard ? findCardData(magicCard.cardId, currentUserCards) : null;
+                    const isSelected = selectedMagicCard === magicCard?.id;
+                    
+                    return (
+                      <div key={slotIdx} className="relative">
+                        <button
+                          onClick={() => {
+                            if (magicCard) {
+                              setSelectedMagicCard(isSelected ? null : magicCard.id);
+                            }
+                          }}
+                          disabled={!magicCard}
+                          className={`w-full relative aspect-[2/3] rounded-lg overflow-hidden border-2 ${
+                            isSelected ? 'border-purple-300 ring-4 ring-purple-300' : 
+                            magicCard ? 'border-purple-500 hover:border-purple-400' : 'border-dashed border-purple-500/25'
+                          } bg-purple-500/5 transition-all ${
+                            magicCard && !isSelected ? 'hover:scale-150 hover:z-20' : ''
+                          } ${magicCard ? 'cursor-pointer' : 'cursor-default'}`}
+                        >
+                          {magicCard && cardData?.imageUrl ? (
+                            <>
+                              <Image
+                                src={cardData.imageUrl}
+                                alt={cardData.name || 'Card'}
+                                fill
+                                className="object-cover"
+                              />
+                              {isSelected && (
+                                <div className="absolute inset-0 bg-purple-500/20 flex items-center justify-center pointer-events-none">
+                                  <div className="bg-purple-500 text-white px-2 py-1 rounded text-xs font-bold">
+                                    SELECTED
+                                  </div>
+                                </div>
+                              )}
+                            </>
+                          ) : magicCard ? (
+                            <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                              <div className="text-center">
+                                <Layers className="h-6 w-6 mx-auto mb-1" />
+                                <p className="text-xs">Loading...</p>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                              <Layers className="h-6 w-6 opacity-30" />
+                            </div>
+                          )}
+                        </button>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 

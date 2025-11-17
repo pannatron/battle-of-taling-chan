@@ -14,6 +14,9 @@ export interface GamePlayer {
   lifeCards: string[];
   field: GameCard[];
   hell: GameCard[];
+  magicZone?: GameCard[];
+  avatarZone?: GameCard[];
+  landZone?: GameCard[];
 }
 
 export interface Spectator {
