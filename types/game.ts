@@ -3,6 +3,12 @@ export interface GameCard {
   id: string;
 }
 
+export interface LifeCard {
+  cardId: string;
+  id: string;
+  faceUp: boolean;
+}
+
 export interface GamePlayer {
   userId: string;
   username: string;
@@ -11,7 +17,7 @@ export interface GamePlayer {
   isReady: boolean;
   hand: GameCard[];
   deck: string[];
-  lifeCards: string[];
+  lifeCards: LifeCard[];
   field: GameCard[];
   hell: GameCard[];
   magicZone?: GameCard[];

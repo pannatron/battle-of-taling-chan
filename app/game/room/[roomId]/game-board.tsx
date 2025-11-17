@@ -9,7 +9,7 @@ import { GamePlayer } from '@/types/game';
 import { Card as CardType } from '@/types/card';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
-import { drawCard, playCard, discardCard, moveFieldCardToHell, moveFieldCardToHand, moveFieldCardToDeck, searchCardFromDeck, searchCardFromHell, shuffleDeck } from '@/lib/api';
+import { drawCard, playCard, discardCard, moveFieldCardToHell, moveFieldCardToHand, moveFieldCardToDeck, searchCardFromDeck, searchCardFromHell, shuffleDeck, flipLifeCard } from '@/lib/api';
 
 interface GameBoardProps {
   roomId: string;
@@ -304,6 +304,28 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
     }
   };
 
+  const handleFlipLifeCard = async (lifeCardInstanceId: string) => {
+    if (!user || actionInProgress) return;
+    
+    setActionInProgress(true);
+    try {
+      await flipLifeCard(roomId, { userId: user.id, lifeCardInstanceId });
+      toast({
+        title: 'Success',
+        description: 'Life card flipped',
+      });
+      onRefresh();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to flip life card',
+        variant: 'destructive',
+      });
+    } finally {
+      setActionInProgress(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Wrapper with relative positioning for land zone */}
@@ -588,6 +610,42 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                     </div>
                   );
                 })}
+              </div>
+              
+              {/* Opponent's Life Cards - below Construct Zone */}
+              <div className="mt-4">
+                <p className="text-sm text-muted-foreground mb-2">Life Cards ({opponentPlayer?.lifeCards?.length || 0})</p>
+                <div className="flex gap-2 justify-center">
+                  {opponentPlayer?.lifeCards?.map((lifeCard: any, idx: number) => {
+                    const cardData = lifeCard ? findCardData(lifeCard.cardId, opponentCards) : null;
+                    
+                    return (
+                      <div key={idx} className="relative">
+                        <div className="relative w-16 aspect-[2/3] rounded-lg overflow-hidden border-2 border-red-500 shadow-md hover:scale-300 hover:z-30 transition-all">
+                          {!lifeCard.faceUp ? (
+                            <div className="w-full h-full bg-gradient-to-br from-red-900 via-rose-900 to-red-900 flex items-center justify-center">
+                              <div className="text-white text-xs font-bold">LIFE</div>
+                            </div>
+                          ) : cardData?.imageUrl ? (
+                            <Image
+                              src={cardData.imageUrl}
+                              alt={cardData.name || 'Life Card'}
+                              fill
+                              className="object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-muted flex items-center justify-center text-muted-foreground">
+                              <div className="text-center">
+                                <Layers className="h-4 w-4 mx-auto mb-1" />
+                                <p className="text-xs">Loading...</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>
@@ -910,6 +968,46 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                         </div>
                       );
                     })}
+                  </div>
+                  
+                  {/* Current User's Life Cards - below Construct Zone */}
+                  <div className="mt-4">
+                    <p className="text-sm text-muted-foreground mb-2">Your Life Cards ({currentUserPlayer?.lifeCards?.length || 0})</p>
+                    <div className="flex gap-2 justify-center">
+                      {currentUserPlayer?.lifeCards?.map((lifeCard: any, idx: number) => {
+                        const cardData = lifeCard ? findCardData(lifeCard.cardId, currentUserCards) : null;
+                        
+                        return (
+                          <div key={idx} className="relative">
+                            <button
+                              onClick={() => handleFlipLifeCard(lifeCard.id)}
+                              disabled={actionInProgress}
+                              className="relative w-16 aspect-[2/3] rounded-lg overflow-hidden border-2 border-red-500 shadow-md hover:scale-300 hover:z-30 transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              {!lifeCard.faceUp ? (
+                                <div className="w-full h-full bg-gradient-to-br from-red-900 via-rose-900 to-red-900 flex items-center justify-center">
+                                  <div className="text-white text-xs font-bold">LIFE</div>
+                                </div>
+                              ) : cardData?.imageUrl ? (
+                                <Image
+                                  src={cardData.imageUrl}
+                                  alt={cardData.name || 'Life Card'}
+                                  fill
+                                  className="object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full bg-muted flex items-center justify-center text-muted-foreground">
+                                  <div className="text-center">
+                                    <Layers className="h-4 w-4 mx-auto mb-1" />
+                                    <p className="text-xs">Loading...</p>
+                                  </div>
+                                </div>
+                              )}
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               </div>

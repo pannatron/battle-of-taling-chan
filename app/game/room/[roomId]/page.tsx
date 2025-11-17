@@ -117,6 +117,16 @@ export default function GameRoomPage() {
             allCardIds.push(...player.landZone.map((c: any) => c.cardId));
           }
           
+          // Collect card IDs from construct zone
+          if (player.constructZone && player.constructZone.length > 0) {
+            allCardIds.push(...player.constructZone.map((c: any) => c.cardId));
+          }
+          
+          // Collect card IDs from life cards
+          if (player.lifeCards && player.lifeCards.length > 0) {
+            allCardIds.push(...player.lifeCards.map((c: any) => c.cardId));
+          }
+          
           // Fetch all unique card data
           if (allCardIds.length > 0) {
             const uniqueCardIds = [...new Set(allCardIds)];
