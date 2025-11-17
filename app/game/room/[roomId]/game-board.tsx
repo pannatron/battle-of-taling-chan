@@ -464,7 +464,7 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                             className={`relative w-32 aspect-[2/3] rounded-lg overflow-hidden border-4 ${
                               isSelected ? 'border-yellow-400 ring-4 ring-yellow-300' : 'border-amber-600 hover:border-amber-400'
                             } shadow-2xl transition-all ${
-                              landCard && !isSelected ? 'hover:scale-110 hover:z-30' : ''
+                              landCard && !isSelected ? 'hover:scale-[3] hover:z-40' : ''
                             } ${landCard ? 'cursor-pointer' : 'cursor-default'}`}
                           >
                             {cardData?.imageUrl ? (
@@ -501,7 +501,7 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                       
                       return (
                         <div key={`opp-land-${idx}`} className="relative">
-                          <div className="relative w-32 aspect-[2/3] rounded-lg overflow-hidden border-4 border-amber-600 shadow-2xl hover:scale-110 transition-all hover:z-30">
+                          <div className="relative w-32 aspect-[2/3] rounded-lg overflow-hidden border-4 border-amber-600 shadow-2xl hover:scale-[3] transition-all hover:z-40">
                             {cardData?.imageUrl ? (
                               <Image
                                 src={cardData.imageUrl}
@@ -586,7 +586,7 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                     <div key={slotIdx} className="relative">
                       <div className={`relative aspect-[2/3] rounded-lg overflow-hidden border-2 ${
                         constructCard ? 'border-orange-500 hover:border-orange-400' : 'border-dashed border-orange-500/25'
-                      } bg-orange-500/5 transition-all ${constructCard ? 'hover:scale-150 hover:z-20' : ''}`}>
+                      } bg-orange-500/5 transition-all ${constructCard ? 'hover:scale-[3] hover:z-20' : ''}`}>
                         {constructCard && cardData?.imageUrl ? (
                           <Image
                             src={cardData.imageUrl}
@@ -678,6 +678,15 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                   <div className="mb-2 flex gap-2 bg-blue-500/10 p-2 rounded-lg flex-wrap">
                     <Button
                       size="sm"
+                      variant="outline"
+                      onClick={() => toggleCardRotation(selectedMagicCard)}
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      <RotateCw className="h-4 w-4 mr-1" />
+                      Rotate
+                    </Button>
+                    <Button
+                      size="sm"
                       variant="destructive"
                       onClick={() => {
                         handleMoveFieldCardToHell(selectedMagicCard);
@@ -759,6 +768,8 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                       const cardData = avatarCard ? findCardData(avatarCard.cardId, currentUserCards) : null;
                       const isSelected = selectedMagicCard === avatarCard?.id;
                       
+                      const isRotated = rotatedCards[avatarCard?.id || ''];
+                      
                       return (
                         <div key={slotIdx} className="relative">
                           <button
@@ -771,9 +782,13 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                             className={`w-full relative aspect-[2/3] rounded-lg overflow-hidden border-2 ${
                               isSelected ? 'border-blue-300 ring-4 ring-blue-300' : 
                               avatarCard ? 'border-blue-500 hover:border-blue-400' : 'border-dashed border-blue-500/25'
-                            } bg-blue-500/5 transition-all ${
+                            } bg-blue-500/5 ${
                               avatarCard && !isSelected ? 'hover:scale-150 hover:z-20' : ''
                             } ${avatarCard ? 'cursor-pointer' : 'cursor-default'}`}
+                            style={{
+                              transform: isRotated ? 'rotate(90deg)' : 'rotate(0deg)',
+                              transition: 'transform 0.3s ease-in-out, scale 0.2s ease-in-out'
+                            }}
                           >
                             {avatarCard && cardData?.imageUrl ? (
                               <>
@@ -816,6 +831,8 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                       const cardData = avatarCard ? findCardData(avatarCard.cardId, currentUserCards) : null;
                       const isSelected = selectedMagicCard === avatarCard?.id;
                       
+                      const isRotated = rotatedCards[avatarCard?.id || ''];
+                      
                       return (
                         <div key={slotIdx} className="relative">
                           <button
@@ -828,9 +845,13 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                             className={`w-full relative aspect-[2/3] rounded-lg overflow-hidden border-2 ${
                               isSelected ? 'border-blue-300 ring-4 ring-blue-300' : 
                               avatarCard ? 'border-blue-500 hover:border-blue-400' : 'border-dashed border-blue-500/25'
-                            } bg-blue-500/5 transition-all ${
+                            } bg-blue-500/5 ${
                               avatarCard && !isSelected ? 'hover:scale-150 hover:z-20' : ''
                             } ${avatarCard ? 'cursor-pointer' : 'cursor-default'}`}
+                            style={{
+                              transform: isRotated ? 'rotate(90deg)' : 'rotate(0deg)',
+                              transition: 'transform 0.3s ease-in-out, scale 0.2s ease-in-out'
+                            }}
                           >
                             {avatarCard && cardData?.imageUrl ? (
                               <>
@@ -933,7 +954,7 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                               isSelected ? 'border-orange-300 ring-4 ring-orange-300' : 
                               constructCard ? 'border-orange-500 hover:border-orange-400' : 'border-dashed border-orange-500/25'
                             } bg-orange-500/5 transition-all ${
-                              constructCard && !isSelected ? 'hover:scale-150 hover:z-20' : ''
+                              constructCard && !isSelected ? 'hover:scale-[3] hover:z-20' : ''
                             } ${constructCard ? 'cursor-pointer' : 'cursor-default'}`}
                           >
                             {constructCard && cardData?.imageUrl ? (
