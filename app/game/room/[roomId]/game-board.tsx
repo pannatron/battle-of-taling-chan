@@ -1524,7 +1524,7 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                         }}
                         onMouseEnter={(e) => {
                           if (!isSelected) {
-                            e.currentTarget.style.transform = `translateX(calc(-50% + ${xPosition}px)) translateY(-60px) rotate(0deg) scale(1.1)`;
+                            e.currentTarget.style.transform = `translateX(calc(-50% + ${xPosition}px)) translateY(-80px) rotate(0deg) scale(3)`;
                             e.currentTarget.style.zIndex = '99';
                           }
                         }}
