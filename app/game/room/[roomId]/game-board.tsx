@@ -1432,7 +1432,7 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                   </div>
                 )}
                 {selectedCard && showZoneSelector && (
-                  <div className="mb-2 p-3 bg-blue-500/20 border-2 border-blue-500 rounded-lg relative z-[100]">
+                  <div className="mb-2 p-3 bg-blue-500/20 border-2 border-blue-500 rounded-lg relative z-[200]">
                     <p className="text-sm font-semibold mb-2">Select Zone to Play Card:</p>
                     <div className="flex gap-2 flex-wrap">
                       <Button
@@ -1506,45 +1506,53 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                         onClick={() => setSelectedCard(isSelected ? null : { id: cardInHand.id, index: idx })}
                         className={`absolute w-40 aspect-[2/3] rounded-lg overflow-hidden border-2 ${
                           isSelected ? 'border-yellow-500 ring-4 ring-yellow-300' : 'border-primary'
-                        } shadow-lg cursor-pointer transition-all duration-300 ease-out`}
+                        } shadow-lg cursor-pointer transition-all duration-200 ease-out ${
+                          !showZoneSelector ? 'group' : ''
+                        }`}
                         style={{
                           left: '50%',
                           bottom: '0',
                           transform: `translateX(calc(-50% + ${xPosition}px))`,
                           zIndex: isSelected ? 100 : 10 + idx,
                           transformOrigin: 'bottom center',
-                        }}
-                        onMouseEnter={(e) => {
-                          if (!isSelected) {
-                            e.currentTarget.style.transform = `translateX(calc(-50% + ${xPosition}px)) translateY(-80px) scale(3)`;
-                            e.currentTarget.style.zIndex = '99';
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!isSelected) {
-                            e.currentTarget.style.transform = `translateX(calc(-50% + ${xPosition}px))`;
-                            e.currentTarget.style.zIndex = String(10 + idx);
-                          }
+                          willChange: 'transform, z-index',
                         }}
                       >
-                        {cardData?.imageUrl ? (
-                          <Image
-                            src={cardData.imageUrl}
-                            alt={cardData.name || 'Card'}
-                            fill
-                            className="object-cover pointer-events-none"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-muted flex items-center justify-center">
-                            <p className="text-xs text-center p-2">Loading...</p>
-                          </div>
-                        )}
-                        {isSelected && (
-                          <div className="absolute inset-0 bg-yellow-500/20 flex items-center justify-center pointer-events-none">
-                            <div className="bg-yellow-500 text-white px-2 py-1 rounded text-xs font-bold">
-                              SELECTED
+                        <div 
+                          className={`w-full h-full transition-transform duration-200 ease-out ${
+                            !isSelected && !showZoneSelector ? 'group-hover:scale-[3] group-hover:-translate-y-[80px]' : ''
+                          }`}
+                          style={{
+                            transformOrigin: 'bottom center',
+                            zIndex: isSelected ? 100 : 'inherit',
+                          }}
+                        >
+                          {cardData?.imageUrl ? (
+                            <Image
+                              src={cardData.imageUrl}
+                              alt={cardData.name || 'Card'}
+                              fill
+                              className="object-cover pointer-events-none"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-muted flex items-center justify-center">
+                              <p className="text-xs text-center p-2">Loading...</p>
                             </div>
-                          </div>
+                          )}
+                          {isSelected && (
+                            <div className="absolute inset-0 bg-yellow-500/20 flex items-center justify-center pointer-events-none">
+                              <div className="bg-yellow-500 text-white px-2 py-1 rounded text-xs font-bold">
+                                SELECTED
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        {!isSelected && (
+                          <style jsx>{`
+                            button:hover {
+                              z-index: 99 !important;
+                            }
+                          `}</style>
                         )}
                       </button>
                     );
