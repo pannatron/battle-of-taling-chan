@@ -1435,14 +1435,14 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                   <div className="mb-2 p-3 bg-blue-500/20 border-2 border-blue-500 rounded-lg">
                     <p className="text-sm font-semibold mb-2">Select Zone to Play Card:</p>
                     <div className="flex gap-2 flex-wrap">
-                      <Button
+                      {/* <Button
                         size="sm"
                         onClick={() => handleZoneSelection('field')}
                         disabled={actionInProgress}
                         className="bg-green-600 hover:bg-green-700"
                       >
                         Field Zone
-                      </Button>
+                      </Button> */}
                       <Button
                         size="sm"
                         onClick={() => handleZoneSelection('avatar')}
