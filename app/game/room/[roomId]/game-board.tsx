@@ -1406,7 +1406,7 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
             <div>
                 <p className="text-sm text-muted-foreground mb-2">Your Hand ({currentUserPlayer?.hand?.length || 0})</p>
                 {selectedCard && !showZoneSelector && (
-                  <div className="mb-2 flex gap-2 bg-primary/10 p-2 rounded-lg">
+                  <div className="mb-2 flex gap-2 bg-primary/10 p-2 rounded-lg relative z-[100]">
                     <Button
                       size="sm"
                       onClick={() => setShowZoneSelector(true)}
@@ -1432,7 +1432,7 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                   </div>
                 )}
                 {selectedCard && showZoneSelector && (
-                  <div className="mb-2 p-3 bg-blue-500/20 border-2 border-blue-500 rounded-lg">
+                  <div className="mb-2 p-3 bg-blue-500/20 border-2 border-blue-500 rounded-lg relative z-[100]">
                     <p className="text-sm font-semibold mb-2">Select Zone to Play Card:</p>
                     <div className="flex gap-2 flex-wrap">
                       <Button
