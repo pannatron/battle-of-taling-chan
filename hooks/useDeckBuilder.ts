@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Card as CardType } from '@/types/card';
-import { searchCards, getDistinctCardValues, createDeck, getAllCards } from '@/lib/api';
+import { searchCards, getDistinctCardValues, createDeck, getAllCards, getDeckById, getCardById } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
 import { isOnlyOneCard } from '@/lib/deckCardUtils';
@@ -239,6 +239,105 @@ export function useDeckBuilder() {
     return getDeckSinCardWarnings(selectedCards, allCards);
   };
 
+  const loadDeckById = async (deckId: string): Promise<boolean> => {
+    try {
+      setLoading(true);
+      const deck = await getDeckById(deckId);
+      
+      if (!deck) {
+        alert('ไม่พบเด็คนี้');
+        setLoading(false);
+        return false;
+      }
+
+      // Clear existing cards first
+      setSelectedCards([]);
+      
+      // Load all card details and build DeckCard array
+      const deckCardsMap = new Map<string, DeckCard>();
+
+      // Process life cards
+      if (deck.lifeCardIds && deck.lifeCardIds.length > 0) {
+        for (const cardId of deck.lifeCardIds) {
+          const card = await getCardById(cardId);
+          if (card) {
+            const existingCard = deckCardsMap.get(cardId);
+            if (existingCard) {
+              existingCard.quantity += 1;
+            } else {
+              deckCardsMap.set(cardId, {
+                ...card,
+                quantity: 1,
+                isLifeCard: true,
+                isSideDeck: false,
+              });
+            }
+          }
+        }
+      }
+
+      // Process main deck cards
+      if (deck.cardIds && deck.cardIds.length > 0) {
+        for (const cardId of deck.cardIds) {
+          const card = await getCardById(cardId);
+          if (card) {
+            const existingCard = deckCardsMap.get(cardId);
+            if (existingCard && !existingCard.isLifeCard && !existingCard.isSideDeck) {
+              existingCard.quantity += 1;
+            } else if (!existingCard) {
+              deckCardsMap.set(cardId, {
+                ...card,
+                quantity: 1,
+                isLifeCard: false,
+                isSideDeck: false,
+              });
+            }
+          }
+        }
+      }
+
+      // Process side deck cards
+      if (deck.sideDeckIds && deck.sideDeckIds.length > 0) {
+        for (const cardId of deck.sideDeckIds) {
+          const card = await getCardById(cardId);
+          if (card) {
+            const key = `${cardId}-side`;
+            const existingCard = Array.from(deckCardsMap.values()).find(
+              c => c._id === cardId && c.isSideDeck
+            );
+            if (existingCard) {
+              existingCard.quantity += 1;
+            } else {
+              deckCardsMap.set(key, {
+                ...card,
+                quantity: 1,
+                isLifeCard: false,
+                isSideDeck: true,
+              });
+            }
+          }
+        }
+      }
+
+      const loadedCards = Array.from(deckCardsMap.values());
+      setSelectedCards(loadedCards);
+
+      // Set deck metadata
+      setDeckName(deck.name + ' (Copy)');
+      setDeckArchetype(deck.archetype);
+      setDeckDescription(deck.description || '');
+      setCoverCardId(deck.coverCardId || '');
+
+      setLoading(false);
+      return true;
+    } catch (error) {
+      console.error('Error loading deck:', error);
+      alert('เกิดข้อผิดพลาดในการโหลดเด็ค');
+      setLoading(false);
+      return false;
+    }
+  };
+
   return {
     searchResults,
     selectedCards,
@@ -283,5 +382,6 @@ export function useDeckBuilder() {
     isMainDeckFull,
     allCards,
     getSinCardWarnings,
+    loadDeckById,
   };
 }

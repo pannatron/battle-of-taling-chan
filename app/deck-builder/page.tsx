@@ -5,20 +5,25 @@ import { Card as CardType } from '@/types/card';
 import { useDeckBuilder } from '@/hooks/useDeckBuilder';
 import { addCardToDeck, removeCardFromDeck, isOnlyOneCard } from '@/lib/deckCardUtils';
 import { Button } from '@/components/ui/button';
-import { Grid3x3, List, ArrowLeft, Filter } from 'lucide-react';
+import { Grid3x3, List, ArrowLeft, Filter, Download } from 'lucide-react';
 import Link from 'next/link';
+import { useToast } from '@/hooks/use-toast';
 import { DeckFilters } from '@/components/deck-builder/DeckFilters';
 import { DeckCardsList } from '@/components/deck-builder/DeckCardsList';
 import { SearchResults } from '@/components/deck-builder/SearchResults';
 import { DeckVisualization } from '@/components/deck-builder/DeckVisualization';
+import { DeckLoader } from '@/components/deck-builder/DeckLoader';
 
 const ITEMS_PER_PAGE = 80;
 
 export default function DeckBuilderPage() {
   const deckBuilder = useDeckBuilder();
+  const { toast } = useToast();
   const [visualizationMode, setVisualizationMode] = useState<'compact' | 'grid'>('compact');
   const [currentPage, setCurrentPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
+  const [showDeckLoader, setShowDeckLoader] = useState(false);
+  const [loadingDeck, setLoadingDeck] = useState(false);
 
   // Reset to page 1 when search results change
   useMemo(() => {
@@ -100,6 +105,26 @@ export default function DeckBuilderPage() {
     }
   };
 
+  const handleLoadDeck = async (deckId: string) => {
+    setLoadingDeck(true);
+    const success = await deckBuilder.loadDeckById(deckId);
+    setLoadingDeck(false);
+    
+    if (success) {
+      setShowDeckLoader(false);
+      toast({
+        title: 'สำเร็จ!',
+        description: 'โหลดเด็คเข้าสู่ Deck Builder เรียบร้อยแล้ว',
+      });
+    } else {
+      toast({
+        title: 'เกิดข้อผิดพลาด',
+        description: 'ไม่สามารถโหลดเด็คได้',
+        variant: 'destructive',
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background py-4 md:py-8">
       <div className="container mx-auto px-2 sm:px-4 max-w-[1800px]">
@@ -111,14 +136,27 @@ export default function DeckBuilderPage() {
             <ArrowLeft className="h-4 w-4" />
             Back to Decks
           </Link>
-          <h1 className="mb-2 bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-transparent">
-            Deck Builder
-          </h1>
-          <p className="text-xs sm:text-sm text-muted-foreground">
-            Build your deck with 5 life cards, 1 only one card (optional), up to{' '}
-            {deckBuilder.getMaxDeckSize()} deck cards, and up to 11 side deck cards (1 Only One +
-            10 regular OR 11 regular)
-          </p>
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div className="flex-1 min-w-0">
+              <h1 className="mb-2 bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-transparent">
+                Deck Builder
+              </h1>
+              <p className="text-xs sm:text-sm text-muted-foreground">
+                Build your deck with 5 life cards, 1 only one card (optional), up to{' '}
+                {deckBuilder.getMaxDeckSize()} deck cards, and up to 11 side deck cards (1 Only One +
+                10 regular OR 11 regular)
+              </p>
+            </div>
+            <Button
+              onClick={() => setShowDeckLoader(true)}
+              variant="outline"
+              className="gap-2 shrink-0"
+            >
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline">Load Deck</span>
+              <span className="sm:hidden">Load</span>
+            </Button>
+          </div>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-4">
@@ -239,6 +277,15 @@ export default function DeckBuilderPage() {
           </div>
         </div>
       </div>
+
+      {/* Deck Loader Modal */}
+      {showDeckLoader && (
+        <DeckLoader
+          onLoadDeck={handleLoadDeck}
+          onClose={() => setShowDeckLoader(false)}
+          loading={loadingDeck}
+        />
+      )}
     </div>
   );
 }
