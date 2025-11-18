@@ -1488,25 +1488,17 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                     </div>
                   </div>
                 )}
-                {/* Hand Cards - Overlapping Fan Layout */}
+                {/* Hand Cards - Straight Horizontal Layout */}
                 <div className="relative flex justify-center items-end" style={{ height: '280px', paddingBottom: '20px' }}>
                   {currentUserPlayer?.hand?.map((cardInHand: any, idx: number) => {
                     const cardData = findCardData(cardInHand.cardId, currentUserCards);
                     const isSelected = selectedCard?.id === cardInHand.id;
                     const totalCards = currentUserPlayer?.hand?.length || 1;
                     
-                    // Calculate fan positions (right-side up - narrow at top, wide at bottom)
-                    const spreadAngle = Math.min(40, totalCards * 8); // Max spread of 40 degrees
-                    const angleStep = totalCards > 1 ? spreadAngle / (totalCards - 1) : 0;
-                    const rotation = spreadAngle/2 - (idx * angleStep); // Inverted rotation
-                    
-                    // Horizontal offset for overlap effect
-                    const baseOffset = -60; // Overlap amount in pixels
+                    // Horizontal offset for overlap effect (straight line, no rotation)
+                    const baseOffset = 120; // Space between cards in pixels
                     const centerOffset = ((totalCards - 1) * baseOffset) / 2;
                     const xPosition = (idx * baseOffset) - centerOffset;
-                    
-                    // Vertical offset for arc effect (cards at edges are lower)
-                    const yOffset = Math.abs(rotation) * 1.5; // Positive to move cards down at edges
                     
                     return (
                       <button
@@ -1518,19 +1510,19 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                         style={{
                           left: '50%',
                           bottom: '0',
-                          transform: `translateX(calc(-50% + ${xPosition}px)) translateY(${yOffset}px) rotate(${rotation}deg)`,
+                          transform: `translateX(calc(-50% + ${xPosition}px))`,
                           zIndex: isSelected ? 100 : 10 + idx,
                           transformOrigin: 'bottom center',
                         }}
                         onMouseEnter={(e) => {
                           if (!isSelected) {
-                            e.currentTarget.style.transform = `translateX(calc(-50% + ${xPosition}px)) translateY(-80px) rotate(0deg) scale(3)`;
+                            e.currentTarget.style.transform = `translateX(calc(-50% + ${xPosition}px)) translateY(-80px) scale(3)`;
                             e.currentTarget.style.zIndex = '99';
                           }
                         }}
                         onMouseLeave={(e) => {
                           if (!isSelected) {
-                            e.currentTarget.style.transform = `translateX(calc(-50% + ${xPosition}px)) translateY(${yOffset}px) rotate(${rotation}deg)`;
+                            e.currentTarget.style.transform = `translateX(calc(-50% + ${xPosition}px))`;
                             e.currentTarget.style.zIndex = String(10 + idx);
                           }
                         }}
