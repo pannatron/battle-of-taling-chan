@@ -9,7 +9,7 @@ import { GamePlayer } from '@/types/game';
 import { Card as CardType } from '@/types/card';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
-import { drawCard, playCard, discardCard, moveFieldCardToHell, moveFieldCardToHand, moveFieldCardToDeck, searchCardFromDeck, searchCardFromHell, shuffleDeck, flipLifeCard, moveAvatarToOpponentField, toggleCardRotation } from '@/lib/api';
+import { drawCard, playCard, discardCard, moveFieldCardToHell, moveFieldCardToHand, moveFieldCardToDeck, searchCardFromDeck, searchCardFromHell, shuffleDeck, flipLifeCard, moveAvatarToOpponentField, toggleCardRotation, moveHandCardToDeck } from '@/lib/api';
 
 interface GameBoardProps {
   roomId: string;
@@ -355,6 +355,29 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
       toast({
         title: 'Error',
         description: error.message || 'Failed to move avatar to opponent field',
+        variant: 'destructive',
+      });
+    } finally {
+      setActionInProgress(false);
+    }
+  };
+
+  const handleMoveHandCardToDeck = async (cardInstanceId: string, position: 'top' | 'bottom') => {
+    if (!user || actionInProgress) return;
+    
+    setActionInProgress(true);
+    try {
+      await moveHandCardToDeck(roomId, { userId: user.id, cardInstanceId, position });
+      toast({
+        title: 'Success',
+        description: `Card returned to ${position} of deck`,
+      });
+      setSelectedCard(null);
+      onRefresh();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to move card to deck',
         variant: 'destructive',
       });
     } finally {
@@ -1459,7 +1482,7 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                 
                 {/* Card Action Buttons - MOVED ABOVE CARDS */}
                 {selectedCard && !showZoneSelector && (
-                  <div className="mb-4 flex gap-2 bg-primary/10 p-2 rounded-lg">
+                  <div className="mb-4 flex gap-2 bg-primary/10 p-2 rounded-lg flex-wrap">
                     <Button
                       size="sm"
                       onClick={() => setShowZoneSelector(true)}
@@ -1474,6 +1497,24 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                       disabled={actionInProgress}
                     >
                       Discard
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => handleMoveHandCardToDeck(selectedCard.id, 'top')}
+                      disabled={actionInProgress}
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      Return to Top of Deck
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => handleMoveHandCardToDeck(selectedCard.id, 'bottom')}
+                      disabled={actionInProgress}
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      Return to Bottom of Deck
                     </Button>
                     <Button
                       size="sm"

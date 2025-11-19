@@ -918,3 +918,29 @@ export async function toggleCardRotation(roomId: string, data: {
     throw error;
   }
 }
+
+export async function moveHandCardToDeck(roomId: string, data: {
+  userId: string;
+  cardInstanceId: string;
+  position?: 'top' | 'bottom';
+}): Promise<any> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/game/rooms/${roomId}/hand-to-deck`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `Failed to move hand card to deck in room ${roomId}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error(`Error moving hand card to deck in room ${roomId}:`, error);
+    throw error;
+  }
+}
