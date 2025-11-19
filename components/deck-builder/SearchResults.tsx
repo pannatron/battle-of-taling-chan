@@ -272,6 +272,8 @@ export function SearchResults({
                           fill
                           className="object-contain"
                           sizes="100px"
+                          loading="lazy"
+                          quality={75}
                         />
                       ) : (
                         <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground">
@@ -360,6 +362,7 @@ export function SearchResults({
                     className="object-contain"
                     sizes="(max-width: 768px) 100vw, 672px"
                     priority
+                    quality={85}
                   />
                 ) : (
                   <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground">

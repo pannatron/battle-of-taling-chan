@@ -589,6 +589,9 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                   alt={cardData.name || 'Card'}
                   fill
                   className="object-cover"
+                  priority
+                  quality={75}
+                  sizes="(max-width: 768px) 100px, 150px"
                 />
               ) : magicCard ? (
                 <div className="w-full h-full flex items-center justify-center text-muted-foreground">
@@ -687,6 +690,9 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                               alt={cardData.name || 'Card'}
                               fill
                               className="object-cover"
+                              priority
+                              quality={75}
+                              sizes="(max-width: 768px) 120px, 180px"
                             />
                             {avatarCard.currentPower !== undefined && (
                               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-purple-600/90 text-white px-4 py-2 rounded-full text-3xl font-bold border-4 border-white shadow-2xl">
@@ -744,6 +750,9 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                                   alt={cardData.name || 'Land Card'}
                                   fill
                                   className="object-cover"
+                                  loading="lazy"
+                                  quality={75}
+                                  sizes="(max-width: 768px) 80px, 120px"
                                 />
                                 {isSelected && (
                                   <div className="absolute inset-0 bg-amber-500/20 flex items-center justify-center pointer-events-none">
@@ -778,6 +787,9 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                                 alt={cardData.name || 'Land Card'}
                                 fill
                                 className="object-cover"
+                                loading="lazy"
+                                quality={75}
+                                sizes="(max-width: 768px) 128px, 192px"
                               />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-muted-foreground bg-gradient-to-br from-amber-950/90 via-yellow-900/90 to-amber-950/90">
