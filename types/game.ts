@@ -1,6 +1,8 @@
 export interface GameCard {
   cardId: string;
   id: string;
+  rotated?: boolean;
+  currentPower?: number;
 }
 
 export interface LifeCard {

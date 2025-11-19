@@ -9,7 +9,7 @@ import { GamePlayer } from '@/types/game';
 import { Card as CardType } from '@/types/card';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
-import { drawCard, playCard, discardCard, moveFieldCardToHell, moveFieldCardToHand, moveFieldCardToDeck, searchCardFromDeck, searchCardFromHell, shuffleDeck, flipLifeCard, moveAvatarToOpponentField, toggleCardRotation, moveHandCardToDeck } from '@/lib/api';
+import { drawCard, playCard, discardCard, moveFieldCardToHell, moveFieldCardToHand, moveFieldCardToDeck, searchCardFromDeck, searchCardFromHell, shuffleDeck, flipLifeCard, moveAvatarToOpponentField, toggleCardRotation, moveHandCardToDeck, updateCardPower } from '@/lib/api';
 
 interface GameBoardProps {
   roomId: string;
@@ -34,6 +34,8 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
   const [selectedZone, setSelectedZone] = useState<'avatar' | 'magic' | 'land' | 'field' | 'construct' | null>(null);
   const [moveCardMode, setMoveCardMode] = useState(false);
   const [cardToMove, setCardToMove] = useState<string | null>(null);
+  const [powerInputValue, setPowerInputValue] = useState<string>('');
+  const [showPowerInput, setShowPowerInput] = useState(false);
 
   const player1 = gameRoom.players[0];
   const player2 = gameRoom.players[1];
@@ -385,6 +387,40 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
     }
   };
 
+  const handleUpdateCardPower = async (cardInstanceId: string) => {
+    if (!user || actionInProgress) return;
+    
+    const power = parseInt(powerInputValue);
+    if (isNaN(power)) {
+      toast({
+        title: 'Error',
+        description: 'Please enter a valid number',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    setActionInProgress(true);
+    try {
+      await updateCardPower(roomId, { userId: user.id, cardInstanceId, power });
+      toast({
+        title: 'Success',
+        description: `Card power updated to ${power}`,
+      });
+      setPowerInputValue('');
+      setShowPowerInput(false);
+      onRefresh();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to update card power',
+        variant: 'destructive',
+      });
+    } finally {
+      setActionInProgress(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Wrapper with relative positioning for land zone */}
@@ -542,12 +578,19 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                         }}
                       >
                         {avatarCard && cardData?.imageUrl ? (
-                          <Image
-                            src={cardData.imageUrl}
-                            alt={cardData.name || 'Card'}
-                            fill
-                            className="object-cover"
-                          />
+                          <>
+                            <Image
+                              src={cardData.imageUrl}
+                              alt={cardData.name || 'Card'}
+                              fill
+                              className="object-cover"
+                            />
+                            {avatarCard.currentPower !== undefined && (
+                              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-purple-600/90 text-white px-4 py-2 rounded-full text-3xl font-bold border-4 border-white shadow-2xl">
+                                {avatarCard.currentPower}
+                              </div>
+                            )}
+                          </>
                         ) : avatarCard ? (
                           <div className="w-full h-full flex items-center justify-center text-muted-foreground">
                             <div className="text-center">
@@ -754,7 +797,7 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                     
                     return (
                       <div key={idx} className="relative">
-                        <div className="relative w-16 aspect-[2/3] rounded-lg overflow-hidden border-2 border-red-500 shadow-md hover:scale-300 hover:z-30 transition-all">
+                        <div className="relative w-16 aspect-[2/3] rounded-lg overflow-hidden border-2 border-red-500 shadow-md hover:scale-[5] hover:z-30 transition-all">
                           {!lifeCard.faceUp ? (
                             <div className="w-full h-full bg-gradient-to-br from-red-900 via-rose-900 to-red-900 flex items-center justify-center">
                               <div className="text-white text-xs font-bold">LIFE</div>
@@ -808,64 +851,115 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                 <div className="flex-1">
                   <p className="text-sm text-muted-foreground mb-2">Your Avatar Zone ({currentUserPlayer?.avatarZone?.length || 0}/4)</p>
                 {selectedMagicCard && currentUserPlayer?.avatarZone?.find((c: any) => c.id === selectedMagicCard) && (
-                  <div className="mb-2 flex gap-2 bg-blue-500/10 p-2 rounded-lg flex-wrap">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleToggleCardRotation(selectedMagicCard)}
-                      className="bg-blue-600 hover:bg-blue-700 text-white"
-                      disabled={actionInProgress}
-                    >
-                      <RotateCw className="h-4 w-4 mr-1" />
-                      Rotate
-                    </Button>
-                    <Button
-                      size="sm"
-                      className="bg-green-600 hover:bg-green-700"
-                      onClick={() => handleMoveAvatarToOpponentField(selectedMagicCard)}
-                      disabled={actionInProgress}
-                    >
-                      Move to Opponent Field
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => {
-                        handleMoveFieldCardToHell(selectedMagicCard);
-                        setSelectedMagicCard(null);
-                      }}
-                      disabled={actionInProgress}
-                    >
-                      To Hell
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => {
-                        handleMoveFieldCardToHand(selectedMagicCard);
-                        setSelectedMagicCard(null);
-                      }}
-                      disabled={actionInProgress}
-                    >
-                      To Hand
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => {
-                        handleMoveFieldCardToDeck(selectedMagicCard);
-                        setSelectedMagicCard(null);
-                      }}
-                      disabled={actionInProgress}
-                    >
-                      To Deck
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setSelectedMagicCard(null)}
-                    >
-                      Cancel
-                    </Button>
+                  <div className="mb-2 space-y-2">
+                    <div className="flex gap-2 bg-blue-500/10 p-2 rounded-lg flex-wrap">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleToggleCardRotation(selectedMagicCard)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                        disabled={actionInProgress}
+                      >
+                        <RotateCw className="h-4 w-4 mr-1" />
+                        Rotate
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="bg-purple-600 hover:bg-purple-700"
+                        onClick={() => {
+                          setShowPowerInput(!showPowerInput);
+                          if (!showPowerInput) {
+                            const card = currentUserPlayer?.avatarZone?.find((c: any) => c.id === selectedMagicCard);
+                            setPowerInputValue(card?.currentPower?.toString() || '');
+                          }
+                        }}
+                        disabled={actionInProgress}
+                      >
+                        Set Power
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="bg-green-600 hover:bg-green-700"
+                        onClick={() => handleMoveAvatarToOpponentField(selectedMagicCard)}
+                        disabled={actionInProgress}
+                      >
+                        Move to Opponent Field
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => {
+                          handleMoveFieldCardToHell(selectedMagicCard);
+                          setSelectedMagicCard(null);
+                        }}
+                        disabled={actionInProgress}
+                      >
+                        To Hell
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          handleMoveFieldCardToHand(selectedMagicCard);
+                          setSelectedMagicCard(null);
+                        }}
+                        disabled={actionInProgress}
+                      >
+                        To Hand
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => {
+                          handleMoveFieldCardToDeck(selectedMagicCard);
+                          setSelectedMagicCard(null);
+                        }}
+                        disabled={actionInProgress}
+                      >
+                        To Deck
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedMagicCard(null);
+                          setShowPowerInput(false);
+                          setPowerInputValue('');
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                    {showPowerInput && (
+                      <div className="flex gap-2 bg-purple-500/10 p-3 rounded-lg items-center">
+                        <label className="text-sm font-semibold text-purple-300">Power:</label>
+                        <input
+                          type="number"
+                          value={powerInputValue}
+                          onChange={(e) => setPowerInputValue(e.target.value)}
+                          className="w-20 px-2 py-1 rounded border border-purple-500 bg-background text-foreground"
+                          placeholder="0"
+                          disabled={actionInProgress}
+                        />
+                        <Button
+                          size="sm"
+                          className="bg-purple-600 hover:bg-purple-700"
+                          onClick={() => handleUpdateCardPower(selectedMagicCard)}
+                          disabled={actionInProgress || !powerInputValue}
+                        >
+                          Update
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setShowPowerInput(false);
+                            setPowerInputValue('');
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 )}
                 {selectedFieldCard && currentUserPlayer?.landZone?.find((c: any) => c.id === selectedFieldCard) && (
@@ -941,6 +1035,11 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                                   fill
                                   className="object-cover"
                                 />
+                                {avatarCard.currentPower !== undefined && (
+                                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-purple-600/90 text-white px-4 py-2 rounded-full text-3xl font-bold border-4 border-white shadow-2xl">
+                                    {avatarCard.currentPower}
+                                  </div>
+                                )}
                                 {isSelected && (
                                   <div className="absolute inset-0 bg-blue-500/20 flex items-center justify-center pointer-events-none">
                                     <div className="bg-blue-500 text-white px-2 py-1 rounded text-xs font-bold">
@@ -1147,7 +1246,7 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                             <button
                               onClick={() => handleFlipLifeCard(lifeCard.id)}
                               disabled={actionInProgress}
-                              className="relative w-16 aspect-[2/3] rounded-lg overflow-hidden border-2 border-red-500 shadow-md hover:scale-300 hover:z-30 transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                              className="relative w-16 aspect-[2/3] rounded-lg overflow-hidden border-2 border-red-500 shadow-md hover:scale-[5] hover:z-30 transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                             >
                               {!lifeCard.faceUp ? (
                                 <div className="w-full h-full bg-gradient-to-br from-red-900 via-rose-900 to-red-900 flex items-center justify-center">

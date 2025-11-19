@@ -966,3 +966,29 @@ export async function moveHandCardToDeck(roomId: string, data: {
     throw error;
   }
 }
+
+export async function updateCardPower(roomId: string, data: {
+  userId: string;
+  cardInstanceId: string;
+  power: number;
+}): Promise<any> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/game/rooms/${roomId}/update-card-power`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `Failed to update card power in room ${roomId}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error(`Error updating card power in room ${roomId}:`, error);
+    throw error;
+  }
+}
