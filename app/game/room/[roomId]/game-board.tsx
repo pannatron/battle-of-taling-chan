@@ -674,7 +674,7 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                       <div 
                         className={`relative aspect-[2/3] rounded-lg overflow-hidden border-2 ${
                           avatarCard ? 'border-blue-500 hover:border-blue-400' : 'border-dashed border-blue-500/25'
-                        } bg-blue-500/5 transition-all ${avatarCard ? 'hover:scale-150 hover:z-20' : ''}`}
+                        } bg-blue-500/5 transition-all ${avatarCard ? 'hover:scale-[2.5] hover:z-20' : ''}`}
                         style={{
                           transform: isRotated ? 'rotate(90deg)' : 'rotate(0deg)',
                           transition: 'transform 0.3s ease-in-out, scale 0.2s ease-in-out'
@@ -820,7 +820,7 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                       <div 
                         className={`relative aspect-[2/3] rounded-lg overflow-hidden border-2 ${
                           avatarCard ? 'border-blue-500 hover:border-blue-400' : 'border-dashed border-blue-500/25'
-                        } bg-blue-500/5 transition-all ${avatarCard ? 'hover:scale-150 hover:z-20' : ''}`}
+                        } bg-blue-500/5 transition-all ${avatarCard ? 'hover:scale-[2.5] hover:z-20' : ''}`}
                         style={{
                           transform: isRotated ? 'rotate(90deg)' : 'rotate(0deg)',
                           transition: 'transform 0.3s ease-in-out, scale 0.2s ease-in-out'
@@ -865,7 +865,7 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                     <div key={slotIdx} className="relative">
                       <div className={`relative aspect-[2/3] rounded-lg overflow-hidden border-2 ${
                         constructCard ? 'border-orange-500 hover:border-orange-400' : 'border-dashed border-orange-500/25'
-                      } bg-orange-500/5 transition-all ${constructCard ? 'hover:scale-[3] hover:z-20' : ''}`}>
+                      } bg-orange-500/5 transition-all ${constructCard ? 'hover:scale-[4] hover:z-20' : ''}`}>
                         {constructCard && cardData?.imageUrl ? (
                           <Image
                             src={cardData.imageUrl}
@@ -1123,7 +1123,7 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                               isSelected ? 'border-blue-300 ring-4 ring-blue-300' : 
                               avatarCard ? 'border-blue-500 hover:border-blue-400' : 'border-dashed border-blue-500/25'
                             } bg-blue-500/5 ${
-                              avatarCard && !isSelected ? 'hover:scale-150 hover:z-20' : ''
+                              avatarCard && !isSelected ? 'hover:scale-[2.5] hover:z-20' : ''
                             } ${avatarCard ? 'cursor-pointer' : 'cursor-default'}`}
                             style={{
                               transform: isRotated ? 'rotate(90deg)' : 'rotate(0deg)',
@@ -1192,7 +1192,7 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                               isSelected ? 'border-blue-300 ring-4 ring-blue-300' : 
                               avatarCard ? 'border-blue-500 hover:border-blue-400' : 'border-dashed border-blue-500/25'
                             } bg-blue-500/5 ${
-                              avatarCard && !isSelected ? 'hover:scale-150 hover:z-20' : ''
+                              avatarCard && !isSelected ? 'hover:scale-[2.5] hover:z-20' : ''
                             } ${avatarCard ? 'cursor-pointer' : 'cursor-default'}`}
                             style={{
                               transform: isRotated ? 'rotate(90deg)' : 'rotate(0deg)',
@@ -1300,7 +1300,7 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                               isSelected ? 'border-orange-300 ring-4 ring-orange-300' : 
                               constructCard ? 'border-orange-500 hover:border-orange-400' : 'border-dashed border-orange-500/25'
                             } bg-orange-500/5 transition-all ${
-                              constructCard && !isSelected ? 'hover:scale-[3] hover:z-20' : ''
+                              constructCard && !isSelected ? 'hover:scale-[4] hover:z-20' : ''
                             } ${constructCard ? 'cursor-pointer' : 'cursor-default'}`}
                           >
                             {constructCard && cardData?.imageUrl ? (
@@ -1458,7 +1458,7 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                                 isSelected ? 'border-purple-300 ring-4 ring-purple-300' : 
                                 magicCard ? 'border-purple-500 hover:border-purple-400' : 'border-dashed border-purple-500/25'
                               } bg-purple-500/5 transition-all ${
-                                magicCard && !isSelected ? 'hover:scale-150 hover:z-20' : ''
+                                magicCard && !isSelected ? 'hover:scale-[2.5] hover:z-20' : ''
                               } ${magicCard ? 'cursor-pointer' : 'cursor-default'}`}
                             >
                               {magicCard && cardData?.imageUrl ? (
@@ -1515,7 +1515,7 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                                 isSelected ? 'border-purple-300 ring-4 ring-purple-300' : 
                                 magicCard ? 'border-purple-500 hover:border-purple-400' : 'border-dashed border-purple-500/25'
                               } bg-purple-500/5 transition-all ${
-                                magicCard && !isSelected ? 'hover:scale-150 hover:z-20' : ''
+                                magicCard && !isSelected ? 'hover:scale-[2.5] hover:z-20' : ''
                               } ${magicCard ? 'cursor-pointer' : 'cursor-default'}`}
                             >
                               {magicCard && cardData?.imageUrl ? (
