@@ -285,10 +285,10 @@ export default function GameRoomPage() {
     );
   }
 
-  const currentPlayer = gameRoom.players.find(p => p.userId === user?.id);
-  const isHost = gameRoom.hostUserId === user?.id;
-  const canStart = gameRoom.players.length === 2 && 
-                   gameRoom.players.every(p => p.isReady && p.deckId);
+  const currentPlayer = gameRoom?.players?.find((p: GamePlayer) => p.userId === user?.id);
+  const isHost = gameRoom?.hostUserId === user?.id;
+  const canStart = (gameRoom?.players?.length || 0) === 2 && 
+                   gameRoom?.players?.every((p: GamePlayer) => p.isReady && p.deckId);
 
   // If game is in progress, show game board
   if (gameRoom.status === 'in_progress') {
