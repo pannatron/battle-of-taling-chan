@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -1405,44 +1405,12 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
             {/* Current User's Hand */}
             <div>
                 <p className="text-sm text-muted-foreground mb-2">Your Hand ({currentUserPlayer?.hand?.length || 0})</p>
-                {selectedCard && !showZoneSelector && (
-                  <div className="mb-2 flex gap-2 bg-primary/10 p-2 rounded-lg">
-                    <Button
-                      size="sm"
-                      onClick={() => setShowZoneSelector(true)}
-                      disabled={actionInProgress || (currentUserPlayer?.field?.length || 0) >= 4}
-                    >
-                      Play Card (Select Zone)
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => handleDiscardCard(selectedCard.id)}
-                      disabled={actionInProgress}
-                    >
-                      Discard
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setSelectedCard(null)}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                )}
+                
+                {/* Zone Selector - MOVED ABOVE CARDS */}
                 {selectedCard && showZoneSelector && (
-                  <div className="mb-2 p-3 bg-blue-500/20 border-2 border-blue-500 rounded-lg">
+                  <div className="mb-4 p-3 bg-blue-500/20 border-2 border-blue-500 rounded-lg shadow-lg z-50 relative">
                     <p className="text-sm font-semibold mb-2">Select Zone to Play Card:</p>
                     <div className="flex gap-2 flex-wrap">
-                      {/* <Button
-                        size="sm"
-                        onClick={() => handleZoneSelection('field')}
-                        disabled={actionInProgress}
-                        className="bg-green-600 hover:bg-green-700"
-                      >
-                        Field Zone
-                      </Button> */}
                       <Button
                         size="sm"
                         onClick={() => handleZoneSelection('avatar')}
@@ -1488,6 +1456,35 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                     </div>
                   </div>
                 )}
+                
+                {/* Card Action Buttons - MOVED ABOVE CARDS */}
+                {selectedCard && !showZoneSelector && (
+                  <div className="mb-4 flex gap-2 bg-primary/10 p-2 rounded-lg">
+                    <Button
+                      size="sm"
+                      onClick={() => setShowZoneSelector(true)}
+                      disabled={actionInProgress || (currentUserPlayer?.field?.length || 0) >= 4}
+                    >
+                      Play Card (Select Zone)
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => handleDiscardCard(selectedCard.id)}
+                      disabled={actionInProgress}
+                    >
+                      Discard
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setSelectedCard(null)}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                )}
+                
                 {/* Hand Cards - Overlapping Fan Layout */}
                 <div className="relative flex justify-center items-end" style={{ height: '280px', paddingBottom: '20px' }}>
                   {currentUserPlayer?.hand?.map((cardInHand: any, idx: number) => {
@@ -1511,7 +1508,12 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                     return (
                       <button
                         key={cardInHand.id}
-                        onClick={() => setSelectedCard(isSelected ? null : { id: cardInHand.id, index: idx })}
+                        onClick={(e) => {
+                          // Reset transform immediately when clicking
+                          e.currentTarget.style.transform = `translateX(calc(-50% + ${xPosition}px)) translateY(${yOffset}px) rotate(${rotation}deg)`;
+                          e.currentTarget.style.zIndex = String(100);
+                          setSelectedCard(isSelected ? null : { id: cardInHand.id, index: idx });
+                        }}
                         className={`absolute w-40 aspect-[2/3] rounded-lg overflow-hidden border-2 ${
                           isSelected ? 'border-yellow-500 ring-4 ring-yellow-300' : 'border-primary'
                         } shadow-lg cursor-pointer transition-all duration-300 ease-out`}
@@ -1523,12 +1525,14 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                           transformOrigin: 'bottom center',
                         }}
                         onMouseEnter={(e) => {
-                          if (!isSelected) {
+                          // Don't scale if ANY card is selected
+                          if (selectedCard === null) {
                             e.currentTarget.style.transform = `translateX(calc(-50% + ${xPosition}px)) translateY(-80px) rotate(0deg) scale(3)`;
                             e.currentTarget.style.zIndex = '99';
                           }
                         }}
                         onMouseLeave={(e) => {
+                          // Reset to normal position if not selected
                           if (!isSelected) {
                             e.currentTarget.style.transform = `translateX(calc(-50% + ${xPosition}px)) translateY(${yOffset}px) rotate(${rotation}deg)`;
                             e.currentTarget.style.zIndex = String(10 + idx);
