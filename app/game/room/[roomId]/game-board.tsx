@@ -36,6 +36,7 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
   const [cardToMove, setCardToMove] = useState<string | null>(null);
   const [powerInputValue, setPowerInputValue] = useState<string>('');
   const [showPowerInput, setShowPowerInput] = useState(false);
+  const [showOpponentHellModal, setShowOpponentHellModal] = useState(false);
 
   const player1 = gameRoom.players[0];
   const player2 = gameRoom.players[1];
@@ -456,17 +457,16 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
           </div>
 
 
-{/* Opponent's Magic Zone */}
-<div>
-  <p className="text-sm text-muted-foreground mb-2">
-    Magic Zone ({opponentPlayer?.magicZone?.length || 0}/4)
-  </p>
+{/* Opponent's Magic Zone & Deck/Hell - Side by Side */}
+<div className="flex gap-6">
+  {/* Magic Zone */}
+  <div className="flex-1">
+    <p className="text-sm text-muted-foreground mb-2">
+      Magic Zone ({opponentPlayer?.magicZone?.length || 0}/4)
+    </p>
 
-  {/* ใช้ layout เดียวกับ Your Magic Zone */}
-  <div className="relative flex items-center max-w-4xl">
-    {/* Left Side - 2 Magic slots */}
-    <div className="grid grid-cols-2 gap-3 w-[40%]">
-      {[0, 1].map((slotIdx) => {
+    <div className="grid grid-cols-4 gap-3">
+      {[0, 1, 2, 3].map((slotIdx) => {
         const magicCard = opponentPlayer?.magicZone?.[slotIdx];
         const cardData = magicCard ? findCardData(magicCard.cardId, opponentCards) : null;
 
@@ -505,48 +505,49 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
         );
       })}
     </div>
+  </div>
 
-    {/* Right Side - 2 Magic slots */}
-    <div className="grid grid-cols-2 gap-3 w-[40%] ml-auto">
-      {[2, 3].map((slotIdx) => {
-        const magicCard = opponentPlayer?.magicZone?.[slotIdx];
-        const cardData = magicCard ? findCardData(magicCard.cardId, opponentCards) : null;
-
-        return (
-          <div key={slotIdx} className="relative">
-            <div
-              className={`w-full relative aspect-[2/3] rounded-lg overflow-hidden border-2 ${
-                magicCard
-                  ? 'border-purple-500 hover:border-purple-400'
-                  : 'border-dashed border-purple-500/25'
-              } bg-purple-500/5 transition-all ${
-                magicCard ? 'hover:scale-150 hover:z-20' : ''
-              }`}
-            >
-              {magicCard && cardData?.imageUrl ? (
-                <Image
-                  src={cardData.imageUrl}
-                  alt={cardData.name || 'Card'}
-                  fill
-                  className="object-cover"
-                />
-              ) : magicCard ? (
-                <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                  <div className="text-center">
-                    <Layers className="h-6 w-6 mx-auto mb-1" />
-                    <p className="text-xs">Loading...</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                  <Layers className="h-6 w-6 opacity-30" />
-                </div>
-              )}
-            </div>
+  {/* Deck & Hell Area - Next to Magic Zone, aligned to bottom */}
+  <div className="flex flex-col gap-2 flex-shrink-0 self-end">
+    <div className="flex gap-2">
+      {/* Deck Pile */}
+      <div className="flex flex-col items-center">
+        <div className="relative w-24 aspect-[2/3] rounded-lg overflow-hidden border-4 border-green-600 shadow-xl">
+          <div className="w-full h-full bg-gradient-to-br from-green-900 via-emerald-900 to-green-900 flex flex-col items-center justify-center text-white">
+            <Layers className="h-6 w-6 mb-1" />
+            <div className="text-lg font-bold">{opponentPlayer?.deck?.length || 0}</div>
+            <div className="text-xs">Cards</div>
           </div>
-        );
-      })}
+        </div>
+        <p className="text-sm text-muted-foreground mt-1 mb-1">Deck</p>
+      </div>
+
+      {/* Hell Pile - Clickable */}
+      <div className="flex flex-col items-center">
+        <button
+          onClick={() => setShowOpponentHellModal(true)}
+          disabled={!opponentPlayer?.hell || opponentPlayer.hell.length === 0}
+          className="relative w-24 aspect-[2/3] rounded-lg overflow-hidden border-4 border-red-600 shadow-xl hover:border-red-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-110"
+        >
+          {opponentPlayer?.hell && opponentPlayer.hell.length > 0 ? (
+            <div className="w-full h-full bg-gradient-to-br from-red-900 via-orange-900 to-red-900 flex flex-col items-center justify-center text-white">
+              <div className="text-2xl font-bold">{opponentPlayer.hell.length}</div>
+              <div className="text-xs">Cards</div>
+            </div>
+          ) : (
+            <div className="w-full h-full bg-muted flex items-center justify-center text-muted-foreground">
+              <div className="text-center">
+                <div className="text-xs">Empty</div>
+              </div>
+            </div>
+          )}
+        </button>
+        <p className="text-sm text-muted-foreground mt-1 mb-1">Hell</p>
+      </div>
     </div>
+    {opponentPlayer?.hell && opponentPlayer.hell.length > 0 && (
+      <p className="text-xs text-muted-foreground text-center">Click to view</p>
+    )}
   </div>
 </div>
 
@@ -753,7 +754,7 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
             {/* Construct Zone */}
             <div className="flex-shrink-0" style={{ width: '280px' }}>
               <p className="text-sm text-muted-foreground mb-2">Construct Zone ({opponentPlayer?.constructZone?.length || 0}/3)</p>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 gap-2 mb-4">
                 {[0, 1, 2].map((slotIdx) => {
                   const constructCard = opponentPlayer?.constructZone?.[slotIdx];
                   const cardData = constructCard ? findCardData(constructCard.cardId, opponentCards) : null;
@@ -788,39 +789,39 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                 })}
               </div>
               
-              {/* Opponent's Life Cards - below Construct Zone */}
-              <div className="mt-4">
-                <p className="text-sm text-muted-foreground mb-2">Life Cards ({opponentPlayer?.lifeCards?.length || 0})</p>
-                <div className="flex gap-2 justify-center">
-                  {opponentPlayer?.lifeCards?.map((lifeCard: any, idx: number) => {
-                    const cardData = lifeCard ? findCardData(lifeCard.cardId, opponentCards) : null;
-                    
-                    return (
-                      <div key={idx} className="relative">
-                        <div className="relative w-16 aspect-[2/3] rounded-lg overflow-hidden border-2 border-red-500 shadow-md hover:scale-[5] hover:z-30 transition-all">
-                          {!lifeCard.faceUp ? (
-                            <div className="w-full h-full bg-gradient-to-br from-red-900 via-rose-900 to-red-900 flex items-center justify-center">
-                              <div className="text-white text-xs font-bold">LIFE</div>
-                            </div>
-                          ) : cardData?.imageUrl ? (
-                            <Image
-                              src={cardData.imageUrl}
-                              alt={cardData.name || 'Life Card'}
-                              fill
-                              className="object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-muted flex items-center justify-center text-muted-foreground">
-                              <div className="text-center">
-                                <Layers className="h-4 w-4 mx-auto mb-1" />
-                                <p className="text-xs">Loading...</p>
+              {/* Opponent's Life Cards */}
+              <div>
+                <p className="text-sm text-muted-foreground mb-2 text-center">Life Cards ({opponentPlayer?.lifeCards?.length || 0})</p>
+                  <div className="flex gap-2 justify-center">
+                    {opponentPlayer?.lifeCards?.map((lifeCard: any, idx: number) => {
+                      const cardData = lifeCard ? findCardData(lifeCard.cardId, opponentCards) : null;
+                      
+                      return (
+                        <div key={idx} className="relative">
+                          <div className="relative w-16 aspect-[2/3] rounded-lg overflow-hidden border-2 border-red-500 shadow-md hover:scale-[5] hover:z-30 transition-all">
+                            {!lifeCard.faceUp ? (
+                              <div className="w-full h-full bg-gradient-to-br from-red-900 via-rose-900 to-red-900 flex items-center justify-center">
+                                <div className="text-white text-xs font-bold">LIFE</div>
                               </div>
-                            </div>
-                          )}
+                            ) : cardData?.imageUrl ? (
+                              <Image
+                                src={cardData.imageUrl}
+                                alt={cardData.name || 'Life Card'}
+                                fill
+                                className="object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-muted flex items-center justify-center text-muted-foreground">
+                                <div className="text-center">
+                                  <Layers className="h-4 w-4 mx-auto mb-1" />
+                                  <p className="text-xs">Loading...</p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
                 </div>
               </div>
             </div>
@@ -1704,6 +1705,7 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                 </div>
             </div>
           </div>
+
         </CardContent>
       </Card>
 
@@ -1819,6 +1821,64 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                 <div className="text-center py-8 text-muted-foreground">
                   <Layers className="h-12 w-12 mx-auto mb-2 opacity-50" />
                   <p>No cards in hell</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* View Opponent Hell Modal */}
+      {showOpponentHellModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-4xl max-h-[80vh] flex flex-col">
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Layers className="h-5 w-5" />
+                  Opponent's Hell
+                </div>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setShowOpponentHellModal(false)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="overflow-y-auto flex-1">
+              <p className="text-sm text-muted-foreground mb-4">
+                Viewing opponent's hell zone ({opponentPlayer?.hell?.length || 0} cards)
+              </p>
+              <div className="grid grid-cols-4 gap-3">
+                {opponentPlayer?.hell?.map((hellCard: any) => {
+                  const cardData = findCardData(hellCard.cardId, opponentCards);
+                  return (
+                    <div
+                      key={hellCard.id}
+                      className="relative aspect-[2/3] rounded-lg overflow-hidden border-2 border-red-500 shadow-lg hover:scale-105 transition-all"
+                    >
+                      {cardData?.imageUrl ? (
+                        <Image
+                          src={cardData.imageUrl}
+                          alt={cardData.name || 'Card'}
+                          fill
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-muted flex items-center justify-center">
+                          <p className="text-xs text-center p-2">{cardData?.name || 'Loading...'}</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              {(!opponentPlayer?.hell || opponentPlayer.hell.length === 0) && (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Layers className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p>Opponent's hell is empty</p>
                 </div>
               )}
             </CardContent>
