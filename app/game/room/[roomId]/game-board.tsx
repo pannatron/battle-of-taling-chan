@@ -9,7 +9,7 @@ import { GamePlayer } from '@/types/game';
 import { Card as CardType } from '@/types/card';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
-import { drawCard, playCard, discardCard, moveFieldCardToHell, moveFieldCardToHand, moveFieldCardToDeck, searchCardFromDeck, searchCardFromHell, shuffleDeck, flipLifeCard, moveAvatarToOpponentField, toggleCardRotation, moveHandCardToDeck, updateCardPower } from '@/lib/api';
+import { drawCard, playCard, discardCard, moveFieldCardToHell, moveFieldCardToHand, moveFieldCardToDeck, searchCardFromDeck, searchCardFromHell, shuffleDeck, flipLifeCard, moveAvatarToOpponentField, toggleCardRotation, moveHandCardToDeck, updateCardPower, rollDice } from '@/lib/api';
 
 interface GameBoardProps {
   roomId: string;
@@ -37,6 +37,53 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
   const [powerInputValue, setPowerInputValue] = useState<string>('');
   const [showPowerInput, setShowPowerInput] = useState(false);
   const [showOpponentHellModal, setShowOpponentHellModal] = useState(false);
+  const [diceResult, setDiceResult] = useState<number | null>(null);
+  const [isRolling, setIsRolling] = useState(false);
+  const [showDiceResult, setShowDiceResult] = useState(false);
+  const [diceRollUsername, setDiceRollUsername] = useState<string>('');
+  const [diceTimeoutId, setDiceTimeoutId] = useState<NodeJS.Timeout | null>(null);
+
+  // Listen for dice roll events from ALL players (including self)
+  useEffect(() => {
+    const handleDiceRollResult = (event: any) => {
+      const { userId: rollerUserId, username, result } = event.detail;
+      
+      // Clear any pending timeout
+      if (diceTimeoutId) {
+        clearTimeout(diceTimeoutId);
+        setDiceTimeoutId(null);
+      }
+      
+      // Wait for animation to complete (1.5s) before showing result
+      setTimeout(() => {
+        setDiceRollUsername(username);
+        setDiceResult(result);
+        setIsRolling(false);
+        setShowDiceResult(true);
+        
+        toast({
+          title: '🎲 Dice Roll',
+          description: `${username} rolled a ${result}!`,
+        });
+        
+        // Hide result after 4 seconds (total 5.5s from start)
+        setTimeout(() => {
+          setShowDiceResult(false);
+          setDiceResult(null);
+          setDiceRollUsername('');
+        }, 4000);
+      }, 1500);
+    };
+
+    window.addEventListener('dice-roll-result', handleDiceRollResult);
+    
+    return () => {
+      window.removeEventListener('dice-roll-result', handleDiceRollResult);
+      if (diceTimeoutId) {
+        clearTimeout(diceTimeoutId);
+      }
+    };
+  }, [toast, diceTimeoutId]);
 
   const player1 = gameRoom.players[0];
   const player2 = gameRoom.players[1];
@@ -419,6 +466,61 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
       });
     } finally {
       setActionInProgress(false);
+    }
+  };
+
+  const handleRollDice = async () => {
+    // Prevent multiple clicks while rolling
+    if (isRolling || !user) return;
+    
+    // Clear any existing states
+    setDiceResult(null);
+    setDiceRollUsername('');
+    
+    // Start rolling animation
+    setIsRolling(true);
+    setShowDiceResult(true);
+    
+    // Set timeout protection (10 seconds)
+    const timeoutId = setTimeout(() => {
+      setIsRolling(false);
+      setShowDiceResult(false);
+      setDiceResult(null);
+      setDiceRollUsername('');
+      toast({
+        title: 'Timeout',
+        description: 'Dice roll timed out. Please try again.',
+        variant: 'destructive',
+      });
+    }, 10000);
+    
+    setDiceTimeoutId(timeoutId);
+    
+    try {
+      // Call API to roll dice (server will broadcast result via Ably)
+      // The result will be received via the dice-roll event listener
+      await rollDice(roomId, { 
+        userId: user.id, 
+        username: user.username || 'Player' 
+      });
+    } catch (error: any) {
+      // Clear timeout on error
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        setDiceTimeoutId(null);
+      }
+      
+      // Reset all states
+      setIsRolling(false);
+      setShowDiceResult(false);
+      setDiceResult(null);
+      setDiceRollUsername('');
+      
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to roll dice',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -1281,7 +1383,17 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
               <div className="flex gap-6">
                 {/* Magic Zone */}
                 <div className="flex-1">
-                  <p className="text-sm text-muted-foreground mb-2">Your Magic Zone ({currentUserPlayer?.magicZone?.length || 0}/4)</p>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm text-muted-foreground">Your Magic Zone ({currentUserPlayer?.magicZone?.length || 0}/4)</p>
+                    <Button
+                      size="sm"
+                      onClick={handleRollDice}
+                      disabled={isRolling}
+                      className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold"
+                    >
+                      🎲 Roll Dice
+                    </Button>
+                  </div>
                   {selectedMagicCard && currentUserPlayer?.magicZone?.find((c: any) => c.id === selectedMagicCard) && (
                     <div className="mb-2 flex gap-2 bg-purple-500/10 p-2 rounded-lg flex-wrap">
                       <Button
@@ -1825,6 +1937,165 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
               )}
             </CardContent>
           </Card>
+        </div>
+      )}
+
+      {/* Dice Roll Result Display - Enhanced 3D Animation */}
+      {showDiceResult && diceResult && (
+        <div className="fixed inset-0 flex items-center justify-center z-[100] pointer-events-none">
+          <style jsx>{`
+            @keyframes roll {
+              0% { transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg); }
+              100% { transform: rotateX(720deg) rotateY(720deg) rotateZ(720deg); }
+            }
+            
+            .dice-container {
+              perspective: 1000px;
+              width: 200px;
+              height: 200px;
+            }
+            
+            .dice {
+              width: 200px;
+              height: 200px;
+              position: relative;
+              transform-style: preserve-3d;
+              animation: ${isRolling ? 'roll 1.5s ease-out' : 'none'};
+            }
+            
+            .dice-face {
+              position: absolute;
+              width: 200px;
+              height: 200px;
+              background: linear-gradient(145deg, #ffffff, #f0f0f0);
+              border: 4px solid #333;
+              border-radius: 20px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 80px;
+              box-shadow: inset 0 5px 10px rgba(0,0,0,0.1);
+            }
+            
+            .dice-face::before {
+              content: '';
+              position: absolute;
+              width: 100%;
+              height: 100%;
+              border-radius: 16px;
+              background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.8), transparent);
+            }
+            
+            .dice-dot {
+              width: 30px;
+              height: 30px;
+              background: #333;
+              border-radius: 50%;
+              position: absolute;
+              box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+            }
+            
+            /* Position dots for each face */
+            .face-1 .dice-dot { top: 50%; left: 50%; transform: translate(-50%, -50%); }
+            
+            .face-2 .dice-dot:nth-child(1) { top: 25%; left: 25%; }
+            .face-2 .dice-dot:nth-child(2) { bottom: 25%; right: 25%; }
+            
+            .face-3 .dice-dot:nth-child(1) { top: 25%; left: 25%; }
+            .face-3 .dice-dot:nth-child(2) { top: 50%; left: 50%; transform: translate(-50%, -50%); }
+            .face-3 .dice-dot:nth-child(3) { bottom: 25%; right: 25%; }
+            
+            .face-4 .dice-dot:nth-child(1) { top: 25%; left: 25%; }
+            .face-4 .dice-dot:nth-child(2) { top: 25%; right: 25%; }
+            .face-4 .dice-dot:nth-child(3) { bottom: 25%; left: 25%; }
+            .face-4 .dice-dot:nth-child(4) { bottom: 25%; right: 25%; }
+            
+            .face-5 .dice-dot:nth-child(1) { top: 25%; left: 25%; }
+            .face-5 .dice-dot:nth-child(2) { top: 25%; right: 25%; }
+            .face-5 .dice-dot:nth-child(3) { top: 50%; left: 50%; transform: translate(-50%, -50%); }
+            .face-5 .dice-dot:nth-child(4) { bottom: 25%; left: 25%; }
+            .face-5 .dice-dot:nth-child(5) { bottom: 25%; right: 25%; }
+            
+            .face-6 .dice-dot:nth-child(1) { top: 25%; left: 25%; }
+            .face-6 .dice-dot:nth-child(2) { top: 25%; right: 25%; }
+            .face-6 .dice-dot:nth-child(3) { top: 50%; left: 25%; }
+            .face-6 .dice-dot:nth-child(4) { top: 50%; right: 25%; }
+            .face-6 .dice-dot:nth-child(5) { bottom: 25%; left: 25%; }
+            .face-6 .dice-dot:nth-child(6) { bottom: 25%; right: 25%; }
+            
+            /* 3D positioning of faces */
+            .face-front  { transform: rotateY(0deg) translateZ(100px); }
+            .face-back   { transform: rotateY(180deg) translateZ(100px); }
+            .face-right  { transform: rotateY(90deg) translateZ(100px); }
+            .face-left   { transform: rotateY(-90deg) translateZ(100px); }
+            .face-top    { transform: rotateX(90deg) translateZ(100px); }
+            .face-bottom { transform: rotateX(-90deg) translateZ(100px); }
+            
+            /* Show result face */
+            .show-1 { transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg) !important; }
+            .show-2 { transform: rotateX(0deg) rotateY(180deg) rotateZ(0deg) !important; }
+            .show-3 { transform: rotateX(0deg) rotateY(-90deg) rotateZ(0deg) !important; }
+            .show-4 { transform: rotateX(0deg) rotateY(90deg) rotateZ(0deg) !important; }
+            .show-5 { transform: rotateX(-90deg) rotateY(0deg) rotateZ(0deg) !important; }
+            .show-6 { transform: rotateX(90deg) rotateY(0deg) rotateZ(0deg) !important; }
+          `}</style>
+          
+          <div className="dice-container">
+            <div className={`dice ${!isRolling ? `show-${diceResult}` : ''}`}>
+              {/* Face 1 */}
+              <div className="dice-face face-front face-1">
+                <div className="dice-dot"></div>
+              </div>
+              
+              {/* Face 2 */}
+              <div className="dice-face face-back face-2">
+                <div className="dice-dot"></div>
+                <div className="dice-dot"></div>
+              </div>
+              
+              {/* Face 3 */}
+              <div className="dice-face face-right face-3">
+                <div className="dice-dot"></div>
+                <div className="dice-dot"></div>
+                <div className="dice-dot"></div>
+              </div>
+              
+              {/* Face 4 */}
+              <div className="dice-face face-left face-4">
+                <div className="dice-dot"></div>
+                <div className="dice-dot"></div>
+                <div className="dice-dot"></div>
+                <div className="dice-dot"></div>
+              </div>
+              
+              {/* Face 5 */}
+              <div className="dice-face face-top face-5">
+                <div className="dice-dot"></div>
+                <div className="dice-dot"></div>
+                <div className="dice-dot"></div>
+                <div className="dice-dot"></div>
+                <div className="dice-dot"></div>
+              </div>
+              
+              {/* Face 6 */}
+              <div className="dice-face face-bottom face-6">
+                <div className="dice-dot"></div>
+                <div className="dice-dot"></div>
+                <div className="dice-dot"></div>
+                <div className="dice-dot"></div>
+                <div className="dice-dot"></div>
+                <div className="dice-dot"></div>
+              </div>
+            </div>
+          </div>
+          
+          {!isRolling && diceResult && (
+            <div className="absolute bottom-32 text-center animate-bounce">
+              <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-3 rounded-full text-2xl font-bold shadow-2xl border-4 border-yellow-400">
+                {diceRollUsername} rolled a {diceResult}! 🎲
+              </div>
+            </div>
+          )}
         </div>
       )}
 

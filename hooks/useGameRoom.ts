@@ -82,6 +82,14 @@ export function useGameRoom(roomId: string | null) {
             case 'game-start':
               setGameRoom(event.data);
               break;
+            case 'dice-roll':
+              // Dice roll event - trigger a custom event that game-board can listen to
+              const diceEvent = new CustomEvent('dice-roll-result', { 
+                detail: event.data 
+              });
+              window.dispatchEvent(diceEvent);
+              console.log('Dice roll event received:', event.data);
+              break;
             default:
               console.log('Unknown event type:', event.type);
           }

@@ -48,7 +48,14 @@ export interface GameRoom {
   updatedAt: Date;
 }
 
+export interface DiceRollData {
+  userId: string;
+  username: string;
+  result: number;
+  timestamp: Date;
+}
+
 export interface GameRoomEvent {
-  type: 'room-update' | 'player-joined' | 'player-left' | 'seat-taken' | 'deck-selected' | 'player-ready' | 'game-start';
+  type: 'room-update' | 'player-joined' | 'player-left' | 'seat-taken' | 'deck-selected' | 'player-ready' | 'game-start' | 'dice-roll';
   data: any;
 }

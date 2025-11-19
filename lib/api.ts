@@ -992,3 +992,28 @@ export async function updateCardPower(roomId: string, data: {
     throw error;
   }
 }
+
+export async function rollDice(roomId: string, data: {
+  userId: string;
+  username: string;
+}): Promise<any> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/game/rooms/${roomId}/roll-dice`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `Failed to roll dice in room ${roomId}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error(`Error rolling dice in room ${roomId}:`, error);
+    throw error;
+  }
+}
