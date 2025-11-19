@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getGameRooms, createGameRoom, joinGameRoom } from '@/lib/api';
 import { GameRoom } from '@/types/game';
-import { Users, Play, RefreshCw, Plus } from 'lucide-react';
+import { Users, Play, RefreshCw, Plus, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export default function GameLobbyPage() {
@@ -153,29 +153,40 @@ export default function GameLobbyPage() {
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="max-w-6xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-4xl font-bold mb-2">Game Lobby</h1>
-            <p className="text-muted-foreground">
-              Join an existing room or create your own to start playing
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={fetchRooms}
-              disabled={loading}
-            >
-              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-            </Button>
-            <Button
-              onClick={() => setShowCreateForm(!showCreateForm)}
-              className="gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              Create Room
-            </Button>
+        <div className="flex items-center gap-4 mb-8">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => router.push('/')}
+            className="shrink-0"
+            title="Back to Home"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div className="flex-1 flex items-center justify-between">
+            <div>
+              <h1 className="text-4xl font-bold mb-2">Game Lobby</h1>
+              <p className="text-muted-foreground">
+                Join an existing room or create your own to start playing
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={fetchRooms}
+                disabled={loading}
+              >
+                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              </Button>
+              <Button
+                onClick={() => setShowCreateForm(!showCreateForm)}
+                className="gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Create Room
+              </Button>
+            </div>
           </div>
         </div>
 
