@@ -291,7 +291,7 @@ export default function GameRoomPage() {
                    gameRoom?.players?.every((p: GamePlayer) => p.isReady && p.deckId);
 
   // If game is in progress, show game board
-  if (gameRoom.status === 'in_progress') {
+  if (gameRoom?.status === 'in_progress') {
     return (
       <div className="container mx-auto py-8 px-4">
         <div className="max-w-7xl mx-auto">
@@ -377,12 +377,12 @@ export default function GameRoomPage() {
                 Players
               </CardTitle>
               <CardDescription>
-                {gameRoom.players.length}/2 players
+                {gameRoom?.players?.length || 0}/2 players
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {[1, 2].map((seat) => {
-                const player = gameRoom.players.find(p => p.seat === seat);
+                const player = gameRoom?.players?.find(p => p.seat === seat);
                 const isCurrentPlayer = player?.userId === user?.id;
                 
                 return (
@@ -400,7 +400,7 @@ export default function GameRoomPage() {
                       <div>
                         <h3 className="font-semibold">
                           Seat {seat}
-                          {player?.userId === gameRoom.hostUserId && (
+                          {player?.userId === gameRoom?.hostUserId && (
                             <Badge variant="outline" className="ml-2">Host</Badge>
                           )}
                         </h3>
@@ -454,13 +454,13 @@ export default function GameRoomPage() {
                 Spectators
               </CardTitle>
               <CardDescription>
-                {gameRoom.spectators.length}/{gameRoom.maxSpectators} spectators
+                {gameRoom?.spectators?.length || 0}/{gameRoom?.maxSpectators || 0} spectators
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {gameRoom.spectators.length > 0 ? (
+              {(gameRoom?.spectators?.length || 0) > 0 ? (
                 <div className="space-y-2">
-                  {gameRoom.spectators.map((spectator) => (
+                  {gameRoom?.spectators?.map((spectator) => (
                     <div
                       key={spectator.userId}
                       className="p-3 rounded-lg bg-muted/50"
@@ -492,13 +492,13 @@ export default function GameRoomPage() {
                 <Button
                   variant="outline"
                   onClick={() => router.push(`/decks?roomId=${roomId}`)}
-                  disabled={gameRoom.status !== 'waiting'}
+                  disabled={gameRoom?.status !== 'waiting'}
                 >
                   {currentPlayer.deckId ? 'Change Deck' : 'Select Deck'}
                 </Button>
                 <Button
                   onClick={handleToggleReady}
-                  disabled={!currentPlayer.deckId || gameRoom.status !== 'waiting'}
+                  disabled={!currentPlayer?.deckId || gameRoom?.status !== 'waiting'}
                   variant={currentPlayer.isReady ? 'outline' : 'default'}
                 >
                   {currentPlayer.isReady ? 'Not Ready' : 'Ready'}
