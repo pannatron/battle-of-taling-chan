@@ -117,6 +117,11 @@ function validateChooseOne(
 
   // Check if any card from the same choose-one group is already in the deck
   for (const deckCard of selectedCards) {
+    // Skip if this is the same card (allow adding multiple copies of the same card)
+    if (deckCard._id === card._id || deckCard.name === card.name) {
+      continue;
+    }
+
     // Find the full card data
     const fullCard = allCards.find(c => c._id === deckCard._id);
     if (!fullCard) continue;
