@@ -5,7 +5,7 @@ import { Card as CardType } from '@/types/card';
 import { useDeckBuilder } from '@/hooks/useDeckBuilder';
 import { addCardToDeck, removeCardFromDeck, isOnlyOneCard } from '@/lib/deckCardUtils';
 import { Button } from '@/components/ui/button';
-import { Grid3x3, List, ArrowLeft, Filter, Download } from 'lucide-react';
+import { Grid3x3, List, ArrowLeft, Filter, Download, FileInput } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { DeckFilters } from '@/components/deck-builder/DeckFilters';
@@ -13,6 +13,7 @@ import { DeckCardsList } from '@/components/deck-builder/DeckCardsList';
 import { SearchResults } from '@/components/deck-builder/SearchResults';
 import { DeckVisualization } from '@/components/deck-builder/DeckVisualization';
 import { DeckLoader } from '@/components/deck-builder/DeckLoader';
+import { DeckCodeImporter } from '@/components/deck-builder/DeckCodeImporter';
 
 const ITEMS_PER_PAGE = 80;
 
@@ -23,6 +24,7 @@ export default function DeckBuilderPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
   const [showDeckLoader, setShowDeckLoader] = useState(false);
+  const [showCodeImporter, setShowCodeImporter] = useState(false);
   const [loadingDeck, setLoadingDeck] = useState(false);
 
   // Reset to page 1 when search results change
@@ -125,6 +127,40 @@ export default function DeckBuilderPage() {
     }
   };
 
+  const handleImportCards = (
+    cards: { card: CardType; quantity: number; section: 'main' | 'life' }[],
+    deckName?: string
+  ) => {
+    // Clear old deck and start with empty array
+    let newSelectedCards: typeof deckBuilder.selectedCards = [];
+
+    cards.forEach(({ card, quantity, section }) => {
+      for (let i = 0; i < quantity; i++) {
+        const target = section === 'life' ? 'life' : 'main';
+        newSelectedCards = addCardToDeck(
+          card,
+          newSelectedCards,
+          target,
+          () => newSelectedCards.filter(c => !c.isLifeCard && !c.isSideDeck).length,
+          () => newSelectedCards.filter(c => c.isLifeCard).length,
+          () => newSelectedCards.filter(c => c.isSideDeck).length,
+          () => newSelectedCards.filter(c => c.isSideDeck && isOnlyOneCard(c.ex)).length,
+          () => newSelectedCards.filter(c => !c.isLifeCard && isOnlyOneCard(c.ex) && !c.isSideDeck).length,
+          deckBuilder.getMaxDeckSize,
+          () => newSelectedCards.filter(c => !c.isLifeCard && !c.isSideDeck).length >= deckBuilder.getMaxDeckSize(),
+          deckBuilder.allCards
+        );
+      }
+    });
+
+    deckBuilder.setSelectedCards(newSelectedCards);
+    
+    // Auto-fill deck name if provided
+    if (deckName) {
+      deckBuilder.setDeckName(deckName);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background py-4 md:py-8">
       <div className="container mx-auto px-2 sm:px-4 max-w-[1800px]">
@@ -147,15 +183,26 @@ export default function DeckBuilderPage() {
                 10 regular OR 11 regular)
               </p>
             </div>
-            <Button
-              onClick={() => setShowDeckLoader(true)}
-              variant="outline"
-              className="gap-2 shrink-0"
-            >
-              <Download className="h-4 w-4" />
-              <span className="hidden sm:inline">Load Deck</span>
-              <span className="sm:hidden">Load</span>
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => setShowCodeImporter(true)}
+                variant="outline"
+                className="gap-2 shrink-0"
+              >
+                <FileInput className="h-4 w-4" />
+                <span className="hidden sm:inline">Import Codes</span>
+                <span className="sm:hidden">Import</span>
+              </Button>
+              <Button
+                onClick={() => setShowDeckLoader(true)}
+                variant="outline"
+                className="gap-2 shrink-0"
+              >
+                <Download className="h-4 w-4" />
+                <span className="hidden sm:inline">Load Deck</span>
+                <span className="sm:hidden">Load</span>
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -284,6 +331,14 @@ export default function DeckBuilderPage() {
           onLoadDeck={handleLoadDeck}
           onClose={() => setShowDeckLoader(false)}
           loading={loadingDeck}
+        />
+      )}
+
+      {/* Deck Code Importer Modal */}
+      {showCodeImporter && (
+        <DeckCodeImporter
+          onImport={handleImportCards}
+          onClose={() => setShowCodeImporter(false)}
         />
       )}
     </div>

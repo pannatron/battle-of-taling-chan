@@ -54,6 +54,28 @@ export async function getCardByPrint(print: string): Promise<Card | null> {
   }
 }
 
+export async function getCardsByPrintCodes(codes: string[]): Promise<Card[]> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/cards/batch/by-codes`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ codes }),
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch cards by print codes');
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error('Error fetching cards by print codes:', error);
+    return [];
+  }
+}
+
 export async function searchCards(params: {
   name?: string;
   type?: string;
