@@ -590,8 +590,8 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                   fill
                   className="object-cover"
                   priority
-                  quality={75}
-                  sizes="(max-width: 768px) 100px, 150px"
+                  quality={100}
+                  sizes="(max-width: 768px) 150px, 225px"
                 />
               ) : magicCard ? (
                 <div className="w-full h-full flex items-center justify-center text-muted-foreground">
@@ -691,8 +691,8 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                               fill
                               className="object-cover"
                               priority
-                              quality={75}
-                              sizes="(max-width: 768px) 120px, 180px"
+                              quality={100}
+                              sizes="(max-width: 768px) 300px, 450px"
                             />
                             {avatarCard.currentPower !== undefined && (
                               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-purple-600/90 text-white px-4 py-2 rounded-full text-3xl font-bold border-4 border-white shadow-2xl">
@@ -787,9 +787,9 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                                 alt={cardData.name || 'Land Card'}
                                 fill
                                 className="object-cover"
-                                loading="lazy"
-                                quality={75}
-                                sizes="(max-width: 768px) 128px, 192px"
+                                priority
+                                quality={100}
+                                sizes="(max-width: 768px) 384px, 576px"
                               />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-muted-foreground bg-gradient-to-br from-amber-950/90 via-yellow-900/90 to-amber-950/90">
@@ -845,6 +845,9 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                               alt={cardData.name || 'Card'}
                               fill
                               className="object-cover"
+                              priority
+                              quality={100}
+                              sizes="(max-width: 768px) 300px, 450px"
                             />
                             {avatarCard.currentPower !== undefined && (
                               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-purple-600/90 text-white px-4 py-2 rounded-full text-3xl font-bold border-4 border-white shadow-2xl">
@@ -891,6 +894,9 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                             alt={cardData.name || 'Card'}
                             fill
                             className="object-cover"
+                            priority
+                            quality={100}
+                            sizes="(max-width: 768px) 400px, 600px"
                           />
                         ) : constructCard ? (
                           <div className="w-full h-full flex items-center justify-center text-muted-foreground">
@@ -930,6 +936,9 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                                 alt={cardData.name || 'Life Card'}
                                 fill
                                 className="object-cover"
+                                priority
+                                quality={100}
+                                sizes="(max-width: 768px) 400px, 500px"
                               />
                             ) : (
                               <div className="w-full h-full bg-muted flex items-center justify-center text-muted-foreground">
