@@ -839,12 +839,19 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                         }}
                       >
                         {avatarCard && cardData?.imageUrl ? (
-                          <Image
-                            src={cardData.imageUrl}
-                            alt={cardData.name || 'Card'}
-                            fill
-                            className="object-cover"
-                          />
+                          <>
+                            <Image
+                              src={cardData.imageUrl}
+                              alt={cardData.name || 'Card'}
+                              fill
+                              className="object-cover"
+                            />
+                            {avatarCard.currentPower !== undefined && (
+                              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-purple-600/90 text-white px-4 py-2 rounded-full text-3xl font-bold border-4 border-white shadow-2xl">
+                                {avatarCard.currentPower}
+                              </div>
+                            )}
+                          </>
                         ) : avatarCard ? (
                           <div className="w-full h-full flex items-center justify-center text-muted-foreground">
                             <div className="text-center">
@@ -1219,6 +1226,11 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                                   fill
                                   className="object-cover"
                                 />
+                                {avatarCard.currentPower !== undefined && (
+                                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-purple-600/90 text-white px-4 py-2 rounded-full text-3xl font-bold border-4 border-white shadow-2xl">
+                                    {avatarCard.currentPower}
+                                  </div>
+                                )}
                                 {isSelected && (
                                   <div className="absolute inset-0 bg-blue-500/20 flex items-center justify-center pointer-events-none">
                                     <div className="bg-blue-500 text-white px-2 py-1 rounded text-xs font-bold">
