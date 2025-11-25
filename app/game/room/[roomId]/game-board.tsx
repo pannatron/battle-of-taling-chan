@@ -981,8 +981,9 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                 {/* Avatar Zone */}
                 <div className="flex-1">
                   <p className="text-sm text-muted-foreground mb-2">Your Avatar Zone ({currentUserPlayer?.avatarZone?.length || 0}/4)</p>
-                {selectedMagicCard && currentUserPlayer?.avatarZone?.find((c: any) => c.id === selectedMagicCard) && (
-                  <div className="mb-2 space-y-2">
+                {/* Reserve space for action buttons to prevent layout shift */}
+                <div className="mb-2 space-y-2" style={{ minHeight: selectedMagicCard && currentUserPlayer?.avatarZone?.find((c: any) => c.id === selectedMagicCard) ? 'auto' : '0' }}>
+                  {selectedMagicCard && currentUserPlayer?.avatarZone?.find((c: any) => c.id === selectedMagicCard) && (
                     <div className="flex gap-2 bg-blue-500/10 p-2 rounded-lg flex-wrap">
                       <Button
                         size="sm"
@@ -1060,7 +1061,8 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                         Cancel
                       </Button>
                     </div>
-                    {showPowerInput && (
+                  )}
+                  {selectedMagicCard && currentUserPlayer?.avatarZone?.find((c: any) => c.id === selectedMagicCard) && showPowerInput && (
                       <div className="flex gap-2 bg-purple-500/10 p-3 rounded-lg items-center">
                         <label className="text-sm font-semibold text-purple-300">Power:</label>
                         <input
@@ -1090,11 +1092,12 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                           Cancel
                         </Button>
                       </div>
-                    )}
-                  </div>
-                )}
-                {selectedFieldCard && currentUserPlayer?.landZone?.find((c: any) => c.id === selectedFieldCard) && (
-                  <div className="mb-2 flex gap-2 bg-amber-500/10 p-2 rounded-lg flex-wrap">
+                  )}
+                </div>
+                {/* Reserve space for land zone action buttons */}
+                <div className="mb-2" style={{ minHeight: selectedFieldCard && currentUserPlayer?.landZone?.find((c: any) => c.id === selectedFieldCard) ? 'auto' : '0' }}>
+                  {selectedFieldCard && currentUserPlayer?.landZone?.find((c: any) => c.id === selectedFieldCard) && (
+                    <div className="flex gap-2 bg-amber-500/10 p-2 rounded-lg flex-wrap">
                     <Button
                       size="sm"
                       variant="destructive"
@@ -1125,8 +1128,9 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                     >
                       Cancel
                     </Button>
-                  </div>
-                )}
+                    </div>
+                  )}
+                </div>
                 <div className="relative flex items-center max-w-4xl">
                   {/* Left Side - 2 Avatar slots */}
                   <div className="grid grid-cols-2 gap-3 w-[40%]">
@@ -1271,8 +1275,10 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                 {/* Construct Zone */}
                 <div className="flex-shrink-0" style={{ width: '280px' }}>
                   <p className="text-sm text-muted-foreground mb-2">Your Construct Zone ({currentUserPlayer?.constructZone?.length || 0}/3)</p>
-                  {selectedConstructCard && currentUserPlayer?.constructZone?.find((c: any) => c.id === selectedConstructCard) && (
-                    <div className="mb-2 flex gap-2 bg-orange-500/10 p-2 rounded-lg flex-wrap">
+                  {/* Reserve space for construct action buttons */}
+                  <div className="mb-2" style={{ minHeight: selectedConstructCard && currentUserPlayer?.constructZone?.find((c: any) => c.id === selectedConstructCard) ? 'auto' : '0' }}>
+                    {selectedConstructCard && currentUserPlayer?.constructZone?.find((c: any) => c.id === selectedConstructCard) && (
+                      <div className="flex gap-2 bg-orange-500/10 p-2 rounded-lg flex-wrap">
                       <Button
                         size="sm"
                         variant="destructive"
@@ -1312,8 +1318,9 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                       >
                         Cancel
                       </Button>
-                    </div>
-                  )}
+                      </div>
+                    )}
+                  </div>
                   <div className="grid grid-cols-3 gap-2">
                     {[0, 1, 2].map((slotIdx) => {
                       const constructCard = currentUserPlayer?.constructZone?.[slotIdx];
@@ -1427,8 +1434,10 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                       🎲 Roll Dice
                     </Button>
                   </div>
-                  {selectedMagicCard && currentUserPlayer?.magicZone?.find((c: any) => c.id === selectedMagicCard) && (
-                    <div className="mb-2 flex gap-2 bg-purple-500/10 p-2 rounded-lg flex-wrap">
+                  {/* Reserve space for magic zone action buttons */}
+                  <div className="mb-2" style={{ minHeight: selectedMagicCard && currentUserPlayer?.magicZone?.find((c: any) => c.id === selectedMagicCard) ? 'auto' : '0' }}>
+                    {selectedMagicCard && currentUserPlayer?.magicZone?.find((c: any) => c.id === selectedMagicCard) && (
+                      <div className="flex gap-2 bg-purple-500/10 p-2 rounded-lg flex-wrap">
                       <Button
                         size="sm"
                         variant="destructive"
@@ -1468,8 +1477,9 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                       >
                         Cancel
                       </Button>
-                    </div>
-                  )}
+                      </div>
+                    )}
+                  </div>
                   <div className="relative flex items-center max-w-4xl">
                     {/* Left Side - 2 Magic slots */}
                     <div className="grid grid-cols-2 gap-3 w-[40%]">
@@ -1674,9 +1684,10 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
             <div>
                 <p className="text-sm text-muted-foreground mb-2">Your Hand ({currentUserPlayer?.hand?.length || 0})</p>
                 
-                {/* Zone Selector - MOVED ABOVE CARDS */}
-                {selectedCard && showZoneSelector && (
-                  <div className="mb-4 p-3 bg-blue-500/20 border-2 border-blue-500 rounded-lg shadow-lg z-50 relative">
+                {/* Zone Selector - Fixed height to prevent layout shift */}
+                <div className="mb-4" style={{ minHeight: selectedCard && showZoneSelector ? 'auto' : '0' }}>
+                  {selectedCard && showZoneSelector && (
+                    <div className="p-3 bg-blue-500/20 border-2 border-blue-500 rounded-lg shadow-lg z-50 relative">
                     <p className="text-sm font-semibold mb-2">Select Zone to Play Card:</p>
                     <div className="flex gap-2 flex-wrap">
                       <Button
@@ -1722,12 +1733,14 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                         Cancel
                       </Button>
                     </div>
-                  </div>
-                )}
+                    </div>
+                  )}
+                </div>
                 
-                {/* Card Action Buttons - MOVED ABOVE CARDS */}
-                {selectedCard && !showZoneSelector && (
-                  <div className="mb-4 flex gap-2 bg-primary/10 p-2 rounded-lg flex-wrap">
+                {/* Card Action Buttons - Fixed height to prevent layout shift */}
+                <div className="mb-4" style={{ minHeight: selectedCard && !showZoneSelector ? 'auto' : '0' }}>
+                  {selectedCard && !showZoneSelector && (
+                    <div className="flex gap-2 bg-primary/10 p-2 rounded-lg flex-wrap">
                     <Button
                       size="sm"
                       onClick={() => setShowZoneSelector(true)}
@@ -1768,8 +1781,9 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                     >
                       Cancel
                     </Button>
-                  </div>
-                )}
+                    </div>
+                  )}
+                </div>
                 
                 {/* Hand Cards - Overlapping Fan Layout */}
                 <div className="relative flex justify-center items-end" style={{ height: '280px', paddingBottom: '20px' }}>
