@@ -139,7 +139,7 @@ export function DeckPreviewDialog({
                             src={card.imageUrl}
                             alt={card.name}
                             fill
-                            className="object-cover"
+                            className="object-cover object-top"
                             sizes="(max-width: 640px) 33vw, (max-width: 768px) 25vw, (max-width: 1024px) 20vw, 16vw"
                           />
                         ) : (
@@ -178,7 +178,7 @@ export function DeckPreviewDialog({
                               src={card.imageUrl}
                               alt={card.name}
                               fill
-                              className="object-cover"
+                              className="object-cover object-top"
                               sizes="(max-width: 640px) 33vw, (max-width: 768px) 25vw, (max-width: 1024px) 20vw, 16vw"
                             />
                           ) : (

@@ -9,9 +9,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Eye, Heart, TrendingUp, Zap, Home, Plus, Search, Sparkles, CheckCircle2 } from "lucide-react";
-import { getAllDecks, getUserDecks, toggleDeckFavorite, selectDeck } from "@/lib/api";
+import { getAllDecks, getUserDecks, toggleDeckFavorite, selectDeck, getCardById } from "@/lib/api";
 import { Deck } from "@/types/deck";
+import { Card as CardType } from "@/types/card";
 import { useToast } from "@/hooks/use-toast";
+import Image from 'next/image';
 
 function DecksContent() {
   const { user } = useUser();
@@ -24,6 +26,7 @@ function DecksContent() {
   const [activeTab, setActiveTab] = useState<'all' | 'my'>('all');
   const [loading, setLoading] = useState(true);
   const [selectingDeck, setSelectingDeck] = useState<string | null>(null);
+  const [deckCoverCards, setDeckCoverCards] = useState<Map<string, CardType>>(new Map());
 
   // Get roomId from query params if user is selecting deck for a game
   const roomId = searchParams.get('roomId');
@@ -42,6 +45,24 @@ function DecksContent() {
       console.log('User decks:', userDecks.length);
       console.log('Filtered user decks:', userDecks.map(d => ({ name: d.name, userId: d.userId })));
     }
+    
+    // Load cover cards for all decks
+    const coverCardMap = new Map<string, CardType>();
+    const coverCardPromises = decks
+      .filter(deck => deck.coverCardId)
+      .map(async (deck) => {
+        try {
+          const card = await getCardById(deck.coverCardId!);
+          if (card) {
+            coverCardMap.set(deck._id, card);
+          }
+        } catch (error) {
+          console.error(`Failed to load cover card for deck ${deck._id}:`, error);
+        }
+      });
+    
+    await Promise.all(coverCardPromises);
+    setDeckCoverCards(coverCardMap);
     
     setLoading(false);
   };
@@ -201,94 +222,136 @@ function DecksContent() {
 
   const displayedDecks = activeTab === 'all' ? filteredDecks(allDecks) : filteredDecks(myDecks);
 
-  const DeckCard = ({ deck }: { deck: Deck }) => (
-    <Card
-      className="group relative overflow-hidden border-border bg-card/50 backdrop-blur-sm transition-all hover:border-glow hover:card-glow"
-    >
-      <div className={`h-1 bg-gradient-to-r ${deck.gradient}`} />
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
-
-      <CardHeader className="relative pb-4">
-        <div className="mb-3 flex items-start justify-between gap-2">
-          <h3 className="text-xl font-bold text-foreground group-hover:text-glow">
-            {deck.name}
-          </h3>
-          <Badge
-            variant="secondary"
-            className="border border-border/40 bg-muted/50 font-semibold backdrop-blur-sm"
-          >
-            {deck.archetype}
-          </Badge>
-        </div>
-        <p className="text-sm text-muted-foreground">by {deck.author}</p>
-      </CardHeader>
-
-      <CardContent className="relative space-y-4">
-        {deck.description && (
-          <p className="text-sm text-muted-foreground line-clamp-2">
-            {deck.description}
-          </p>
-        )}
-
-        <div className="flex items-center gap-6 text-sm">
-          <div className="flex items-center gap-1.5">
-            <div className="rounded-md bg-accent/20 p-1">
-              <TrendingUp className="h-3.5 w-3.5 text-accent" />
-            </div>
-            <span className="font-bold text-foreground">{deck.wins}</span>
-            <span className="text-muted-foreground">wins</span>
-          </div>
-          <div className="flex items-center gap-1.5 text-muted-foreground">
-            <Eye className="h-3.5 w-3.5" />
-            <span>{deck.views}</span>
-          </div>
-          <div className="flex items-center gap-1.5 text-muted-foreground">
-            <Heart className="h-3.5 w-3.5" />
-            <span>{deck.likes}</span>
-          </div>
-          <button
-            onClick={() => handleToggleFavorite(deck._id)}
-            className="ml-auto flex items-center gap-1.5 text-sm transition-colors hover:text-primary"
-          >
-            <Heart
-              className={`h-4 w-4 transition-all ${
-                isFavorited(deck)
-                  ? 'fill-red-500 text-red-500'
-                  : 'text-muted-foreground hover:text-red-500'
-              }`}
+  const DeckCard = ({ deck }: { deck: Deck }) => {
+    const coverCard = deckCoverCards.get(deck._id);
+    
+    return (
+      <Card
+        className="group relative h-[420px] overflow-hidden border-border transition-all hover:border-primary hover:shadow-xl hover:shadow-primary/20"
+      >
+        {/* Background Image */}
+        {coverCard?.imageUrl ? (
+          <div className="absolute inset-0">
+            <Image
+              src={coverCard.imageUrl}
+              alt={deck.name}
+              fill
+              className="object-cover object-top brightness-110 saturate-110 transition-transform duration-500 group-hover:scale-110"
+              sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
             />
-            <span className="font-semibold">{deck.favoriteCount || 0}</span>
-          </button>
+            {/* Dark overlay gradient - lighter for more vibrant colors */}
+            <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/50 to-black/80" />
+            {/* Accent gradient overlay */}
+            <div className={`absolute inset-0 bg-gradient-to-br ${deck.gradient} opacity-30 mix-blend-overlay`} />
+          </div>
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-b from-gray-900 to-black" />
+        )}
+
+        {/* Content Container */}
+        <div className="relative flex h-full flex-col justify-between p-5">
+          {/* Top Section - User Info & Date */}
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 backdrop-blur-sm">
+                <span className="text-xs font-bold text-white">
+                  {deck.author.charAt(0).toUpperCase()}
+                </span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold text-white">{deck.author}</span>
+                <span className="text-xs text-white/70">Other</span>
+              </div>
+            </div>
+            
+            {/* Stats in top right */}
+            <div className="flex items-center gap-3 text-white/90">
+              <button
+                onClick={() => handleToggleFavorite(deck._id)}
+                className="flex items-center gap-1 transition-all hover:scale-110"
+              >
+                <Heart
+                  className={`h-4 w-4 ${
+                    isFavorited(deck)
+                      ? 'fill-red-500 text-red-500'
+                      : 'text-white hover:text-red-400'
+                  }`}
+                />
+                <span className="text-sm font-semibold">{deck.favoriteCount || 0}</span>
+              </button>
+              
+              <div className="flex items-center gap-1">
+                <TrendingUp className="h-4 w-4 text-accent" />
+                <span className="text-sm font-semibold">{deck.wins}</span>
+              </div>
+              
+              <div className="flex items-center gap-1">
+                <Eye className="h-4 w-4" />
+                <span className="text-sm font-semibold">{deck.views}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Section - Deck Info */}
+          <div className="space-y-4">
+            {/* Deck Name */}
+            <div>
+              <h3 className="mb-2 text-2xl font-bold leading-tight text-white drop-shadow-lg">
+                {deck.name}
+              </h3>
+              <Badge
+                variant="secondary"
+                className="border border-white/20 bg-white/10 font-semibold text-white backdrop-blur-md"
+              >
+                {deck.archetype}
+              </Badge>
+            </div>
+
+            {/* Description */}
+            {deck.description && (
+              <p className="line-clamp-2 text-sm leading-relaxed text-white/90 drop-shadow">
+                {deck.description}
+              </p>
+            )}
+
+            {/* Action Buttons */}
+            {fromGame ? (
+              <div className="flex gap-2">
+                <Button
+                  className="flex-1 border-white/20 bg-white/10 font-semibold text-white backdrop-blur-md hover:bg-white/20"
+                  variant="outline"
+                  onClick={() => router.push(`/decks/${deck._id}`)}
+                >
+                  <Eye className="mr-2 h-4 w-4" />
+                  View
+                </Button>
+                <Button
+                  className="flex-1 bg-primary font-semibold hover:bg-primary/90"
+                  onClick={() => handleSelectDeckForGame(deck._id)}
+                  disabled={selectingDeck === deck._id}
+                >
+                  {selectingDeck === deck._id ? 'Selecting...' : 'Select'}
+                  <CheckCircle2 className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <Button
+                className="w-full border-white/20 bg-white/10 font-semibold text-white backdrop-blur-md hover:bg-white/20"
+                variant="outline"
+                onClick={() => router.push(`/decks/${deck._id}`)}
+              >
+                View Deck
+                <Zap className="ml-2 h-4 w-4 transition-transform group-hover:rotate-12" />
+              </Button>
+            )}
+          </div>
         </div>
 
-        {fromGame ? (
-          <Button
-            className="group/btn relative w-full overflow-hidden border-border/40 bg-primary font-semibold hover:bg-primary/90"
-            onClick={() => handleSelectDeckForGame(deck._id)}
-            disabled={selectingDeck === deck._id}
-          >
-            <span className="relative z-10 flex items-center gap-2">
-              {selectingDeck === deck._id ? 'Selecting...' : 'Select This Deck'}
-              <CheckCircle2 className="h-4 w-4" />
-            </span>
-          </Button>
-        ) : (
-          <Link href={`/decks/${deck._id}`}>
-            <Button
-              className="group/btn relative w-full overflow-hidden border-border/40 bg-card/50 font-semibold backdrop-blur-sm hover:border-glow"
-              variant="outline"
-            >
-              <span className="relative z-10 flex items-center gap-2">
-                View Deck
-                <Zap className="h-4 w-4 transition-transform group-hover/btn:rotate-12" />
-              </span>
-              <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-accent/10 opacity-0 transition-opacity group-hover/btn:opacity-100" />
-            </Button>
-          </Link>
-        )}
-      </CardContent>
-    </Card>
-  );
+        {/* Top accent line */}
+        <div className={`absolute left-0 right-0 top-0 h-1 bg-gradient-to-r ${deck.gradient}`} />
+      </Card>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-background">

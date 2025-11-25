@@ -453,7 +453,7 @@ export default function GameRoomPage() {
                                   className="h-6 px-2"
                                 >
                                   <Eye className="h-3 w-3 mr-1" />
-                                  View
+                                  View Deck
                                 </Button>
                               </div>
                             )}
@@ -527,7 +527,7 @@ export default function GameRoomPage() {
           isOpen={isPreviewOpen}
           onClose={() => setIsPreviewOpen(false)}
           onSelectDeck={currentPlayer ? handleSelectDeckFromPreview : undefined}
-          showSelectButton={!!(currentPlayer && !currentPlayer.deckId)}
+          showSelectButton={!!currentPlayer}
         />
 
         {/* Actions */}
