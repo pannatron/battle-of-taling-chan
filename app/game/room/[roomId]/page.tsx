@@ -14,6 +14,8 @@ import { GameRoom, GamePlayer } from '@/types/game';
 import { Card as CardType } from '@/types/card';
 import Image from 'next/image';
 import { GameBoard } from './game-board';
+import { DeckPreviewDialog } from '@/components/deck-preview-dialog';
+import { Eye } from 'lucide-react';
 
 export default function GameRoomPage() {
   const params = useParams();
@@ -27,6 +29,8 @@ export default function GameRoomPage() {
   const [refetchTrigger, setRefetchTrigger] = useState(0);
   const [playerCards, setPlayerCards] = useState<{ [playerId: string]: CardType[] }>({});
   const [loadingCards, setLoadingCards] = useState(false);
+  const [previewDeckId, setPreviewDeckId] = useState<string | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   // Fetch room data
   useEffect(() => {
@@ -246,6 +250,34 @@ export default function GameRoomPage() {
     }
   };
 
+  const handlePreviewDeck = (deckId: string) => {
+    setPreviewDeckId(deckId);
+    setIsPreviewOpen(true);
+  };
+
+  const handleSelectDeckFromPreview = async (deckId: string) => {
+    if (!user) return;
+
+    try {
+      await selectDeck(roomId, {
+        userId: user.id,
+        deckId,
+      });
+      setIsPreviewOpen(false);
+      toast({
+        title: 'Success',
+        description: 'Deck selected!',
+      });
+    } catch (error) {
+      console.error('Error selecting deck:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to select deck',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const badges = {
       waiting: <Badge variant="outline" className="bg-yellow-100 text-yellow-800">Waiting</Badge>,
@@ -382,7 +414,7 @@ export default function GameRoomPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               {[1, 2].map((seat) => {
-                const player = gameRoom?.players?.find(p => p.seat === seat);
+                  const player = gameRoom?.players?.find(p => p.seat === seat);
                 const isCurrentPlayer = player?.userId === user?.id;
                 
                 return (
@@ -397,7 +429,7 @@ export default function GameRoomPage() {
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <div>
+                      <div className="flex-1">
                         <h3 className="font-semibold">
                           Seat {seat}
                           {player?.userId === gameRoom?.hostUserId && (
@@ -410,9 +442,20 @@ export default function GameRoomPage() {
                               {player.username}
                             </p>
                             {player.deckId && (
-                              <Badge variant="outline" className="text-xs">
-                                Deck Selected
-                              </Badge>
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline" className="text-xs">
+                                  Deck Selected
+                                </Badge>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handlePreviewDeck(player.deckId)}
+                                  className="h-6 px-2"
+                                >
+                                  <Eye className="h-3 w-3 mr-1" />
+                                  View
+                                </Button>
+                              </div>
                             )}
                             {player.isReady ? (
                               <div className="flex items-center gap-1 text-green-600">
@@ -477,6 +520,15 @@ export default function GameRoomPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Deck Preview Dialog */}
+        <DeckPreviewDialog
+          deckId={previewDeckId}
+          isOpen={isPreviewOpen}
+          onClose={() => setIsPreviewOpen(false)}
+          onSelectDeck={currentPlayer ? handleSelectDeckFromPreview : undefined}
+          showSelectButton={!!(currentPlayer && !currentPlayer.deckId)}
+        />
 
         {/* Actions */}
         {currentPlayer && (
