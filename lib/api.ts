@@ -546,6 +546,7 @@ export async function joinGameRoom(roomId: string, data: {
 
 export async function takeSeat(roomId: string, data: {
   userId: string;
+  username?: string;
   seat: number;
 }): Promise<any> {
   try {

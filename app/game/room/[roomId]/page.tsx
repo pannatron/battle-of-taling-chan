@@ -82,7 +82,7 @@ export default function GameRoomPage() {
   // Fetch card data when game starts
   useEffect(() => {
     const fetchCards = async () => {
-      if (!gameRoom || gameRoom.status !== 'in_progress' || !gameRoom.players) {
+      if (!gameRoom || (gameRoom.status !== 'in_progress' && gameRoom.status !== 'mulligan') || !gameRoom.players) {
         return;
       }
 
@@ -208,6 +208,7 @@ export default function GameRoomPage() {
     try {
       await takeSeat(roomId, {
         userId: user.id,
+        username: user.username || user.firstName || 'Player',
         seat,
       });
       toast({
@@ -342,8 +343,8 @@ export default function GameRoomPage() {
   const canStart = (gameRoom?.players?.length || 0) === 2 && 
                    gameRoom?.players?.every((p: GamePlayer) => p.isReady && p.deckId);
 
-  // If game is in progress, show game board
-  if (gameRoom?.status === 'in_progress') {
+  // If game is in progress or mulligan phase, show game board
+  if (gameRoom?.status === 'in_progress' || gameRoom?.status === 'mulligan') {
     return (
       <div className="container mx-auto py-8 px-4">
         <div className="max-w-7xl mx-auto">
@@ -575,11 +576,6 @@ export default function GameRoomPage() {
                 >
                   {currentPlayer.isReady ? 'Not Ready' : 'Ready'}
                 </Button>
-                {isHost && canStart && (
-                  <Button className="ml-auto">
-                    Start Game
-                  </Button>
-                )}
               </div>
               <Button
                 variant="destructive"
