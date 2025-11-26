@@ -1017,3 +1017,27 @@ export async function rollDice(roomId: string, data: {
     throw error;
   }
 }
+
+export async function endTurn(roomId: string, data: {
+  userId: string;
+}): Promise<any> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/game/rooms/${roomId}/end-turn`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `Failed to end turn in room ${roomId}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error(`Error ending turn in room ${roomId}:`, error);
+    throw error;
+  }
+}

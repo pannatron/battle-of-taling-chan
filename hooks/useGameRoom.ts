@@ -90,6 +90,14 @@ export function useGameRoom(roomId: string | null) {
               window.dispatchEvent(diceEvent);
               console.log('Dice roll event received:', event.data);
               break;
+            case 'turn-change':
+              // Turn change event - trigger a custom event for notifications
+              const turnEvent = new CustomEvent('turn-change', { 
+                detail: event.data 
+              });
+              window.dispatchEvent(turnEvent);
+              console.log('Turn change event received:', event.data);
+              break;
             default:
               console.log('Unknown event type:', event.type);
           }

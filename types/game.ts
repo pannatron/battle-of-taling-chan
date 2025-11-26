@@ -11,6 +11,11 @@ export interface LifeCard {
   faceUp: boolean;
 }
 
+export interface MagicQuota {
+  used: number;
+  max: number;
+}
+
 export interface GamePlayer {
   userId: string;
   username: string;
@@ -26,6 +31,13 @@ export interface GamePlayer {
   avatarZone?: GameCard[];
   landZone?: GameCard[];
   constructZone?: GameCard[];
+  magicQuota?: {
+    normal: MagicQuota;
+    react: MagicQuota;
+    modification: MagicQuota;
+    land: MagicQuota;
+    noSecondTime: MagicQuota;
+  };
 }
 
 export interface Spectator {
@@ -42,6 +54,7 @@ export interface GameRoom {
   spectators: Spectator[];
   maxSpectators: number;
   hostUserId: string;
+  currentPlayerTurn?: 1 | 2;
   gameStartedAt?: Date;
   gameEndedAt?: Date;
   createdAt: Date;
@@ -55,7 +68,19 @@ export interface DiceRollData {
   timestamp: Date;
 }
 
+export interface TurnChangeData {
+  previousPlayer: {
+    userId: string;
+    username: string;
+  };
+  currentPlayer: {
+    userId: string;
+    username: string;
+  } | null;
+  turnNumber: number;
+}
+
 export interface GameRoomEvent {
-  type: 'room-update' | 'player-joined' | 'player-left' | 'seat-taken' | 'deck-selected' | 'player-ready' | 'game-start' | 'dice-roll';
+  type: 'room-update' | 'player-joined' | 'player-left' | 'seat-taken' | 'deck-selected' | 'player-ready' | 'game-start' | 'dice-roll' | 'turn-change';
   data: any;
 }

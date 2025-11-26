@@ -9,7 +9,7 @@ import { GamePlayer } from '@/types/game';
 import { Card as CardType } from '@/types/card';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
-import { drawCard, playCard, discardCard, moveFieldCardToHell, moveFieldCardToHand, moveFieldCardToDeck, searchCardFromDeck, searchCardFromHell, shuffleDeck, flipLifeCard, moveAvatarToOpponentField, toggleCardRotation, moveHandCardToDeck, updateCardPower, rollDice } from '@/lib/api';
+import { drawCard, playCard, discardCard, moveFieldCardToHell, moveFieldCardToHand, moveFieldCardToDeck, searchCardFromDeck, searchCardFromHell, shuffleDeck, flipLifeCard, moveAvatarToOpponentField, toggleCardRotation, moveHandCardToDeck, updateCardPower, rollDice, endTurn } from '@/lib/api';
 
 interface GameBoardProps {
   roomId: string;
@@ -42,6 +42,8 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
   const [showDiceResult, setShowDiceResult] = useState(false);
   const [diceRollUsername, setDiceRollUsername] = useState<string>('');
   const [diceTimeoutId, setDiceTimeoutId] = useState<NodeJS.Timeout | null>(null);
+  const [showTurnNotification, setShowTurnNotification] = useState(false);
+  const [turnNotificationMessage, setTurnNotificationMessage] = useState<{ title: string; message: string } | null>(null);
 
   // Listen for dice roll events from ALL players (including self)
   useEffect(() => {
@@ -75,15 +77,58 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
       }, 1500);
     };
 
+    const handleTurnChange = (event: any) => {
+      const { currentPlayer, previousPlayer, turnNumber } = event.detail;
+      
+      if (!currentPlayer || !user?.id) return;
+      
+      // Show large center notification to both players
+      if (currentPlayer.userId === user.id) {
+        // It's now your turn
+        setTurnNotificationMessage({
+          title: '🎯 Your Turn',
+          message: `Turn ${turnNumber}`
+        });
+        setShowTurnNotification(true);
+        
+        toast({
+          title: "Your Turn",
+          description: `Turn ${turnNumber} - It's your move!`,
+          duration: 5000,
+        });
+      } else {
+        // Opponent's turn
+        setTurnNotificationMessage({
+          title: '⏳ Opponent\'s Turn',
+          message: `${currentPlayer.username} - Turn ${turnNumber}`
+        });
+        setShowTurnNotification(true);
+        
+        toast({
+          title: "Opponent's Turn",
+          description: `${currentPlayer.username} is now taking Turn ${turnNumber}`,
+          duration: 5000,
+        });
+      }
+      
+      // Hide notification after 3 seconds
+      setTimeout(() => {
+        setShowTurnNotification(false);
+        setTimeout(() => setTurnNotificationMessage(null), 500); // Clear after fade out
+      }, 3000);
+    };
+
     window.addEventListener('dice-roll-result', handleDiceRollResult);
-    
+    window.addEventListener('turn-change', handleTurnChange);
+
     return () => {
       window.removeEventListener('dice-roll-result', handleDiceRollResult);
+      window.removeEventListener('turn-change', handleTurnChange);
       if (diceTimeoutId) {
         clearTimeout(diceTimeoutId);
       }
     };
-  }, [toast, diceTimeoutId]);
+  }, [toast, diceTimeoutId, user]);
 
   const player1 = gameRoom.players[0];
   const player2 = gameRoom.players[1];
@@ -524,8 +569,50 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
     }
   };
 
+  const handleEndTurn = async () => {
+    if (!user || actionInProgress) return;
+    
+    setActionInProgress(true);
+    try {
+      await endTurn(roomId, { userId: user.id });
+      toast({
+        title: 'Success',
+        description: 'Turn ended. Magic usage counters reset.',
+      });
+      onRefresh();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to end turn',
+        variant: 'destructive',
+      });
+    } finally {
+      setActionInProgress(false);
+    }
+  };
+
+  // Determine current turn player
+  const currentTurnPlayer = gameRoom.currentTurn 
+    ? gameRoom.players.find((p: GamePlayer) => p.userId === gameRoom.currentTurn)
+    : null;
+  const isYourTurn = currentTurnPlayer?.userId === user?.id;
+
   return (
     <div className="space-y-6">
+      {/* Turn Indicator - Always Visible at Top */}
+      {currentTurnPlayer && (
+        <div className="flex justify-center mb-4">
+          <div className={`px-8 py-3 rounded-xl font-bold text-lg shadow-lg border-2 transition-all ${
+            isYourTurn 
+              ? 'bg-gradient-to-r from-emerald-600 to-green-600 text-white border-emerald-400' 
+              : 'bg-gradient-to-r from-slate-700 to-slate-800 text-slate-200 border-slate-500'
+          }`}>
+            <span className="mr-2">🎯</span>
+            Current Turn: <span className="font-extrabold">{currentTurnPlayer.username}</span>
+          </div>
+        </div>
+      )}
+
       {/* Wrapper with relative positioning for land zone */}
       <div className="relative">
         {/* Opponent Side */}
@@ -538,6 +625,22 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
           <div className="flex items-center gap-4 text-sm">
             <Badge variant="outline">Deck: {opponentPlayer?.deck?.length || 0}</Badge>
             <Badge variant="outline">Life: {opponentPlayer?.lifeCards?.length || 0}</Badge>
+            <Badge 
+              variant="outline" 
+              className={`font-bold ${
+                !currentTurnPlayer 
+                  ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500'
+                  : currentTurnPlayer.userId === opponentPlayer?.userId 
+                    ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500' 
+                    : 'bg-slate-700/20 text-slate-400 border-slate-600'
+              }`}
+            >
+              {!currentTurnPlayer 
+                ? '⏱️ Starting...' 
+                : currentTurnPlayer.userId === opponentPlayer?.userId 
+                  ? '🎯 Their Turn' 
+                  : '⏳ Waiting'}
+            </Badge>
           </div>
         </div>
         <Card>
@@ -967,13 +1070,58 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
               <Users className="h-5 w-5" />
               {currentUserPlayer?.username || 'You'} (Seat {currentUserPlayer?.seat})
             </div>
-            <div className="flex items-center gap-4 text-sm font-normal">
+            <div className="flex items-center gap-2 text-sm font-normal">
               <Badge variant="outline">Deck: {currentUserPlayer?.deck?.length || 0}</Badge>
               <Badge variant="outline">Life: {currentUserPlayer?.lifeCards?.length || 0}</Badge>
+              <Badge 
+                variant="outline" 
+                className={`font-bold ${
+                  !currentTurnPlayer 
+                    ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500'
+                    : isYourTurn 
+                      ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500' 
+                      : 'bg-slate-700/20 text-slate-400 border-slate-600'
+                }`}
+              >
+                {!currentTurnPlayer 
+                  ? '⏱️ Starting...' 
+                  : isYourTurn 
+                    ? '🎯 Your Turn' 
+                    : '⏳ Waiting'}
+              </Badge>
+              <Button
+                size="sm"
+                onClick={handleEndTurn}
+                disabled={actionInProgress}
+                className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white font-bold"
+              >
+                End Turn
+              </Button>
             </div>
           </CardTitle>
+          
+          {/* Magic Quota Display - Below End Turn Button */}
+          <div className="flex items-center justify-end gap-1 text-[10px] bg-gradient-to-r from-purple-500/10 via-blue-500/10 to-purple-500/10 px-2 py-1 rounded border border-purple-500/20 mt-2">
+            <span className="font-semibold text-purple-300">🎴 Magic Quota:</span>
+            <Badge variant="outline" className="bg-blue-500/10 border-blue-500/30 text-[9px] px-1 py-0 h-4">
+              N: {currentUserPlayer?.magicQuota?.normal.max - (currentUserPlayer?.magicQuota?.normal.used || 0)}/{currentUserPlayer?.magicQuota?.normal.max || 1}
+            </Badge>
+            <Badge variant="outline" className="bg-purple-500/10 border-purple-500/30 text-[9px] px-1 py-0 h-4">
+              R: {currentUserPlayer?.magicQuota?.react.max - (currentUserPlayer?.magicQuota?.react.used || 0)}/{currentUserPlayer?.magicQuota?.react.max || 1}
+            </Badge>
+            <Badge variant="outline" className="bg-pink-500/10 border-pink-500/30 text-[9px] px-1 py-0 h-4">
+              M: {currentUserPlayer?.magicQuota?.modification.max - (currentUserPlayer?.magicQuota?.modification.used || 0)}/{currentUserPlayer?.magicQuota?.modification.max || 1}
+            </Badge>
+            <Badge variant="outline" className="bg-green-500/10 border-green-500/30 text-[9px] px-1 py-0 h-4">
+              L: {currentUserPlayer?.magicQuota?.land.max - (currentUserPlayer?.magicQuota?.land.used || 0)}/{currentUserPlayer?.magicQuota?.land.max || 1}
+            </Badge>
+            <Badge variant="outline" className="bg-red-500/10 border-red-500/30 text-[9px] px-1 py-0 h-4">
+              อ2: {currentUserPlayer?.magicQuota?.noSecondTime.max - (currentUserPlayer?.magicQuota?.noSecondTime.used || 0)}/{currentUserPlayer?.magicQuota?.noSecondTime.max || 1}
+            </Badge>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
+          
           {/* Main Play Area */}
           <div className="space-y-4">
               {/* Current User's Avatar Zone & Construct Zone - Side by Side */}
@@ -2143,6 +2291,30 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Turn Notification Display - Large Center Screen */}
+      {showTurnNotification && turnNotificationMessage && (
+        <div 
+          className={`fixed inset-0 flex items-center justify-center z-[100] pointer-events-none transition-opacity duration-500 ${
+            showTurnNotification ? 'opacity-100' : 'opacity-0'
+          }`}
+        >
+          <div className="text-center">
+            <div className={`inline-block px-12 py-8 rounded-2xl text-white font-bold shadow-xl border-4 ${
+              turnNotificationMessage.title.includes('Your Turn')
+                ? 'bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900 border-slate-500/50'
+                : 'bg-gradient-to-br from-slate-800 via-slate-900 to-black border-slate-600/50'
+            }`}>
+              <div className="text-5xl mb-3 drop-shadow-lg">
+                {turnNotificationMessage.title}
+              </div>
+              <div className="text-3xl drop-shadow-md text-slate-300">
+                {turnNotificationMessage.message}
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
