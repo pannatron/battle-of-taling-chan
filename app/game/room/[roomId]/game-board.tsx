@@ -9,7 +9,7 @@ import { GamePlayer } from '@/types/game';
 import { Card as CardType } from '@/types/card';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
-import { drawCard, playCard, discardCard, moveFieldCardToHell, moveFieldCardToHand, moveFieldCardToDeck, searchCardFromDeck, searchCardFromHell, shuffleDeck, flipLifeCard, moveAvatarToOpponentField, toggleCardRotation, moveHandCardToDeck, updateCardPower, rollDice, endTurn } from '@/lib/api';
+import { drawCard, drawCardFromBottom, viewDeckBottom, playCard, discardCard, moveFieldCardToHell, moveFieldCardToHand, moveFieldCardToDeck, searchCardFromDeck, searchCardFromHell, shuffleDeck, flipLifeCard, moveAvatarToOpponentField, toggleCardRotation, moveHandCardToDeck, updateCardPower, rollDice, endTurn } from '@/lib/api';
 
 interface GameBoardProps {
   roomId: string;
@@ -163,6 +163,28 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
       toast({
         title: 'Error',
         description: error.message || 'Failed to draw card',
+        variant: 'destructive',
+      });
+    } finally {
+      setActionInProgress(false);
+    }
+  };
+
+  const handleDrawCardFromBottom = async () => {
+    if (!user || actionInProgress) return;
+    
+    setActionInProgress(true);
+    try {
+      await drawCardFromBottom(roomId, { userId: user.id });
+      toast({
+        title: 'Success',
+        description: 'Drew a card from bottom of deck',
+      });
+      onRefresh();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to draw card from bottom',
         variant: 'destructive',
       });
     } finally {
@@ -648,16 +670,20 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
           {/* Opponent's Hand */}
           <div>
             <p className="text-sm text-muted-foreground mb-2">Hand ({opponentPlayer?.hand?.length || 0})</p>
-            <div className="grid grid-cols-5 gap-2">
-              {opponentPlayer?.hand?.map((_: any, idx: number) => (
-                <div key={idx} className="relative aspect-[2/3] rounded-lg overflow-hidden border-2 border-border shadow-md">
-                  <div className="w-full h-full bg-gradient-to-br from-blue-900 via-purple-900 to-blue-900 flex items-center justify-center border-4 border-yellow-600 rounded-lg">
+            <div className="flex justify-center">
+              {(opponentPlayer?.hand?.length || 0) > 0 ? (
+                <div className="relative w-32 aspect-[2/3] rounded-lg overflow-hidden border-4 border-yellow-600 shadow-xl">
+                  <div className="w-full h-full bg-gradient-to-br from-blue-900 via-purple-900 to-blue-900 flex flex-col items-center justify-center">
                     <div className="text-center text-yellow-400">
-                      <div className="text-2xl font-bold">BOT</div>
+                      <div className="text-3xl font-bold mb-2">BOT</div>
+                      <div className="text-5xl font-extrabold">{opponentPlayer.hand.length}</div>
+                      <div className="text-sm mt-1">Cards</div>
                     </div>
                   </div>
                 </div>
-              ))}
+              ) : (
+                <div className="text-muted-foreground text-sm">No cards in hand</div>
+              )}
             </div>
           </div>
 
@@ -1092,8 +1118,8 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
               <Button
                 size="sm"
                 onClick={handleEndTurn}
-                disabled={actionInProgress}
-                className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white font-bold"
+                disabled={actionInProgress || (currentTurnPlayer && !isYourTurn)}
+                className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 End Turn
               </Button>
@@ -1780,23 +1806,34 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                     </div>
                   </div>
 
-                  {/* Action Buttons */}
+                  {/* Action Buttons - Aligned with Deck and Hell */}
                   <div className="flex gap-2">
+                    {/* Deck Buttons */}
                     <div className="flex flex-col gap-1 w-24">
-                      <Button
-                        size="sm"
-                        onClick={handleDrawCard}
-                        disabled={actionInProgress || !currentUserPlayer?.deck?.length}
-                        className="w-full text-xs"
-                      >
-                        Draw
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          onClick={handleDrawCard}
+                          disabled={actionInProgress || !currentUserPlayer?.deck?.length}
+                          className="text-[10px] px-2 py-1 h-7 flex-1"
+                        >
+                          Top
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={handleDrawCardFromBottom}
+                          disabled={actionInProgress || !currentUserPlayer?.deck?.length}
+                          className="text-[10px] px-2 py-1 h-7 bg-blue-600 hover:bg-blue-700 flex-1"
+                        >
+                          Btm
+                        </Button>
+                      </div>
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => setShowSearchModal(true)}
                         disabled={actionInProgress || !currentUserPlayer?.deck?.length}
-                        className="w-full text-xs"
+                        className="w-full text-[10px] px-2 py-1 h-7"
                       >
                         <Search className="h-3 w-3 mr-1" />
                         Search
@@ -1806,19 +1843,21 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                         variant="secondary"
                         onClick={handleShuffleDeck}
                         disabled={actionInProgress || !currentUserPlayer?.deck?.length}
-                        className="w-full text-xs"
+                        className="w-full text-[10px] px-2 py-1 h-7"
                       >
                         <RotateCw className="h-3 w-3 mr-1" />
                         Shuffle
                       </Button>
                     </div>
+                    
+                    {/* Hell Buttons */}
                     <div className="flex flex-col gap-1 w-24">
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => setShowSearchHellModal(true)}
                         disabled={actionInProgress || !currentUserPlayer?.hell?.length}
-                        className="w-full text-xs"
+                        className="w-full text-[10px] px-2 py-1 h-7"
                       >
                         <Search className="h-3 w-3 mr-1" />
                         Search

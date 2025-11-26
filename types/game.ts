@@ -38,6 +38,8 @@ export interface GamePlayer {
     land: MagicQuota;
     noSecondTime: MagicQuota;
   };
+  hasMulliganed?: boolean;
+  mulliganCards?: string[];
 }
 
 export interface Spectator {
@@ -49,7 +51,7 @@ export interface GameRoom {
   _id?: string;
   roomId: string;
   roomName: string;
-  status: 'waiting' | 'ready' | 'in_progress' | 'finished';
+  status: 'waiting' | 'ready' | 'mulligan' | 'in_progress' | 'finished';
   players: GamePlayer[];
   spectators: Spectator[];
   maxSpectators: number;

@@ -57,8 +57,9 @@ export function useGameRoom(roomId: string | null) {
           
           console.log('Received game room event:', event);
 
-          // Save scroll position before updating state
-          const scrollY = window.scrollY;
+          // Save scroll position BEFORE updating state
+          const savedScrollY = window.scrollY;
+          const savedScrollX = window.scrollX;
 
           switch (event.type) {
             case 'room-update':
@@ -102,10 +103,20 @@ export function useGameRoom(roomId: string | null) {
               console.log('Unknown event type:', event.type);
           }
 
-          // Restore scroll position after state update
-          setTimeout(() => {
-            window.scrollTo({ top: scrollY, behavior: 'instant' as ScrollBehavior });
-          }, 50);
+          // Restore scroll position after React finishes rendering
+          // Use requestAnimationFrame to ensure DOM has updated
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              // Double RAF to ensure all layout calculations are complete
+              if (window.scrollY !== savedScrollY || window.scrollX !== savedScrollX) {
+                window.scrollTo({
+                  top: savedScrollY,
+                  left: savedScrollX,
+                  behavior: 'auto' as ScrollBehavior
+                });
+              }
+            });
+          });
         });
 
         // Handle connection state changes

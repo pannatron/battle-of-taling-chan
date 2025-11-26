@@ -37,7 +37,8 @@ export default function GameRoomPage() {
     const fetchRoom = async () => {
       try {
         // Save scroll position before fetching
-        const scrollY = window.scrollY;
+        const savedScrollY = window.scrollY;
+        const savedScrollX = window.scrollX;
         
         // Only show loading on initial load
         if (refetchTrigger === 0) {
@@ -48,10 +49,19 @@ export default function GameRoomPage() {
         setGameRoom(room);
         console.log('Room data fetched:', room);
         
-        // Restore scroll position after DOM updates
-        setTimeout(() => {
-          window.scrollTo({ top: scrollY, behavior: 'auto' });
-        }, 0);
+        // Restore scroll position after React finishes rendering
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            // Double RAF to ensure all layout calculations are complete
+            if (window.scrollY !== savedScrollY || window.scrollX !== savedScrollX) {
+              window.scrollTo({
+                top: savedScrollY,
+                left: savedScrollX,
+                behavior: 'auto' as ScrollBehavior
+              });
+            }
+          });
+        });
       } catch (error) {
         console.error('Error fetching room:', error);
         toast({
@@ -77,7 +87,8 @@ export default function GameRoomPage() {
       }
 
       // Save scroll position before fetching
-      const scrollY = window.scrollY;
+      const savedScrollY = window.scrollY;
+      const savedScrollX = window.scrollX;
       
       setLoadingCards(true);
       const cardCache: { [playerId: string]: CardType[] } = {};
@@ -145,10 +156,19 @@ export default function GameRoomPage() {
         }
         setPlayerCards(cardCache);
         
-        // Restore scroll position after DOM updates
-        setTimeout(() => {
-          window.scrollTo({ top: scrollY, behavior: 'auto' });
-        }, 0);
+        // Restore scroll position after React finishes rendering
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            // Double RAF to ensure all layout calculations are complete
+            if (window.scrollY !== savedScrollY || window.scrollX !== savedScrollX) {
+              window.scrollTo({
+                top: savedScrollY,
+                left: savedScrollX,
+                behavior: 'auto' as ScrollBehavior
+              });
+            }
+          });
+        });
       } catch (error) {
         console.error('Error fetching card data:', error);
       } finally {
@@ -449,7 +469,7 @@ export default function GameRoomPage() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => handlePreviewDeck(player.deckId)}
+                                  onClick={() => player.deckId && handlePreviewDeck(player.deckId)}
                                   className="h-6 px-2"
                                 >
                                   <Eye className="h-3 w-3 mr-1" />

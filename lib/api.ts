@@ -1041,3 +1041,101 @@ export async function endTurn(roomId: string, data: {
     throw error;
   }
 }
+
+export async function selectMulliganCards(roomId: string, data: {
+  userId: string;
+  cardInstanceIds: string[];
+}): Promise<any> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/game/rooms/${roomId}/select-mulligan-cards`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `Failed to select mulligan cards in room ${roomId}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error(`Error selecting mulligan cards in room ${roomId}:`, error);
+    throw error;
+  }
+}
+
+export async function confirmMulligan(roomId: string, data: {
+  userId: string;
+}): Promise<any> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/game/rooms/${roomId}/confirm-mulligan`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `Failed to confirm mulligan in room ${roomId}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error(`Error confirming mulligan in room ${roomId}:`, error);
+    throw error;
+  }
+}
+
+export async function drawCardFromBottom(roomId: string, data: {
+  userId: string;
+}): Promise<any> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/game/rooms/${roomId}/draw-from-bottom`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `Failed to draw card from bottom in room ${roomId}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error(`Error drawing card from bottom in room ${roomId}:`, error);
+    throw error;
+  }
+}
+
+export async function viewDeckBottom(roomId: string, data: {
+  userId: string;
+  count?: number;
+}): Promise<any> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/game/rooms/${roomId}/view-deck-bottom`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `Failed to view deck bottom in room ${roomId}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error(`Error viewing deck bottom in room ${roomId}:`, error);
+    throw error;
+  }
+}
