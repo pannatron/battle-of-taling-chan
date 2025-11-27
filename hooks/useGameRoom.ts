@@ -99,6 +99,17 @@ export function useGameRoom(roomId: string | null) {
               window.dispatchEvent(turnEvent);
               console.log('Turn change event received:', event.data);
               break;
+            case 'game-end':
+              // Game end event - trigger a custom event for game over popup
+              const gameOverEvent = new CustomEvent('game-over', { 
+                detail: {
+                  winner: event.data.winnerUsername,
+                  loser: event.data.loserUsername,
+                }
+              });
+              window.dispatchEvent(gameOverEvent);
+              console.log('Game end event received:', event.data);
+              break;
             default:
               console.log('Unknown event type:', event.type);
           }

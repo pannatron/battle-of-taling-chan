@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, memo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,6 +17,119 @@ import { GameBoard } from './game-board';
 import { DeckPreviewDialog } from '@/components/deck-preview-dialog';
 import { Eye } from 'lucide-react';
 
+// Separate GameOverModal component with memo to prevent re-renders
+const GameOverModal = memo(({ 
+  isWinner, 
+  gameOverData, 
+  redirectCountdown, 
+  onReturnToLobby 
+}: {
+  isWinner: boolean;
+  gameOverData: { winner: string; loser: string };
+  redirectCountdown: number;
+  onReturnToLobby: () => void;
+}) => {
+  return (
+    <div 
+      className="fixed inset-0 bg-black/80 flex items-center justify-center z-[200]"
+      style={{
+        animation: 'fadeIn 0.3s ease-out'
+      }}
+    >
+      <style jsx>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes zoomIn {
+          from { 
+            opacity: 0;
+            transform: scale(0.95);
+          }
+          to { 
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+      `}</style>
+      <div 
+        className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl p-8 max-w-md w-full mx-4 border-4 shadow-2xl"
+        style={{
+          borderColor: isWinner ? '#10b981' : '#ef4444',
+          animation: 'zoomIn 0.3s ease-out'
+        }}
+      >
+        {/* Result Icon - Static animation, won't re-trigger */}
+        <div className="text-center mb-6">
+          {isWinner ? (
+            <div className="inline-block" style={{ animation: 'bounce 1s ease-in-out infinite' }}>
+              <div className="text-9xl mb-4">🏆</div>
+              <h2 className="text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-yellow-200 to-yellow-400 drop-shadow-[0_0_30px_rgba(250,204,21,0.5)] mb-2" style={{
+                textShadow: '0 0 20px rgba(250,204,21,0.8), 0 0 40px rgba(250,204,21,0.4)'
+              }}>
+                WINNER
+              </h2>
+              <p className="text-2xl font-bold text-green-400" style={{ animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }}>
+                Congratulations!
+              </p>
+            </div>
+          ) : (
+            <div className="inline-block">
+              <div className="text-8xl mb-2">😔</div>
+              <h2 className="text-4xl font-bold text-red-400 drop-shadow-lg">
+                DEFEAT
+              </h2>
+            </div>
+          )}
+        </div>
+
+        {/* Game Result Info */}
+        <div className="bg-slate-950/50 rounded-xl p-6 mb-6 border border-slate-700">
+          <div className="space-y-3 text-center">
+            <div className="flex items-center justify-center gap-2">
+              <span className="text-lg text-slate-400">Winner:</span>
+              <span className="text-2xl font-bold text-green-400">{gameOverData.winner}</span>
+            </div>
+            <div className="flex items-center justify-center gap-2">
+              <span className="text-lg text-slate-400">Loser:</span>
+              <span className="text-2xl font-bold text-red-400">{gameOverData.loser}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Countdown - Smooth number transition */}
+        <div className="text-center mb-4">
+          <p className="text-slate-400 text-sm mb-2">
+            Returning to room in
+          </p>
+          <div 
+            className="text-5xl font-bold text-white tabular-nums"
+            style={{
+              willChange: 'contents',
+              minHeight: '3.75rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
+            {redirectCountdown}
+          </div>
+        </div>
+
+        {/* Manual Continue Button */}
+        <Button
+          onClick={onReturnToLobby}
+          className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold py-3 text-lg"
+        >
+          Continue
+        </Button>
+      </div>
+    </div>
+  );
+});
+
+GameOverModal.displayName = 'GameOverModal';
+
 export default function GameRoomPage() {
   const params = useParams();
   const router = useRouter();
@@ -31,6 +144,9 @@ export default function GameRoomPage() {
   const [loadingCards, setLoadingCards] = useState(false);
   const [previewDeckId, setPreviewDeckId] = useState<string | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [showGameOver, setShowGameOver] = useState(false);
+  const [gameOverData, setGameOverData] = useState<{ winner: string; loser: string } | null>(null);
+  const [redirectCountdown, setRedirectCountdown] = useState(10);
 
   // Fetch room data
   useEffect(() => {
@@ -178,6 +294,36 @@ export default function GameRoomPage() {
 
     fetchCards();
   }, [gameRoom]);
+
+  // Listen for game over events
+  useEffect(() => {
+    const handleGameOver = (event: any) => {
+      const { winner, loser } = event.detail;
+      setGameOverData({ winner, loser });
+      setShowGameOver(true);
+      setRedirectCountdown(10);
+      
+      // Start countdown - close modal and stay in room
+      let countdown = 10;
+      const countdownInterval = setInterval(() => {
+        countdown--;
+        if (countdown <= 0) {
+          clearInterval(countdownInterval);
+          // Close modal and refresh room data to show waiting room state
+          setShowGameOver(false);
+          setGameOverData(null);
+          setRefetchTrigger(prev => prev + 1);
+        } else {
+          setRedirectCountdown(countdown);
+        }
+      }, 1000);
+      
+      return () => clearInterval(countdownInterval);
+    };
+
+    window.addEventListener('game-over', handleGameOver);
+    return () => window.removeEventListener('game-over', handleGameOver);
+  }, []);
 
   // Refetch room data when page becomes visible (returning from deck selection)
   useEffect(() => {
@@ -389,6 +535,20 @@ export default function GameRoomPage() {
   // Waiting room view
   return (
     <div className="container mx-auto py-8 px-4">
+      {/* Game Over Modal */}
+      {showGameOver && gameOverData && (
+        <GameOverModal
+          isWinner={gameOverData.winner === (user?.username || user?.firstName || 'Player')}
+          gameOverData={gameOverData}
+          redirectCountdown={redirectCountdown}
+          onReturnToLobby={() => {
+            // Close modal immediately and stay in room
+            setShowGameOver(false);
+            setGameOverData(null);
+            setRefetchTrigger(prev => prev + 1);
+          }}
+        />
+      )}
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">

@@ -9,7 +9,7 @@ import { GamePlayer } from '@/types/game';
 import { Card as CardType } from '@/types/card';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
-import { drawCard, drawCardFromBottom, viewDeckBottom, playCard, discardCard, moveFieldCardToHell, moveFieldCardToHand, moveFieldCardToDeck, searchCardFromDeck, searchCardFromHell, shuffleDeck, flipLifeCard, moveAvatarToOpponentField, toggleCardRotation, moveHandCardToDeck, updateCardPower, rollDice, endTurn } from '@/lib/api';
+import { drawCard, drawCardFromBottom, viewDeckBottom, playCard, discardCard, moveFieldCardToHell, moveFieldCardToHand, moveFieldCardToDeck, searchCardFromDeck, searchCardFromHell, shuffleDeck, flipLifeCard, moveAvatarToOpponentField, toggleCardRotation, moveHandCardToDeck, updateCardPower, rollDice, endTurn, surrender } from '@/lib/api';
 
 interface GameBoardProps {
   roomId: string;
@@ -613,6 +613,36 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
     }
   };
 
+  const handleSurrender = async () => {
+    if (!user || actionInProgress) return;
+    
+    // Confirm surrender
+    const confirmed = window.confirm('Are you sure you want to surrender?');
+    if (!confirmed) return;
+    
+    setActionInProgress(true);
+    try {
+      await surrender(roomId, { userId: user.id });
+      toast({
+        title: 'Surrendered',
+        description: 'You have surrendered the game.',
+        variant: 'destructive',
+      });
+      onRefresh();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to surrender',
+        variant: 'destructive',
+      });
+    } finally {
+      setActionInProgress(false);
+    }
+  };
+
+  // Check if player can surrender (must have 5 face-up life cards)
+  const canSurrender = currentUserPlayer?.lifeCards?.filter((lc: any) => lc.faceUp).length === 5;
+
   // Determine current turn player
   const currentTurnPlayer = gameRoom.currentTurn 
     ? gameRoom.players.find((p: GamePlayer) => p.userId === gameRoom.currentTurn)
@@ -1122,6 +1152,16 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                 className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 End Turn
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleSurrender}
+                disabled={actionInProgress || !canSurrender}
+                variant="destructive"
+                className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                title={!canSurrender ? "You can only surrender when you have 5 face-up life cards" : "Surrender the game"}
+              >
+                Surrender
               </Button>
             </div>
           </CardTitle>

@@ -1140,3 +1140,27 @@ export async function viewDeckBottom(roomId: string, data: {
     throw error;
   }
 }
+
+export async function surrender(roomId: string, data: {
+  userId: string;
+}): Promise<any> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/game/rooms/${roomId}/surrender`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `Failed to surrender in room ${roomId}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error(`Error surrendering in room ${roomId}:`, error);
+    throw error;
+  }
+}
