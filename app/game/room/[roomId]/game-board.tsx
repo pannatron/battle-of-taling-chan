@@ -45,6 +45,18 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
   const [showTurnNotification, setShowTurnNotification] = useState(false);
   const [turnNotificationMessage, setTurnNotificationMessage] = useState<{ title: string; message: string } | null>(null);
   const [isHandVisible, setIsHandVisible] = useState(true);
+  const [discardAnimation, setDiscardAnimation] = useState<{
+    cardName: string;
+    cardImageUrl: string | null;
+    username: string;
+  } | null>(null);
+  const [showDiscardAnimation, setShowDiscardAnimation] = useState(false);
+  const [discardQueue, setDiscardQueue] = useState<Array<{
+    cardName: string;
+    cardImageUrl: string | null;
+    username: string;
+  }>>([]);
+  const [isProcessingDiscard, setIsProcessingDiscard] = useState(false);
 
   // Prevent scrolling during actions to avoid jittering
   useEffect(() => {
@@ -64,6 +76,48 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
       document.documentElement.style.overflow = '';
     };
   }, [actionInProgress]);
+
+  // Listen for card discard events from ALL players
+  useEffect(() => {
+    const handleCardDiscard = (event: any) => {
+      const { username, cardName, cardImageUrl } = event.detail;
+      
+      // Add to queue
+      setDiscardQueue(prev => [...prev, {
+        cardName: cardName || 'Card',
+        cardImageUrl: cardImageUrl || null,
+        username,
+      }]);
+    };
+
+    window.addEventListener('card-discard', handleCardDiscard);
+
+    return () => {
+      window.removeEventListener('card-discard', handleCardDiscard);
+    };
+  }, []);
+
+  // Process discard queue
+  useEffect(() => {
+    if (isProcessingDiscard || discardQueue.length === 0) return;
+    
+    setIsProcessingDiscard(true);
+    const nextCard = discardQueue[0];
+    
+    // Show animation
+    setDiscardAnimation(nextCard);
+    setShowDiscardAnimation(true);
+    
+    // Hide after 3 seconds
+    setTimeout(() => {
+      setShowDiscardAnimation(false);
+      setTimeout(() => {
+        setDiscardAnimation(null);
+        setDiscardQueue(prev => prev.slice(1)); // Remove from queue
+        setIsProcessingDiscard(false);
+      }, 400);
+    }, 3000);
+  }, [discardQueue, isProcessingDiscard]);
 
   // Listen for dice roll events from ALL players (including self)
   useEffect(() => {
@@ -2580,6 +2634,75 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
               )}
             </CardContent>
           </Card>
+        </div>
+      )}
+
+      {/* Card Discard Animation Overlay */}
+      {showDiscardAnimation && discardAnimation && (
+        <div className={`fixed inset-0 flex items-center justify-center z-[100] pointer-events-none transition-opacity duration-300 ${
+          showDiscardAnimation ? 'opacity-100' : 'opacity-0'
+        }`}>
+          <style jsx>{`
+            @keyframes cardFall {
+              0% {
+                transform: translateY(-50vh) scale(0.8) rotate(-10deg);
+                opacity: 0;
+              }
+              20% {
+                opacity: 1;
+                transform: translateY(0) scale(1) rotate(0deg);
+              }
+              80% {
+                opacity: 1;
+                transform: translateY(0) scale(1) rotate(0deg);
+              }
+              100% {
+                transform: translateY(50vh) scale(0.8) rotate(10deg);
+                opacity: 0;
+              }
+            }
+            
+            @keyframes fireGlow {
+              0%, 100% {
+                box-shadow: 0 0 15px rgba(255, 69, 0, 0.6);
+              }
+              50% {
+                box-shadow: 0 0 25px rgba(255, 69, 0, 0.8);
+              }
+            }
+            
+            .discard-card {
+              animation: cardFall 2.8s ease-in-out forwards, fireGlow 0.5s ease-in-out infinite;
+            }
+          `}</style>
+          
+          <div className="discard-card w-64 aspect-[2/3] rounded-lg overflow-hidden border-2 border-red-500 shadow-xl">
+            <div className="w-full h-full relative bg-gradient-to-br from-red-900 via-orange-900 to-red-900">
+              {discardAnimation.cardImageUrl ? (
+                <Image
+                  src={discardAnimation.cardImageUrl}
+                  alt={discardAnimation.cardName}
+                  fill
+                  className="object-cover"
+                  priority
+                  quality={100}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-white text-xl font-bold">
+                  {discardAnimation.cardName}
+                </div>
+              )}
+              {/* Subtle overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-red-600/40 via-transparent to-transparent pointer-events-none" />
+            </div>
+          </div>
+          
+          {/* Minimal text notification */}
+          <div className="absolute bottom-24 text-center">
+            <div className="bg-slate-900/90 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-lg border border-red-500/50">
+              {discardAnimation.username} → Hell
+            </div>
+          </div>
         </div>
       )}
       </div>

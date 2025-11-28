@@ -110,6 +110,14 @@ export function useGameRoom(roomId: string | null) {
               window.dispatchEvent(gameOverEvent);
               console.log('Game end event received:', event.data);
               break;
+            case 'card-discard':
+              // Card discard event - trigger a custom event for discard animation
+              const discardEvent = new CustomEvent('card-discard', { 
+                detail: event.data 
+              });
+              window.dispatchEvent(discardEvent);
+              console.log('Card discard event received:', event.data);
+              break;
             default:
               console.log('Unknown event type:', event.type);
           }
