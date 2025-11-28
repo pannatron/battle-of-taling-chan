@@ -46,6 +46,25 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
   const [turnNotificationMessage, setTurnNotificationMessage] = useState<{ title: string; message: string } | null>(null);
   const [isHandVisible, setIsHandVisible] = useState(true);
 
+  // Prevent scrolling during actions to avoid jittering
+  useEffect(() => {
+    if (actionInProgress) {
+      // Disable scrolling
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+    } else {
+      // Re-enable scrolling
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    }
+
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    };
+  }, [actionInProgress]);
+
   // Listen for dice roll events from ALL players (including self)
   useEffect(() => {
     const handleDiceRollResult = (event: any) => {
