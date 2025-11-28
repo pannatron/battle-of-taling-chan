@@ -22,7 +22,7 @@ interface GameBoardProps {
 
 export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, onRefresh }: GameBoardProps) {
   const { toast } = useToast();
-  const [selectedCard, setSelectedCard] = useState<{ id: string; index: number } | null>(null);
+  const [selectedCards, setSelectedCards] = useState<Array<{ id: string; index: number; order: number }>>([]);
   const [selectedFieldCard, setSelectedFieldCard] = useState<string | null>(null);
   const [selectedMagicCard, setSelectedMagicCard] = useState<string | null>(null);
   const [selectedConstructCard, setSelectedConstructCard] = useState<string | null>(null);
@@ -44,6 +44,7 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
   const [diceTimeoutId, setDiceTimeoutId] = useState<NodeJS.Timeout | null>(null);
   const [showTurnNotification, setShowTurnNotification] = useState(false);
   const [turnNotificationMessage, setTurnNotificationMessage] = useState<{ title: string; message: string } | null>(null);
+  const [isHandVisible, setIsHandVisible] = useState(true);
 
   // Listen for dice roll events from ALL players (including self)
   useEffect(() => {
@@ -202,7 +203,8 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
         title: 'Success',
         description: `Card played to ${zone || 'field'}`,
       });
-      setSelectedCard(null);
+      // Remove the played card from selected cards
+      setSelectedCards(prev => prev.filter(c => c.id !== cardInstanceId));
       setShowZoneSelector(false);
       setSelectedZone(null);
       onRefresh();
@@ -217,10 +219,14 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
     }
   };
 
-  const handleZoneSelection = (zone: 'avatar' | 'magic' | 'land' | 'field' | 'construct') => {
+  const handleZoneSelection = async (zone: 'avatar' | 'magic' | 'land' | 'field' | 'construct') => {
     setSelectedZone(zone);
-    if (selectedCard) {
-      handlePlayCard(selectedCard.id, zone);
+    if (selectedCards.length > 0) {
+      // Play cards in order
+      for (const card of selectedCards.sort((a, b) => a.order - b.order)) {
+        await handlePlayCard(card.id, zone);
+      }
+      setSelectedCards([]);
     }
   };
 
@@ -262,7 +268,8 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
         title: 'Success',
         description: 'Card discarded to hell',
       });
-      setSelectedCard(null);
+      // Remove the discarded card from selected cards
+      setSelectedCards(prev => prev.filter(c => c.id !== cardInstanceId));
       onRefresh();
     } catch (error: any) {
       toast({
@@ -489,7 +496,8 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
         title: 'Success',
         description: `Card returned to ${position} of deck`,
       });
-      setSelectedCard(null);
+      // Remove the moved card from selected cards
+      setSelectedCards(prev => prev.filter(c => c.id !== cardInstanceId));
       onRefresh();
     } catch (error: any) {
       toast({
@@ -650,10 +658,10 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
   const isYourTurn = currentTurnPlayer?.userId === user?.id;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-20">
       {/* Turn Indicator - Always Visible at Top */}
       {currentTurnPlayer && (
-        <div className="flex justify-center mb-4">
+        <div className="flex justify-center mb-4 sticky top-0 z-30 bg-background/95 backdrop-blur-sm py-2">
           <div className={`px-8 py-3 rounded-xl font-bold text-lg shadow-lg border-2 transition-all ${
             isYourTurn 
               ? 'bg-gradient-to-r from-emerald-600 to-green-600 text-white border-emerald-400' 
@@ -1193,25 +1201,26 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
               {/* Current User's Avatar Zone & Construct Zone - Side by Side */}
               <div className="flex gap-6">
                 {/* Avatar Zone */}
-                <div className="flex-1">
+                <div className="flex-1 relative">
                   <p className="text-sm text-muted-foreground mb-2">Your Avatar Zone ({currentUserPlayer?.avatarZone?.length || 0}/4)</p>
-                {/* Reserve space for action buttons to prevent layout shift */}
-                <div className="mb-2 space-y-2" style={{ minHeight: selectedMagicCard && currentUserPlayer?.avatarZone?.find((c: any) => c.id === selectedMagicCard) ? 'auto' : '0' }}>
-                  {selectedMagicCard && currentUserPlayer?.avatarZone?.find((c: any) => c.id === selectedMagicCard) && (
-                    <div className="flex gap-2 bg-blue-500/10 p-2 rounded-lg flex-wrap">
+                {/* Floating action buttons above avatar zone */}
+                {selectedMagicCard && currentUserPlayer?.avatarZone?.find((c: any) => c.id === selectedMagicCard) && (
+                  <div className="absolute top-8 left-0 right-0 z-30 flex justify-center pointer-events-none">
+                    <div className="bg-blue-900/95 backdrop-blur-md border-2 border-blue-500/50 rounded-lg shadow-2xl p-1.5 flex gap-1 flex-wrap max-w-md pointer-events-auto">
                       <Button
                         size="sm"
-                        variant="outline"
+                        variant="ghost"
                         onClick={() => handleToggleCardRotation(selectedMagicCard)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                        className="h-7 px-2 text-xs bg-blue-600/80 hover:bg-blue-700 text-white"
                         disabled={actionInProgress}
+                        title="Rotate Card"
                       >
-                        <RotateCw className="h-4 w-4 mr-1" />
-                        Rotate
+                        <RotateCw className="h-3 w-3" />
                       </Button>
                       <Button
                         size="sm"
-                        className="bg-purple-600 hover:bg-purple-700"
+                        variant="ghost"
+                        className="h-7 px-2 text-xs bg-purple-600/80 hover:bg-purple-700 text-white"
                         onClick={() => {
                           setShowPowerInput(!showPowerInput);
                           if (!showPowerInput) {
@@ -1220,131 +1229,155 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                           }
                         }}
                         disabled={actionInProgress}
+                        title="Set Power"
                       >
-                        Set Power
+                        ⚡
                       </Button>
                       <Button
                         size="sm"
-                        className="bg-green-600 hover:bg-green-700"
+                        variant="ghost"
+                        className="h-7 px-2 text-xs bg-green-600/80 hover:bg-green-700 text-white"
                         onClick={() => handleMoveAvatarToOpponentField(selectedMagicCard)}
                         disabled={actionInProgress}
+                        title="Move to Opponent Field"
                       >
-                        Move to Opponent Field
+                        ↑
                       </Button>
                       <Button
                         size="sm"
-                        variant="destructive"
+                        variant="ghost"
+                        className="h-7 px-2 text-xs bg-red-600/80 hover:bg-red-700 text-white"
                         onClick={() => {
                           handleMoveFieldCardToHell(selectedMagicCard);
                           setSelectedMagicCard(null);
                         }}
                         disabled={actionInProgress}
+                        title="To Hell"
                       >
-                        To Hell
+                        🔥
                       </Button>
                       <Button
                         size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-xs bg-slate-600/80 hover:bg-slate-700 text-white"
                         onClick={() => {
                           handleMoveFieldCardToHand(selectedMagicCard);
                           setSelectedMagicCard(null);
                         }}
                         disabled={actionInProgress}
+                        title="To Hand"
                       >
-                        To Hand
+                        👋
                       </Button>
                       <Button
                         size="sm"
-                        variant="secondary"
+                        variant="ghost"
+                        className="h-7 px-2 text-xs bg-slate-600/80 hover:bg-slate-700 text-white"
                         onClick={() => {
                           handleMoveFieldCardToDeck(selectedMagicCard);
                           setSelectedMagicCard(null);
                         }}
                         disabled={actionInProgress}
+                        title="To Deck"
                       >
-                        To Deck
+                        📚
                       </Button>
                       <Button
                         size="sm"
-                        variant="outline"
+                        variant="ghost"
+                        className="h-7 px-2 text-xs bg-slate-500/80 hover:bg-slate-600 text-white"
                         onClick={() => {
                           setSelectedMagicCard(null);
                           setShowPowerInput(false);
                           setPowerInputValue('');
                         }}
+                        title="Cancel"
                       >
-                        Cancel
+                        ✕
                       </Button>
                     </div>
-                  )}
-                  {selectedMagicCard && currentUserPlayer?.avatarZone?.find((c: any) => c.id === selectedMagicCard) && showPowerInput && (
-                      <div className="flex gap-2 bg-purple-500/10 p-3 rounded-lg items-center">
-                        <label className="text-sm font-semibold text-purple-300">Power:</label>
-                        <input
-                          type="number"
-                          value={powerInputValue}
-                          onChange={(e) => setPowerInputValue(e.target.value)}
-                          className="w-20 px-2 py-1 rounded border border-purple-500 bg-background text-foreground"
-                          placeholder="0"
-                          disabled={actionInProgress}
-                        />
-                        <Button
-                          size="sm"
-                          className="bg-purple-600 hover:bg-purple-700"
-                          onClick={() => handleUpdateCardPower(selectedMagicCard)}
-                          disabled={actionInProgress || !powerInputValue}
-                        >
-                          Update
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setShowPowerInput(false);
-                            setPowerInputValue('');
-                          }}
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                  )}
-                </div>
-                {/* Reserve space for land zone action buttons */}
-                <div className="mb-2" style={{ minHeight: selectedFieldCard && currentUserPlayer?.landZone?.find((c: any) => c.id === selectedFieldCard) ? 'auto' : '0' }}>
-                  {selectedFieldCard && currentUserPlayer?.landZone?.find((c: any) => c.id === selectedFieldCard) && (
-                    <div className="flex gap-2 bg-amber-500/10 p-2 rounded-lg flex-wrap">
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => handleMoveFieldCardToHell(selectedFieldCard)}
-                      disabled={actionInProgress}
-                    >
-                      To Hell
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => handleMoveFieldCardToHand(selectedFieldCard)}
-                      disabled={actionInProgress}
-                    >
-                      To Hand
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => handleMoveFieldCardToDeck(selectedFieldCard)}
-                      disabled={actionInProgress}
-                    >
-                      To Deck
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setSelectedFieldCard(null)}
-                    >
-                      Cancel
-                    </Button>
+                  </div>
+                )}
+                {/* Power input floating above */}
+                {selectedMagicCard && currentUserPlayer?.avatarZone?.find((c: any) => c.id === selectedMagicCard) && showPowerInput && (
+                  <div className="absolute top-16 left-0 right-0 z-30 flex justify-center pointer-events-none">
+                    <div className="bg-purple-900/95 backdrop-blur-md border-2 border-purple-500/50 rounded-lg shadow-2xl p-2 flex gap-2 items-center pointer-events-auto">
+                      <input
+                        type="number"
+                        value={powerInputValue}
+                        onChange={(e) => setPowerInputValue(e.target.value)}
+                        className="w-16 h-7 px-2 text-xs rounded border border-purple-500 bg-background text-foreground"
+                        placeholder="0"
+                        disabled={actionInProgress}
+                      />
+                      <Button
+                        size="sm"
+                        className="h-7 px-2 text-xs bg-purple-600 hover:bg-purple-700"
+                        onClick={() => handleUpdateCardPower(selectedMagicCard)}
+                        disabled={actionInProgress || !powerInputValue}
+                      >
+                        ✓
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 px-2 text-xs"
+                        onClick={() => {
+                          setShowPowerInput(false);
+                          setPowerInputValue('');
+                        }}
+                      >
+                        ✕
+                      </Button>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
+                {/* Floating land zone action buttons */}
+                {selectedFieldCard && currentUserPlayer?.landZone?.find((c: any) => c.id === selectedFieldCard) && (
+                  <div className="absolute top-8 left-0 right-0 z-30 flex justify-center pointer-events-none">
+                    <div className="bg-amber-900/95 backdrop-blur-md border-2 border-amber-500/50 rounded-lg shadow-2xl p-1.5 flex gap-1 pointer-events-auto">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-xs bg-red-600/80 hover:bg-red-700 text-white"
+                        onClick={() => handleMoveFieldCardToHell(selectedFieldCard)}
+                        disabled={actionInProgress}
+                        title="To Hell"
+                      >
+                        🔥
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-xs bg-slate-600/80 hover:bg-slate-700 text-white"
+                        onClick={() => handleMoveFieldCardToHand(selectedFieldCard)}
+                        disabled={actionInProgress}
+                        title="To Hand"
+                      >
+                        👋
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-xs bg-slate-600/80 hover:bg-slate-700 text-white"
+                        onClick={() => handleMoveFieldCardToDeck(selectedFieldCard)}
+                        disabled={actionInProgress}
+                        title="To Deck"
+                      >
+                        📚
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-xs bg-slate-500/80 hover:bg-slate-600 text-white"
+                        onClick={() => setSelectedFieldCard(null)}
+                        title="Cancel"
+                      >
+                        ✕
+                      </Button>
+                    </div>
+                  </div>
+                )}
                 <div className="relative flex items-center max-w-4xl">
                   {/* Left Side - 2 Avatar slots */}
                   <div className="grid grid-cols-2 gap-3 w-[40%]">
@@ -1487,54 +1520,63 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                 </div>
 
                 {/* Construct Zone */}
-                <div className="flex-shrink-0" style={{ width: '280px' }}>
+                <div className="flex-shrink-0 relative" style={{ width: '280px' }}>
                   <p className="text-sm text-muted-foreground mb-2">Your Construct Zone ({currentUserPlayer?.constructZone?.length || 0}/3)</p>
-                  {/* Reserve space for construct action buttons */}
-                  <div className="mb-2" style={{ minHeight: selectedConstructCard && currentUserPlayer?.constructZone?.find((c: any) => c.id === selectedConstructCard) ? 'auto' : '0' }}>
-                    {selectedConstructCard && currentUserPlayer?.constructZone?.find((c: any) => c.id === selectedConstructCard) && (
-                      <div className="flex gap-2 bg-orange-500/10 p-2 rounded-lg flex-wrap">
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => {
-                          handleMoveFieldCardToHell(selectedConstructCard);
-                          setSelectedConstructCard(null);
-                        }}
-                        disabled={actionInProgress}
-                      >
-                        To Hell
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={() => {
-                          handleMoveFieldCardToHand(selectedConstructCard);
-                          setSelectedConstructCard(null);
-                        }}
-                        disabled={actionInProgress}
-                      >
-                        To Hand
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => {
-                          handleMoveFieldCardToDeck(selectedConstructCard);
-                          setSelectedConstructCard(null);
-                        }}
-                        disabled={actionInProgress}
-                      >
-                        To Deck
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setSelectedConstructCard(null)}
-                      >
-                        Cancel
-                      </Button>
+                  {/* Floating construct action buttons */}
+                  {selectedConstructCard && currentUserPlayer?.constructZone?.find((c: any) => c.id === selectedConstructCard) && (
+                    <div className="absolute top-8 left-0 right-0 z-30 flex justify-center pointer-events-none">
+                      <div className="bg-orange-900/95 backdrop-blur-md border-2 border-orange-500/50 rounded-lg shadow-2xl p-1.5 flex gap-1 pointer-events-auto">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 px-2 text-xs bg-red-600/80 hover:bg-red-700 text-white"
+                          onClick={() => {
+                            handleMoveFieldCardToHell(selectedConstructCard);
+                            setSelectedConstructCard(null);
+                          }}
+                          disabled={actionInProgress}
+                          title="To Hell"
+                        >
+                          🔥
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 px-2 text-xs bg-slate-600/80 hover:bg-slate-700 text-white"
+                          onClick={() => {
+                            handleMoveFieldCardToHand(selectedConstructCard);
+                            setSelectedConstructCard(null);
+                          }}
+                          disabled={actionInProgress}
+                          title="To Hand"
+                        >
+                          👋
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 px-2 text-xs bg-slate-600/80 hover:bg-slate-700 text-white"
+                          onClick={() => {
+                            handleMoveFieldCardToDeck(selectedConstructCard);
+                            setSelectedConstructCard(null);
+                          }}
+                          disabled={actionInProgress}
+                          title="To Deck"
+                        >
+                          📚
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 px-2 text-xs bg-slate-500/80 hover:bg-slate-600 text-white"
+                          onClick={() => setSelectedConstructCard(null)}
+                          title="Cancel"
+                        >
+                          ✕
+                        </Button>
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                   <div className="grid grid-cols-3 gap-2">
                     {[0, 1, 2].map((slotIdx) => {
                       const constructCard = currentUserPlayer?.constructZone?.[slotIdx];
@@ -1636,7 +1678,7 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
               {/* Current User's Magic Zone & Deck/Hell - Side by Side */}
               <div className="flex gap-6">
                 {/* Magic Zone */}
-                <div className="flex-1">
+                <div className="flex-1 relative">
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-sm text-muted-foreground">Your Magic Zone ({currentUserPlayer?.magicZone?.length || 0}/4)</p>
                     <Button
@@ -1648,52 +1690,61 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                       🎲 Roll Dice
                     </Button>
                   </div>
-                  {/* Reserve space for magic zone action buttons */}
-                  <div className="mb-2" style={{ minHeight: selectedMagicCard && currentUserPlayer?.magicZone?.find((c: any) => c.id === selectedMagicCard) ? 'auto' : '0' }}>
-                    {selectedMagicCard && currentUserPlayer?.magicZone?.find((c: any) => c.id === selectedMagicCard) && (
-                      <div className="flex gap-2 bg-purple-500/10 p-2 rounded-lg flex-wrap">
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => {
-                          handleMoveFieldCardToHell(selectedMagicCard);
-                          setSelectedMagicCard(null);
-                        }}
-                        disabled={actionInProgress}
-                      >
-                        To Hell
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={() => {
-                          handleMoveFieldCardToHand(selectedMagicCard);
-                          setSelectedMagicCard(null);
-                        }}
-                        disabled={actionInProgress}
-                      >
-                        To Hand
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => {
-                          handleMoveFieldCardToDeck(selectedMagicCard);
-                          setSelectedMagicCard(null);
-                        }}
-                        disabled={actionInProgress}
-                      >
-                        To Deck
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setSelectedMagicCard(null)}
-                      >
-                        Cancel
-                      </Button>
+                  {/* Floating magic zone action buttons */}
+                  {selectedMagicCard && currentUserPlayer?.magicZone?.find((c: any) => c.id === selectedMagicCard) && (
+                    <div className="absolute top-12 left-0 right-0 z-30 flex justify-center pointer-events-none">
+                      <div className="bg-purple-900/95 backdrop-blur-md border-2 border-purple-500/50 rounded-lg shadow-2xl p-1.5 flex gap-1 pointer-events-auto">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 px-2 text-xs bg-red-600/80 hover:bg-red-700 text-white"
+                          onClick={() => {
+                            handleMoveFieldCardToHell(selectedMagicCard);
+                            setSelectedMagicCard(null);
+                          }}
+                          disabled={actionInProgress}
+                          title="To Hell"
+                        >
+                          🔥
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 px-2 text-xs bg-slate-600/80 hover:bg-slate-700 text-white"
+                          onClick={() => {
+                            handleMoveFieldCardToHand(selectedMagicCard);
+                            setSelectedMagicCard(null);
+                          }}
+                          disabled={actionInProgress}
+                          title="To Hand"
+                        >
+                          👋
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 px-2 text-xs bg-slate-600/80 hover:bg-slate-700 text-white"
+                          onClick={() => {
+                            handleMoveFieldCardToDeck(selectedMagicCard);
+                            setSelectedMagicCard(null);
+                          }}
+                          disabled={actionInProgress}
+                          title="To Deck"
+                        >
+                          📚
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 px-2 text-xs bg-slate-500/80 hover:bg-slate-600 text-white"
+                          onClick={() => setSelectedMagicCard(null)}
+                          title="Cancel"
+                        >
+                          ✕
+                        </Button>
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                   <div className="relative flex items-center max-w-4xl">
                     {/* Left Side - 2 Magic slots */}
                     <div className="grid grid-cols-2 gap-3 w-[40%]">
@@ -1907,116 +1958,166 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                 </div>
               </div>
 
-            {/* Current User's Hand */}
-            <div>
-                <p className="text-sm text-muted-foreground mb-2">Your Hand ({currentUserPlayer?.hand?.length || 0})</p>
+            {/* Current User's Hand - Fixed with Hide Button */}
+            <div className="fixed bottom-0 left-0 right-0 z-40 pointer-events-none">
+
+              {/* Small Toggle Modal - Bottom Right Corner */}
+              <button
+                onClick={() => setIsHandVisible(!isHandVisible)}
+                className="fixed bottom-4 right-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white px-3 py-2 rounded-lg shadow-lg z-50 flex items-center gap-2 text-xs font-semibold pointer-events-auto hover:from-purple-700 hover:to-blue-700"
+              >
+                {isHandVisible ? (
+                  <>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+                    </svg>
+                    Hide Hand
+                  </>
+                ) : (
+                  <>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    Show Hand
+                  </>
+                )}
+              </button>
+
+              <div className={`transition-all duration-300 pointer-events-none ${isHandVisible ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden'}`}>
                 
-                {/* Zone Selector - Fixed height to prevent layout shift */}
-                <div className="mb-4" style={{ minHeight: selectedCard && showZoneSelector ? 'auto' : '0' }}>
-                  {selectedCard && showZoneSelector && (
-                    <div className="p-3 bg-blue-500/20 border-2 border-blue-500 rounded-lg shadow-lg z-50 relative">
-                    <p className="text-sm font-semibold mb-2">Select Zone to Play Card:</p>
-                    <div className="flex gap-2 flex-wrap">
-                      <Button
-                        size="sm"
-                        onClick={() => handleZoneSelection('avatar')}
-                        disabled={actionInProgress}
-                        className="bg-blue-600 hover:bg-blue-700"
-                      >
-                        Avatar Zone
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={() => handleZoneSelection('magic')}
-                        disabled={actionInProgress}
-                        className="bg-purple-600 hover:bg-purple-700"
-                      >
-                        Magic Zone
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={() => handleZoneSelection('construct')}
-                        disabled={actionInProgress}
-                        className="bg-orange-600 hover:bg-orange-700"
-                      >
-                        Construct Zone
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={() => handleZoneSelection('land')}
-                        disabled={actionInProgress}
-                        className="bg-amber-600 hover:bg-amber-700"
-                      >
-                        Land Zone
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setShowZoneSelector(false);
-                          setSelectedZone(null);
-                        }}
-                      >
-                        Cancel
-                      </Button>
+                {/* Floating Zone Selector - Above hand cards */}
+                {selectedCards.length > 0 && showZoneSelector && (
+                  <div className="absolute bottom-[290px] left-0 right-0 z-40 flex justify-center pointer-events-none">
+                    <div className="bg-blue-900/95 backdrop-blur-md border-2 border-blue-500/50 rounded-lg shadow-2xl p-2 pointer-events-auto max-w-lg">
+                      <p className="text-xs font-semibold mb-2 text-center text-white">
+                        Select Zone ({selectedCards.length} card{selectedCards.length > 1 ? 's' : ''}):
+                      </p>
+                      <div className="flex gap-1.5 flex-wrap justify-center">
+                        <Button
+                          size="sm"
+                          onClick={() => handleZoneSelection('avatar')}
+                          disabled={actionInProgress}
+                          className="h-7 px-3 text-xs bg-blue-600/80 hover:bg-blue-700"
+                        >
+                          Avatar
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => handleZoneSelection('magic')}
+                          disabled={actionInProgress}
+                          className="h-7 px-3 text-xs bg-purple-600/80 hover:bg-purple-700"
+                        >
+                          Magic
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => handleZoneSelection('construct')}
+                          disabled={actionInProgress}
+                          className="h-7 px-3 text-xs bg-orange-600/80 hover:bg-orange-700"
+                        >
+                          Construct
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => handleZoneSelection('land')}
+                          disabled={actionInProgress}
+                          className="h-7 px-3 text-xs bg-amber-600/80 hover:bg-amber-700"
+                        >
+                          Land
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            setShowZoneSelector(false);
+                            setSelectedZone(null);
+                          }}
+                          className="h-7 px-3 text-xs bg-slate-500/80 hover:bg-slate-600"
+                        >
+                          ✕
+                        </Button>
+                      </div>
                     </div>
-                    </div>
-                  )}
-                </div>
+                  </div>
+                )}
                 
-                {/* Card Action Buttons - Fixed height to prevent layout shift */}
-                <div className="mb-4" style={{ minHeight: selectedCard && !showZoneSelector ? 'auto' : '0' }}>
-                  {selectedCard && !showZoneSelector && (
-                    <div className="flex gap-2 bg-primary/10 p-2 rounded-lg flex-wrap">
-                    <Button
-                      size="sm"
-                      onClick={() => setShowZoneSelector(true)}
-                      disabled={actionInProgress || (currentUserPlayer?.field?.length || 0) >= 4}
-                    >
-                      Play Card (Select Zone)
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => handleDiscardCard(selectedCard.id)}
-                      disabled={actionInProgress}
-                    >
-                      Discard
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => handleMoveHandCardToDeck(selectedCard.id, 'top')}
-                      disabled={actionInProgress}
-                      className="bg-green-600 hover:bg-green-700 text-white"
-                    >
-                      Return to Top of Deck
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => handleMoveHandCardToDeck(selectedCard.id, 'bottom')}
-                      disabled={actionInProgress}
-                      className="bg-blue-600 hover:bg-blue-700 text-white"
-                    >
-                      Return to Bottom of Deck
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setSelectedCard(null)}
-                    >
-                      Cancel
-                    </Button>
+                {/* Floating Hand Card Action Buttons - Above hand cards */}
+                {selectedCards.length > 0 && !showZoneSelector && (
+                  <div className="absolute bottom-[290px] left-0 right-0 z-40 flex justify-center pointer-events-none">
+                    <div className="bg-slate-900/95 backdrop-blur-md border-2 border-slate-500/50 rounded-lg shadow-2xl p-2 pointer-events-auto max-w-2xl">
+                      <p className="text-xs font-semibold mb-2 text-center text-white">
+                        {selectedCards.length} card{selectedCards.length > 1 ? 's' : ''} selected
+                      </p>
+                      <div className="flex gap-1.5 flex-wrap justify-center">
+                        <Button
+                          size="sm"
+                          onClick={() => setShowZoneSelector(true)}
+                          disabled={actionInProgress}
+                          className="h-7 px-3 text-xs bg-green-600/80 hover:bg-green-700"
+                        >
+                          Play
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={async () => {
+                            for (const card of selectedCards.sort((a, b) => a.order - b.order)) {
+                              await handleDiscardCard(card.id);
+                            }
+                          }}
+                          disabled={actionInProgress}
+                          className="h-7 px-3 text-xs bg-red-600/80 hover:bg-red-700 text-white"
+                        >
+                          Discard
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={async () => {
+                            for (const card of selectedCards.sort((a, b) => a.order - b.order)) {
+                              await handleMoveHandCardToDeck(card.id, 'top');
+                            }
+                          }}
+                          disabled={actionInProgress}
+                          className="h-7 px-3 text-xs bg-green-600/80 hover:bg-green-700 text-white"
+                          title="Return to Top of Deck"
+                        >
+                          📚↑
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={async () => {
+                            for (const card of selectedCards.sort((a, b) => a.order - b.order)) {
+                              await handleMoveHandCardToDeck(card.id, 'bottom');
+                            }
+                          }}
+                          disabled={actionInProgress}
+                          className="h-7 px-3 text-xs bg-blue-600/80 hover:bg-blue-700 text-white"
+                          title="Return to Bottom of Deck"
+                        >
+                          📚↓
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setSelectedCards([])}
+                          className="h-7 px-3 text-xs bg-slate-500/80 hover:bg-slate-600 text-white"
+                        >
+                          ✕
+                        </Button>
+                      </div>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
                 
                 {/* Hand Cards - Overlapping Fan Layout */}
-                <div className="relative flex justify-center items-end" style={{ height: '280px', paddingBottom: '20px' }}>
+                <div className="relative flex justify-center items-end pointer-events-none" style={{ height: '280px', paddingBottom: '10px' }}>
                   {currentUserPlayer?.hand?.map((cardInHand: any, idx: number) => {
                     const cardData = findCardData(cardInHand.cardId, currentUserCards);
-                    const isSelected = selectedCard?.id === cardInHand.id;
+                    const selectedCard = selectedCards.find(c => c.id === cardInHand.id);
+                    const isSelected = !!selectedCard;
                     const totalCards = currentUserPlayer?.hand?.length || 1;
                     
                     // Calculate fan positions (right-side up - narrow at top, wide at bottom)
@@ -2039,11 +2140,18 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                           // Reset transform immediately when clicking
                           e.currentTarget.style.transform = `translateX(calc(-50% + ${xPosition}px)) translateY(${yOffset}px) rotate(${rotation}deg)`;
                           e.currentTarget.style.zIndex = String(100);
-                          setSelectedCard(isSelected ? null : { id: cardInHand.id, index: idx });
+                          
+                          // Toggle selection with order tracking
+                          if (isSelected) {
+                            setSelectedCards(prev => prev.filter(c => c.id !== cardInHand.id));
+                          } else {
+                            const nextOrder = selectedCards.length + 1;
+                            setSelectedCards(prev => [...prev, { id: cardInHand.id, index: idx, order: nextOrder }]);
+                          }
                         }}
                         className={`absolute w-40 aspect-[2/3] rounded-lg overflow-hidden border-2 ${
                           isSelected ? 'border-yellow-500 ring-4 ring-yellow-300' : 'border-primary'
-                        } shadow-lg cursor-pointer transition-all duration-300 ease-out`}
+                        } shadow-lg cursor-pointer transition-all duration-300 ease-out pointer-events-auto`}
                         style={{
                           left: '50%',
                           bottom: '0',
@@ -2053,7 +2161,7 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                         }}
                         onMouseEnter={(e) => {
                           // Don't scale if ANY card is selected
-                          if (selectedCard === null) {
+                          if (selectedCards.length === 0) {
                             e.currentTarget.style.transform = `translateX(calc(-50% + ${xPosition}px)) translateY(-80px) rotate(0deg) scale(3)`;
                             e.currentTarget.style.zIndex = '99';
                           }
@@ -2078,10 +2186,10 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                             <p className="text-xs text-center p-2">Loading...</p>
                           </div>
                         )}
-                        {isSelected && (
+                        {isSelected && selectedCard && (
                           <div className="absolute inset-0 bg-yellow-500/20 flex items-center justify-center pointer-events-none">
-                            <div className="bg-yellow-500 text-white px-2 py-1 rounded text-xs font-bold">
-                              SELECTED
+                            <div className="bg-yellow-500 text-white px-3 py-2 rounded-full text-2xl font-extrabold shadow-lg border-2 border-white">
+                              {selectedCard.order}
                             </div>
                           </div>
                         )}
@@ -2089,6 +2197,7 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                     );
                   })}
                 </div>
+              </div>
             </div>
           </div>
 
