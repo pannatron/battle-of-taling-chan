@@ -57,6 +57,20 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
     username: string;
   }>>([]);
   const [isProcessingDiscard, setIsProcessingDiscard] = useState(false);
+  const [magicAnimation, setMagicAnimation] = useState<{
+    cardName: string;
+    cardImageUrl: string | null;
+    username: string;
+    isReact?: boolean;
+  } | null>(null);
+  const [showMagicAnimation, setShowMagicAnimation] = useState(false);
+  const [magicQueue, setMagicQueue] = useState<Array<{
+    cardName: string;
+    cardImageUrl: string | null;
+    username: string;
+    isReact?: boolean;
+  }>>([]);
+  const [isProcessingMagic, setIsProcessingMagic] = useState(false);
 
   // Prevent scrolling during actions to avoid jittering
   useEffect(() => {
@@ -97,6 +111,27 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
     };
   }, []);
 
+  // Listen for magic card usage events from ALL players
+  useEffect(() => {
+    const handleMagicUse = (event: any) => {
+      const { username, cardName, cardImageUrl, isReact } = event.detail;
+      
+      // Add to queue
+      setMagicQueue(prev => [...prev, {
+        cardName: cardName || 'Magic Card',
+        cardImageUrl: cardImageUrl || null,
+        username,
+        isReact: isReact || false,
+      }]);
+    };
+
+    window.addEventListener('card-magic-use', handleMagicUse);
+
+    return () => {
+      window.removeEventListener('card-magic-use', handleMagicUse);
+    };
+  }, []);
+
   // Process discard queue
   useEffect(() => {
     if (isProcessingDiscard || discardQueue.length === 0) return;
@@ -118,6 +153,28 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
       }, 400);
     }, 3000);
   }, [discardQueue, isProcessingDiscard]);
+
+  // Process magic queue
+  useEffect(() => {
+    if (isProcessingMagic || magicQueue.length === 0) return;
+    
+    setIsProcessingMagic(true);
+    const nextCard = magicQueue[0];
+    
+    // Show animation
+    setMagicAnimation(nextCard);
+    setShowMagicAnimation(true);
+    
+    // Hide after 3 seconds
+    setTimeout(() => {
+      setShowMagicAnimation(false);
+      setTimeout(() => {
+        setMagicAnimation(null);
+        setMagicQueue(prev => prev.slice(1)); // Remove from queue
+        setIsProcessingMagic(false);
+      }, 400);
+    }, 3000);
+  }, [magicQueue, isProcessingMagic]);
 
   // Listen for dice roll events from ALL players (including self)
   useEffect(() => {
@@ -2703,6 +2760,551 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
               {discardAnimation.username} → Hell
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Magic Card Usage Animation Overlay - Normal Magic */}
+      {showMagicAnimation && magicAnimation && !magicAnimation.isReact && (
+        <div className={`fixed inset-0 flex items-center justify-center z-[100] pointer-events-none transition-opacity duration-300 ${
+          showMagicAnimation ? 'opacity-100' : 'opacity-0'
+        }`}>
+          <style jsx>{`
+            @keyframes magicReveal {
+              0% {
+                transform: scale(0.3) rotateY(-180deg);
+                opacity: 0;
+              }
+              15% {
+                transform: scale(1.1) rotateY(0deg);
+                opacity: 1;
+              }
+              30% {
+                transform: scale(1) rotateY(0deg);
+              }
+              70% {
+                transform: scale(1) rotateY(0deg);
+              }
+              85% {
+                transform: scale(1.1) rotateY(0deg);
+              }
+              100% {
+                transform: scale(0.3) rotateY(180deg);
+                opacity: 0;
+              }
+            }
+            
+            @keyframes magicGlow {
+              0%, 100% {
+                box-shadow: 0 0 20px rgba(147, 51, 234, 0.6),
+                           0 0 40px rgba(147, 51, 234, 0.4),
+                           0 0 60px rgba(147, 51, 234, 0.2);
+              }
+              50% {
+                box-shadow: 0 0 30px rgba(147, 51, 234, 0.8),
+                           0 0 60px rgba(147, 51, 234, 0.6),
+                           0 0 90px rgba(147, 51, 234, 0.4);
+              }
+            }
+            
+            @keyframes magicParticles {
+              0% {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+              }
+              100% {
+                transform: translateY(-100px) scale(0);
+                opacity: 0;
+              }
+            }
+            
+            @keyframes magicRing {
+              0% {
+                transform: scale(0.8);
+                opacity: 0;
+              }
+              50% {
+                opacity: 0.6;
+              }
+              100% {
+                transform: scale(2);
+                opacity: 0;
+              }
+            }
+            
+            .magic-card {
+              animation: magicReveal 2.8s ease-in-out forwards, magicGlow 0.6s ease-in-out infinite;
+            }
+            
+            .magic-particle {
+              position: absolute;
+              width: 8px;
+              height: 8px;
+              background: radial-gradient(circle, rgba(147, 51, 234, 1), rgba(147, 51, 234, 0));
+              border-radius: 50%;
+              animation: magicParticles 1.5s ease-out infinite;
+            }
+            
+            .magic-ring {
+              position: absolute;
+              width: 280px;
+              height: 280px;
+              border: 3px solid rgba(147, 51, 234, 0.6);
+              border-radius: 50%;
+              animation: magicRing 2s ease-out infinite;
+            }
+          `}</style>
+          
+          {/* Magic rings */}
+          <div className="magic-ring" style={{ animationDelay: '0s' }}></div>
+          <div className="magic-ring" style={{ animationDelay: '0.4s' }}></div>
+          <div className="magic-ring" style={{ animationDelay: '0.8s' }}></div>
+          
+          {/* Magic particles */}
+          {[...Array(12)].map((_, i) => (
+            <div
+              key={i}
+              className="magic-particle"
+              style={{
+                left: `calc(50% + ${Math.cos((i * Math.PI * 2) / 12) * 150}px)`,
+                top: `calc(50% + ${Math.sin((i * Math.PI * 2) / 12) * 150}px)`,
+                animationDelay: `${i * 0.1}s`,
+              }}
+            />
+          ))}
+          
+          {/* Magic card */}
+          <div className="magic-card w-64 aspect-[2/3] rounded-lg overflow-hidden border-2 border-purple-500 shadow-2xl">
+            <div className="w-full h-full relative bg-gradient-to-br from-purple-900 via-fuchsia-900 to-purple-900">
+              {magicAnimation.cardImageUrl ? (
+                <Image
+                  src={magicAnimation.cardImageUrl}
+                  alt={magicAnimation.cardName}
+                  fill
+                  className="object-cover"
+                  priority
+                  quality={100}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-white text-xl font-bold">
+                  {magicAnimation.cardName}
+                </div>
+              )}
+              {/* Mystical overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-purple-600/40 via-transparent to-fuchsia-600/40 pointer-events-none" />
+              
+              {/* Sparkle effects */}
+              <div className="absolute inset-0 pointer-events-none">
+                {[...Array(8)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="absolute w-2 h-2 bg-white rounded-full"
+                    style={{
+                      left: `${Math.random() * 100}%`,
+                      top: `${Math.random() * 100}%`,
+                      animation: `magicParticles ${1 + Math.random()}s ease-out infinite`,
+                      animationDelay: `${Math.random() * 2}s`,
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+          
+          {/* Magic usage notification */}
+          <div className="absolute bottom-24 text-center">
+            <div className="bg-gradient-to-r from-purple-900/90 via-fuchsia-900/90 to-purple-900/90 text-white px-6 py-3 rounded-lg text-sm font-semibold shadow-2xl border-2 border-purple-500/70">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">✨</span>
+                <span>{magicAnimation.username} used Magic!</span>
+                <span className="text-xl">✨</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* React Magic Animation Overlay - Enhanced Counter/Deflection Effect */}
+      {showMagicAnimation && magicAnimation && magicAnimation.isReact && (
+        <div className={`fixed inset-0 flex items-center justify-center z-[100] pointer-events-none transition-opacity duration-300 ${
+          showMagicAnimation ? 'opacity-100' : 'opacity-0'
+        }`}>
+          <style jsx>{`
+            @keyframes counterStrike {
+              0% {
+                transform: translateX(-120vw) translateY(20vh) scale(0.6) rotateY(-180deg) rotateZ(20deg);
+                opacity: 0;
+              }
+              15% {
+                transform: translateX(-40vw) translateY(10vh) scale(0.8) rotateY(-90deg) rotateZ(10deg);
+                opacity: 0.8;
+              }
+              35% {
+                transform: translateX(0) translateY(0) scale(1.3) rotateY(0deg) rotateZ(0deg);
+                opacity: 1;
+              }
+              50% {
+                transform: translateX(0) translateY(0) scale(1.2) rotateY(0deg) rotateZ(-5deg);
+              }
+              65% {
+                transform: translateX(0) translateY(0) scale(1.3) rotateY(0deg) rotateZ(5deg);
+              }
+              85% {
+                transform: translateX(40vw) translateY(-10vh) scale(0.8) rotateY(90deg) rotateZ(-10deg);
+                opacity: 0.8;
+              }
+              100% {
+                transform: translateX(120vw) translateY(-20vh) scale(0.6) rotateY(180deg) rotateZ(-20deg);
+                opacity: 0;
+              }
+            }
+            
+            @keyframes deflectShield {
+              0% {
+                transform: scale(0.5) rotate(0deg);
+                opacity: 0;
+              }
+              20% {
+                transform: scale(1.3) rotate(45deg);
+                opacity: 0.9;
+              }
+              40% {
+                transform: scale(1.1) rotate(90deg);
+                opacity: 0.8;
+              }
+              60% {
+                transform: scale(1.3) rotate(135deg);
+                opacity: 0.9;
+              }
+              80% {
+                transform: scale(1) rotate(180deg);
+                opacity: 0.6;
+              }
+              100% {
+                transform: scale(0.5) rotate(225deg);
+                opacity: 0;
+              }
+            }
+            
+            @keyframes counterArrow {
+              0% {
+                transform: translateX(-300px) scale(0);
+                opacity: 0;
+              }
+              20% {
+                transform: translateX(-150px) scale(1);
+                opacity: 1;
+              }
+              50% {
+                transform: translateX(0) scale(1.5);
+                opacity: 1;
+              }
+              80% {
+                transform: translateX(150px) scale(1);
+                opacity: 1;
+              }
+              100% {
+                transform: translateX(300px) scale(0);
+                opacity: 0;
+              }
+            }
+            
+            @keyframes impactWave {
+              0% {
+                transform: scale(0) rotate(0deg);
+                opacity: 0;
+              }
+              10% {
+                opacity: 0.8;
+              }
+              50% {
+                transform: scale(3) rotate(180deg);
+                opacity: 0.4;
+              }
+              100% {
+                transform: scale(5) rotate(360deg);
+                opacity: 0;
+              }
+            }
+            
+            @keyframes energySurge {
+              0% {
+                transform: translateX(-100%) scaleX(0);
+                opacity: 0;
+              }
+              30% {
+                opacity: 1;
+              }
+              50% {
+                transform: translateX(0) scaleX(1);
+              }
+              70% {
+                opacity: 1;
+              }
+              100% {
+                transform: translateX(100%) scaleX(0);
+                opacity: 0;
+              }
+            }
+            
+            @keyframes counterGlow {
+              0%, 100% {
+                box-shadow: 
+                  0 0 40px rgba(249, 115, 22, 0.8),
+                  0 0 80px rgba(59, 130, 246, 0.6),
+                  0 0 120px rgba(34, 211, 238, 0.4),
+                  inset 0 0 40px rgba(59, 130, 246, 0.4);
+              }
+              50% {
+                box-shadow: 
+                  0 0 60px rgba(249, 115, 22, 1),
+                  0 0 120px rgba(59, 130, 246, 0.9),
+                  0 0 180px rgba(34, 211, 238, 0.7),
+                  inset 0 0 60px rgba(59, 130, 246, 0.6);
+              }
+            }
+            
+            @keyframes reflectionFlash {
+              0%, 100% {
+                opacity: 0;
+              }
+              50% {
+                opacity: 1;
+              }
+            }
+            
+            .react-card {
+              animation: counterStrike 3s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards, counterGlow 0.4s ease-in-out infinite;
+            }
+            
+            .deflect-shield {
+              position: absolute;
+              width: 350px;
+              height: 350px;
+              border: 6px solid rgba(249, 115, 22, 0.9);
+              border-radius: 50%;
+              animation: deflectShield 3s ease-in-out forwards;
+            }
+            
+            .counter-arrow {
+              position: absolute;
+              width: 150px;
+              height: 8px;
+              background: linear-gradient(90deg, 
+                transparent,
+                rgba(249, 115, 22, 1) 10%,
+                rgba(251, 146, 60, 1) 50%,
+                rgba(249, 115, 22, 1) 90%,
+                transparent
+              );
+              box-shadow: 0 0 15px rgba(249, 115, 22, 1), 0 0 30px rgba(249, 115, 22, 0.5);
+              animation: counterArrow 3s ease-in-out infinite;
+            }
+            
+            .counter-arrow::before {
+              content: '';
+              position: absolute;
+              right: -20px;
+              top: 50%;
+              transform: translateY(-50%);
+              width: 0;
+              height: 0;
+              border-left: 25px solid rgba(249, 115, 22, 1);
+              border-top: 15px solid transparent;
+              border-bottom: 15px solid transparent;
+              filter: drop-shadow(0 0 10px rgba(249, 115, 22, 0.8));
+            }
+            
+            .impact-wave {
+              position: absolute;
+              width: 300px;
+              height: 300px;
+              border: 5px solid rgba(59, 130, 246, 0.7);
+              border-radius: 50%;
+              animation: impactWave 1.5s ease-out infinite;
+            }
+            
+            .energy-surge {
+              position: absolute;
+              width: 100%;
+              height: 12px;
+              background: linear-gradient(90deg,
+                transparent,
+                rgba(34, 211, 238, 0.8),
+                rgba(59, 130, 246, 1),
+                rgba(34, 211, 238, 0.8),
+                transparent
+              );
+              box-shadow: 0 0 20px rgba(59, 130, 246, 0.8);
+              animation: energySurge 1.5s ease-in-out infinite;
+            }
+          `}</style>
+          
+          {/* Deflection shields - rotating and pulsing */}
+          {[...Array(3)].map((_, i) => (
+            <div
+              key={`shield-${i}`}
+              className="deflect-shield"
+              style={{
+                animationDelay: `${i * 0.2}s`,
+                width: `${350 - i * 40}px`,
+                height: `${350 - i * 40}px`,
+              }}
+            />
+          ))}
+          
+          {/* Impact waves - expanding circles */}
+          {[...Array(4)].map((_, i) => (
+            <div
+              key={`wave-${i}`}
+              className="impact-wave"
+              style={{
+                animationDelay: `${i * 0.3}s`,
+              }}
+            />
+          ))}
+          
+          {/* Counter arrows - showing deflection direction */}
+          {[...Array(6)].map((_, i) => (
+            <div
+              key={`arrow-${i}`}
+              className="counter-arrow"
+              style={{
+                top: `calc(50% + ${Math.sin((i * Math.PI * 2) / 6) * 140}px)`,
+                left: `calc(50% + ${Math.cos((i * Math.PI * 2) / 6) * 140}px)`,
+                transform: `rotate(${(i * 360) / 6}deg)`,
+                animationDelay: `${i * 0.15}s`,
+              }}
+            />
+          ))}
+          
+          {/* Energy surges - horizontal beams */}
+          {[...Array(5)].map((_, i) => (
+            <div
+              key={`surge-${i}`}
+              className="energy-surge"
+              style={{
+                top: `calc(50% + ${(i - 2) * 60}px)`,
+                animationDelay: `${i * 0.3}s`,
+              }}
+            />
+          ))}
+          
+          {/* React magic card - with intense counter styling */}
+          <div className="react-card w-72 aspect-[2/3] rounded-xl overflow-hidden border-8 shadow-2xl relative"
+            style={{
+              borderImage: 'linear-gradient(45deg, rgba(249, 115, 22, 1), rgba(59, 130, 246, 1), rgba(34, 211, 238, 1), rgba(249, 115, 22, 1)) 1',
+            }}>
+            <div className="w-full h-full relative bg-gradient-to-br from-orange-600 via-blue-900 to-cyan-900">
+              {magicAnimation.cardImageUrl ? (
+                <Image
+                  src={magicAnimation.cardImageUrl}
+                  alt={magicAnimation.cardName}
+                  fill
+                  className="object-cover"
+                  priority
+                  quality={100}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-white text-xl font-bold">
+                  {magicAnimation.cardName}
+                </div>
+              )}
+              
+              {/* Dynamic counter overlay */}
+              <div className="absolute inset-0 bg-gradient-to-br from-orange-500/40 via-blue-600/20 to-cyan-500/40 pointer-events-none" />
+              
+              {/* Reflection flashes */}
+              <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                {[...Array(3)].map((_, i) => (
+                  <div
+                    key={`flash-${i}`}
+                    className="absolute w-full h-full bg-gradient-to-r from-transparent via-white/60 to-transparent"
+                    style={{
+                      animation: `shine ${2 + i * 0.5}s ease-in-out infinite`,
+                      animationDelay: `${i * 0.5}s`,
+                      transform: 'translateX(-100%) skewX(-25deg)',
+                    }}
+                  />
+                ))}
+              </div>
+              
+              {/* Energy particles */}
+              {[...Array(20)].map((_, i) => (
+                <div
+                  key={`particle-${i}`}
+                  className="absolute rounded-full"
+                  style={{
+                    width: `${4 + Math.random() * 6}px`,
+                    height: `${4 + Math.random() * 6}px`,
+                    left: `${Math.random() * 100}%`,
+                    top: `${Math.random() * 100}%`,
+                    background: i % 2 === 0 
+                      ? 'radial-gradient(circle, rgba(249, 115, 22, 1), transparent)'
+                      : 'radial-gradient(circle, rgba(59, 130, 246, 1), transparent)',
+                    animation: 'reflectionFlash 0.5s ease-in-out infinite',
+                    animationDelay: `${Math.random() * 2}s`,
+                    boxShadow: i % 2 === 0
+                      ? '0 0 15px rgba(249, 115, 22, 0.8)'
+                      : '0 0 15px rgba(59, 130, 246, 0.8)',
+                  }}
+                />
+              ))}
+              
+              {/* X-shaped counter indicator */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="relative w-48 h-48">
+                  <div className="absolute inset-0 border-4 border-orange-500 rounded-full animate-pulse" 
+                    style={{ animation: 'deflectShield 1.5s ease-in-out infinite' }} />
+                  <div className="absolute top-1/2 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-orange-400 to-transparent transform -translate-y-1/2 rotate-45"
+                    style={{ boxShadow: '0 0 20px rgba(249, 115, 22, 0.8)' }} />
+                  <div className="absolute top-1/2 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-orange-400 to-transparent transform -translate-y-1/2 -rotate-45"
+                    style={{ boxShadow: '0 0 20px rgba(249, 115, 22, 0.8)' }} />
+                </div>
+              </div>
+            </div>
+            
+            {/* Enhanced counter badge */}
+            <div className="absolute top-3 right-3 bg-gradient-to-r from-orange-600 to-blue-600 text-white px-4 py-2 rounded-lg text-sm font-black border-2 border-white shadow-2xl animate-pulse">
+              🛡️ COUNTER 🛡️
+            </div>
+            
+            {/* Deflection indicator arrows on card */}
+            <div className="absolute left-2 top-1/2 transform -translate-y-1/2">
+              <div className="text-orange-400 text-2xl font-black animate-bounce" style={{ textShadow: '0 0 10px rgba(249, 115, 22, 1)' }}>
+                {'<<<'}
+              </div>
+            </div>
+            <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+              <div className="text-orange-400 text-2xl font-black animate-bounce" style={{ textShadow: '0 0 10px rgba(249, 115, 22, 1)' }}>
+                {'>>>'}
+              </div>
+            </div>
+          </div>
+          
+          {/* Enhanced counter notification */}
+          <div className="absolute bottom-24 text-center">
+            <div className="bg-gradient-to-r from-orange-600/95 via-blue-900/95 to-cyan-600/95 text-white px-8 py-4 rounded-xl text-lg font-black shadow-2xl border-4 border-orange-400 animate-pulse">
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">🛡️</span>
+                <div className="flex flex-col">
+                  <span className="text-2xl text-orange-300">⚡ COUNTER! ⚡</span>
+                  <span className="text-sm font-semibold">{magicAnimation.username} deflected the attack!</span>
+                </div>
+                <span className="text-3xl">↩️</span>
+              </div>
+            </div>
+          </div>
+          
+          <style jsx>{`
+            @keyframes shine {
+              0% {
+                transform: translateX(-100%) skewX(-25deg);
+              }
+              100% {
+                transform: translateX(200%) skewX(-25deg);
+              }
+            }
+          `}</style>
         </div>
       )}
       </div>

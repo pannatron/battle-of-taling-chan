@@ -83,6 +83,6 @@ export interface TurnChangeData {
 }
 
 export interface GameRoomEvent {
-  type: 'room-update' | 'player-joined' | 'player-left' | 'seat-taken' | 'deck-selected' | 'player-ready' | 'game-start' | 'dice-roll' | 'turn-change' | 'game-end' | 'card-discard';
+  type: 'room-update' | 'player-joined' | 'player-left' | 'seat-taken' | 'deck-selected' | 'player-ready' | 'game-start' | 'dice-roll' | 'turn-change' | 'game-end' | 'card-discard' | 'card-magic-use';
   data: any;
 }

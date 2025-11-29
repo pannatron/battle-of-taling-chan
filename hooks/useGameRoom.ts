@@ -118,6 +118,14 @@ export function useGameRoom(roomId: string | null) {
               window.dispatchEvent(discardEvent);
               console.log('Card discard event received:', event.data);
               break;
+            case 'card-magic-use':
+              // Magic card usage event - trigger a custom event for magic animation
+              const magicEvent = new CustomEvent('card-magic-use', { 
+                detail: event.data 
+              });
+              window.dispatchEvent(magicEvent);
+              console.log('Magic card usage event received:', event.data);
+              break;
             default:
               console.log('Unknown event type:', event.type);
           }
