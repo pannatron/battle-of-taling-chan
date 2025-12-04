@@ -9,7 +9,8 @@ import { GamePlayer } from '@/types/game';
 import { Card as CardType } from '@/types/card';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
-import { drawCard, drawCardFromBottom, viewDeckBottom, playCard, discardCard, moveFieldCardToHell, moveFieldCardToHand, moveFieldCardToDeck, searchCardFromDeck, searchCardFromHell, shuffleDeck, flipLifeCard, moveAvatarToOpponentField, toggleCardRotation, moveHandCardToDeck, updateCardPower, rollDice, endTurn, surrender } from '@/lib/api';
+import { drawCard, drawCardFromBottom, viewDeckBottom, playCard, discardCard, moveFieldCardToHell, moveFieldCardToHand, moveFieldCardToDeck, searchCardFromDeck, searchCardFromHell, shuffleDeck, flipLifeCard, moveAvatarToOpponentField, toggleCardRotation, moveHandCardToDeck, updateCardPower, rollDice, endTurn, surrender, scryDeck as scryDeckAPI, resolveScry as resolveScryAPI } from '@/lib/api';
+import { ScryModal } from '@/components/game/ScryModal';
 
 interface GameBoardProps {
   roomId: string;
@@ -71,6 +72,15 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
     isReact?: boolean;
   }>>([]);
   const [isProcessingMagic, setIsProcessingMagic] = useState(false);
+  const [showScryInput, setShowScryInput] = useState(false);
+  const [scryCount, setScryCount] = useState<string>('3');
+  const [scryedCards, setScryedCards] = useState<any[]>([]);
+  const [showScryModal, setShowScryModal] = useState(false);
+  const [selectedScryCards, setSelectedScryCards] = useState<{
+    toHand: string[];
+    toTop: string[];
+    toBottom: string[];
+  }>({ toHand: [], toTop: [], toBottom: [] });
 
   // Prevent scrolling during actions to avoid jittering
   useEffect(() => {
@@ -564,6 +574,77 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
       toast({
         title: 'Error',
         description: error.message || 'Failed to shuffle deck',
+        variant: 'destructive',
+      });
+    } finally {
+      setActionInProgress(false);
+    }
+  };
+
+  const handleScryDeck = async () => {
+    if (!user || actionInProgress) return;
+    
+    const count = parseInt(scryCount);
+    if (isNaN(count) || count < 1 || count > 10) {
+      toast({
+        title: 'Error',
+        description: 'Please enter a number between 1 and 10',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setActionInProgress(true);
+    try {
+      const result = await scryDeckAPI(roomId, { 
+        userId: user.id, 
+        count 
+      });
+      
+      if (result && result.cards) {
+        setScryedCards(result.cards);
+        setShowScryModal(true);
+      }
+      
+      toast({
+        title: 'Scrying',
+        description: `Viewing top ${result.count} card${result.count > 1 ? 's' : ''} of your deck`,
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to scry deck',
+        variant: 'destructive',
+      });
+    } finally {
+      setActionInProgress(false);
+    }
+  };
+
+  const handleResolveScry = async (cardsToHand: string[], cardsToTop: string[], cardsToBottom: string[]) => {
+    if (!user || actionInProgress) return;
+    
+    setActionInProgress(true);
+    try {
+      await resolveScryAPI(roomId, {
+        userId: user.id,
+        cardsToHand,
+        cardsToTop,
+        cardsToBottom
+      });
+      
+      toast({
+        title: 'Success',
+        description: 'Scry resolved successfully',
+      });
+      
+      setShowScryModal(false);
+      setScryedCards([]);
+      onRefresh();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to resolve scry',
         variant: 'destructive',
       });
     } finally {
@@ -2069,6 +2150,26 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
                         <RotateCw className="h-3 w-3 mr-1" />
                         Shuffle
                       </Button>
+                      <div className="flex gap-1">
+                        <input
+                          type="number"
+                          min="1"
+                          max="10"
+                          value={scryCount}
+                          onChange={(e) => setScryCount(e.target.value)}
+                          className="w-8 h-7 px-1 text-[10px] rounded border border-cyan-500 bg-background text-foreground text-center"
+                          disabled={actionInProgress || !currentUserPlayer?.deck?.length}
+                        />
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={handleScryDeck}
+                          disabled={actionInProgress || !currentUserPlayer?.deck?.length}
+                          className="flex-1 text-[10px] px-2 py-1 h-7 bg-cyan-600 hover:bg-cyan-700 text-white border-cyan-500"
+                        >
+                          👁️ Scry
+                        </Button>
+                      </div>
                     </div>
                     
                     {/* Hell Buttons */}
@@ -2391,6 +2492,20 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
           </Card>
         </div>
       )}
+
+      {/* Scry Modal - New Enhanced Version */}
+      <ScryModal
+        isOpen={showScryModal}
+        onClose={() => {
+          setShowScryModal(false);
+          setScryedCards([]);
+        }}
+        scryedCards={scryedCards}
+        onResolve={handleResolveScry}
+        isProcessing={actionInProgress}
+        showForBothPlayers={false}
+        activePlayerName={currentUserPlayer?.username || 'You'}
+      />
 
       {/* Search Hell Modal */}
       {showSearchHellModal && (

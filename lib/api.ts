@@ -1164,3 +1164,55 @@ export async function surrender(roomId: string, data: {
     throw error;
   }
 }
+
+export async function scryDeck(roomId: string, data: {
+  userId: string;
+  count?: number;
+}): Promise<any> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/game/rooms/${roomId}/scry`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `Failed to scry deck in room ${roomId}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error(`Error scrying deck in room ${roomId}:`, error);
+    throw error;
+  }
+}
+
+export async function resolveScry(roomId: string, data: {
+  userId: string;
+  cardsToHand: string[];
+  cardsToTop: string[];
+  cardsToBottom: string[];
+}): Promise<any> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/game/rooms/${roomId}/resolve-scry`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `Failed to resolve scry in room ${roomId}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error(`Error resolving scry in room ${roomId}:`, error);
+    throw error;
+  }
+}
