@@ -81,6 +81,13 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
     toTop: string[];
     toBottom: string[];
   }>({ toHand: [], toTop: [], toBottom: [] });
+  
+  // Opponent scry view states
+  const [showOpponentScryModal, setShowOpponentScryModal] = useState(false);
+  const [opponentScryData, setOpponentScryData] = useState<{
+    cards: any[];
+    playerName: string;
+  } | null>(null);
 
   // Prevent scrolling during actions to avoid jittering
   useEffect(() => {
@@ -270,6 +277,27 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
       }
     };
   }, [toast, diceTimeoutId, user]);
+
+  // Listen for scry-start events from opponent
+  useEffect(() => {
+    if (!user) return;
+
+    const handleScryStart = (event: any) => {
+      const { userId, username, cards } = event.detail;
+      
+      // If opponent is scrying (not me)
+      if (userId !== user.id) {
+        setOpponentScryData({ cards, playerName: username });
+        setShowOpponentScryModal(true);
+      }
+    };
+
+    window.addEventListener('scry-start', handleScryStart);
+
+    return () => {
+      window.removeEventListener('scry-start', handleScryStart);
+    };
+  }, [user]);
 
   const player1 = gameRoom.players[0];
   const player2 = gameRoom.players[1];
@@ -2506,6 +2534,23 @@ export function GameBoard({ roomId, gameRoom, user, playerCards, loadingCards, o
         showForBothPlayers={false}
         activePlayerName={currentUserPlayer?.username || 'You'}
       />
+
+      {/* Opponent Scry Modal - View Only */}
+      {opponentScryData && (
+        <ScryModal
+          isOpen={showOpponentScryModal}
+          onClose={() => {
+            setShowOpponentScryModal(false);
+            setOpponentScryData(null);
+          }}
+          scryedCards={opponentScryData.cards}
+          onResolve={() => {}} 
+          isProcessing={false}
+          isOpponentView={true}
+          showForBothPlayers={true}
+          activePlayerName={opponentScryData.playerName}
+        />
+      )}
 
       {/* Search Hell Modal */}
       {showSearchHellModal && (

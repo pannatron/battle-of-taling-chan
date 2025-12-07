@@ -126,6 +126,22 @@ export function useGameRoom(roomId: string | null) {
               window.dispatchEvent(magicEvent);
               console.log('Magic card usage event received:', event.data);
               break;
+            case 'scry-start':
+              // Scry start event - trigger a custom event for opponent scry view
+              const scryEvent = new CustomEvent('scry-start', { 
+                detail: event.data 
+              });
+              window.dispatchEvent(scryEvent);
+              console.log('Scry start event received:', event.data);
+              break;
+            case 'scry-resolved':
+              // Scry resolved event - trigger a custom event to close modals on both sides
+              const scryResolvedEvent = new CustomEvent('scry-resolved', { 
+                detail: event.data 
+              });
+              window.dispatchEvent(scryResolvedEvent);
+              console.log('Scry resolved event received:', event.data);
+              break;
             default:
               console.log('Unknown event type:', event.type);
           }
