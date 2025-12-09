@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Card as CardType } from '@/types/card';
 import { useDeckBuilder } from '@/hooks/useDeckBuilder';
@@ -18,7 +18,8 @@ import { DeckCodeImporter } from '@/components/deck-builder/DeckCodeImporter';
 
 const ITEMS_PER_PAGE = 80;
 
-export default function DeckBuilderPage() {
+// Component that uses useSearchParams - needs to be wrapped in Suspense
+function DeckBuilderContent() {
   const searchParams = useSearchParams();
   const deckBuilder = useDeckBuilder();
   const { toast } = useToast();
@@ -355,5 +356,21 @@ export default function DeckBuilderPage() {
         />
       )}
     </div>
+  );
+}
+
+// Main page component with Suspense boundary
+export default function DeckBuilderPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-background py-4 md:py-8 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading Deck Builder...</p>
+        </div>
+      </div>
+    }>
+      <DeckBuilderContent />
+    </Suspense>
   );
 }
