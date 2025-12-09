@@ -253,15 +253,17 @@ export default function DeckBuilderPage() {
               setDeckName={deckBuilder.setDeckName}
               deckArchetype={deckBuilder.deckArchetype}
               setDeckArchetype={deckBuilder.setDeckArchetype}
-              deckDescription={deckBuilder.deckDescription}
-              setDeckDescription={deckBuilder.setDeckDescription}
-              selectedCards={deckBuilder.selectedCards}
-              coverCardId={deckBuilder.coverCardId}
-              setCoverCardId={deckBuilder.setCoverCardId}
-              handleSaveDeck={deckBuilder.handleSaveDeck}
-              saving={deckBuilder.saving}
-              hasCards={deckBuilder.selectedCards.length > 0}
-            />
+          deckDescription={deckBuilder.deckDescription}
+          setDeckDescription={deckBuilder.setDeckDescription}
+          selectedCards={deckBuilder.selectedCards}
+          coverCardId={deckBuilder.coverCardId}
+          setCoverCardId={deckBuilder.setCoverCardId}
+          coverCardId2={deckBuilder.coverCardId2}
+          setCoverCardId2={deckBuilder.setCoverCardId2}
+          handleSaveDeck={deckBuilder.handleSaveDeck}
+          saving={deckBuilder.saving}
+          hasCards={deckBuilder.selectedCards.length > 0}
+        />
           </div>
 
           {/* Main Content Area */}

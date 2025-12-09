@@ -3,6 +3,7 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
+import { isOnlyOneCard } from '@/lib/deckCardUtils';
 
 interface DeckCard {
   _id: string;
@@ -85,7 +86,7 @@ function ExportDeckContent() {
   }
 
   const lifeCards: DeckCard[] = deck.cards.filter((c: DeckCard) => c.ex === 'Life');
-  const onlyOneCards: DeckCard[] = deck.cards.filter((c: DeckCard) => c.ex === 'Only #1' && !c.isSideDeck);
+  const onlyOneCards: DeckCard[] = deck.cards.filter((c: DeckCard) => isOnlyOneCard(c.ex) && !c.isSideDeck);
   
   // Get all side deck cards - need to identify them properly
   // Side deck cards have isSideDeck flag OR ex contains "Side Deck" substring
@@ -99,11 +100,11 @@ function ExportDeckContent() {
   });
   
   // Separate side deck cards by their ex field (Only #1 vs regular)
-  const sideDeckOnlyOneCards = sideDeckCards.filter((card) => card.ex === 'Only #1');
-  const sideDeckRegularCards = sideDeckCards.filter((card) => card.ex !== 'Only #1');
+  const sideDeckOnlyOneCards = sideDeckCards.filter((card) => isOnlyOneCard(card.ex));
+  const sideDeckRegularCards = sideDeckCards.filter((card) => !isOnlyOneCard(card.ex));
   
   const deckCards: DeckCard[] = deck.cards.filter(
-    (c: DeckCard) => c.ex !== 'Life' && c.ex !== 'Only #1' && !c.isSideDeck && c.ex !== 'Side Deck'
+    (c: DeckCard) => c.ex !== 'Life' && !isOnlyOneCard(c.ex) && !c.isSideDeck && c.ex !== 'Side Deck'
   );
 
   return (
@@ -135,6 +136,7 @@ function ExportDeckContent() {
                       className="object-contain"
                       sizes="10vw"
                       unoptimized
+                      priority
                     />
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-full bg-white text-sm font-bold text-black shadow-xl ring-2 ring-black">
                       {card.quantity}
@@ -179,6 +181,7 @@ function ExportDeckContent() {
                               className="object-contain"
                               sizes="80px"
                               unoptimized
+                              priority
                             />
                           </div>
                         )}
@@ -205,6 +208,7 @@ function ExportDeckContent() {
                               className="object-contain"
                               sizes="80px"
                               unoptimized
+                              priority
                             />
                             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-full bg-white text-sm font-bold text-black shadow-xl ring-2 ring-cyan-500">
                               {card.quantity}
@@ -243,6 +247,7 @@ function ExportDeckContent() {
                           className="object-contain"
                           sizes="112px"
                           unoptimized
+                          priority
                         />
                       </div>
                     )}
@@ -269,6 +274,7 @@ function ExportDeckContent() {
                           className="object-contain"
                           sizes="192px"
                           unoptimized
+                          priority
                         />
                       </div>
                     )}

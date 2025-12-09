@@ -35,6 +35,7 @@ export function useDeckBuilder() {
   const [deckArchetype, setDeckArchetype] = useState('');
   const [deckDescription, setDeckDescription] = useState('');
   const [coverCardId, setCoverCardId] = useState<string>('');
+  const [coverCardId2, setCoverCardId2] = useState<string>('');
   
   // Edit mode state
   const [editingDeckId, setEditingDeckId] = useState<string | null>(null);
@@ -183,6 +184,7 @@ export function useDeckBuilder() {
       sideDeckIds,
       lifeCardIds,
       coverCardId: coverCardId && coverCardId !== 'none' ? coverCardId : undefined,
+      coverCardId2: coverCardId2 && coverCardId2 !== 'none' ? coverCardId2 : undefined,
       userId: user.id,
     };
 
@@ -346,6 +348,7 @@ export function useDeckBuilder() {
       setDeckArchetype(deck.archetype);
       setDeckDescription(deck.description || '');
       setCoverCardId(deck.coverCardId || '');
+      setCoverCardId2(deck.coverCardId2 || '');
       
       // Set edit mode state
       if (isEditMode) {
@@ -393,6 +396,8 @@ export function useDeckBuilder() {
     setDeckDescription,
     coverCardId,
     setCoverCardId,
+    coverCardId2,
+    setCoverCardId2,
     types,
     rarities,
     series,

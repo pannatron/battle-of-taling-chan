@@ -15,6 +15,7 @@ export interface Deck {
   sideDeckIds?: string[];
   lifeCardIds?: string[];
   coverCardId?: string;
+  coverCardId2?: string;
   createdAt?: string;
   updatedAt?: string;
 }

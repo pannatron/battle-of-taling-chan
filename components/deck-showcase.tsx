@@ -4,20 +4,38 @@ import { Button } from "@/components/ui/button"
 import { Eye, Heart, TrendingUp, Zap } from "lucide-react"
 import Link from "next/link"
 import { getAllDecks, getCardById } from "@/lib/api"
-import Image from "next/image"
+import { HybridCoverCard } from "@/components/hybrid-cover-card"
 
 export async function DeckShowcase() {
   const allDecks = await getAllDecks()
   const topDecks = allDecks.slice(0, 3)
   
-  // Get first card image for each deck
+  // Get cover card images for each deck
   const decksWithImages = await Promise.all(
     topDecks.map(async (deck) => {
-      const firstCardId = deck.cardIds?.[0]
-      const firstCard = firstCardId ? await getCardById(firstCardId) : null
+      let coverImage1 = null
+      let coverImage2 = null
+      
+      // If deck has custom cover cards set
+      if (deck.coverCardId) {
+        const card1 = await getCardById(deck.coverCardId)
+        coverImage1 = card1?.imageUrl || null
+      } else if (deck.cardIds?.[0]) {
+        // Fallback to first card in deck
+        const card1 = await getCardById(deck.cardIds[0])
+        coverImage1 = card1?.imageUrl || null
+      }
+      
+      // Get second cover card if set
+      if (deck.coverCardId2) {
+        const card2 = await getCardById(deck.coverCardId2)
+        coverImage2 = card2?.imageUrl || null
+      }
+      
       return {
         ...deck,
-        coverImage: firstCard?.imageUrl || null
+        coverImage1,
+        coverImage2
       }
     })
   )
@@ -62,18 +80,12 @@ export async function DeckShowcase() {
               <Link href={`/decks/${deck._id}`} key={deck._id}>
                 <Card className="group relative aspect-[3/4] overflow-hidden border-border bg-card/50 backdrop-blur-sm transition-all hover:border-glow hover:card-glow">
                   {/* Background Image */}
-                  <div className="absolute inset-0">
-                    {deck.coverImage ? (
-                      <Image
-                        src={deck.coverImage}
-                        alt={deck.name}
-                        fill
-                        className="object-cover transition-transform duration-300 group-hover:scale-110"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                      />
-                    ) : (
-                      <div className="h-full w-full bg-gradient-to-br from-muted to-muted/50" />
-                    )}
+                  <div className="absolute inset-0 transition-transform duration-300 group-hover:scale-110">
+                    <HybridCoverCard 
+                      coverImage1={deck.coverImage1}
+                      coverImage2={deck.coverImage2}
+                      alt={deck.name}
+                    />
                   </div>
 
                   {/* Gradient Overlay */}

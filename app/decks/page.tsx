@@ -14,6 +14,7 @@ import { Deck } from "@/types/deck";
 import { Card as CardType } from "@/types/card";
 import { useToast } from "@/hooks/use-toast";
 import Image from 'next/image';
+import { HybridCoverCard } from "@/components/hybrid-cover-card";
 
 function DecksContent() {
   const { user } = useUser();
@@ -27,6 +28,7 @@ function DecksContent() {
   const [loading, setLoading] = useState(true);
   const [selectingDeck, setSelectingDeck] = useState<string | null>(null);
   const [deckCoverCards, setDeckCoverCards] = useState<Map<string, CardType>>(new Map());
+  const [deckCoverCards2, setDeckCoverCards2] = useState<Map<string, CardType>>(new Map());
 
   // Get roomId from query params if user is selecting deck for a game
   const roomId = searchParams.get('roomId');
@@ -48,21 +50,47 @@ function DecksContent() {
     
     // Load cover cards for all decks
     const coverCardMap = new Map<string, CardType>();
-    const coverCardPromises = decks
-      .filter(deck => deck.coverCardId)
-      .map(async (deck) => {
-        try {
-          const card = await getCardById(deck.coverCardId!);
-          if (card) {
-            coverCardMap.set(deck._id, card);
-          }
-        } catch (error) {
-          console.error(`Failed to load cover card for deck ${deck._id}:`, error);
-        }
-      });
+    const coverCardMap2 = new Map<string, CardType>();
+    
+    const coverCardPromises = decks.map(async (deck) => {
+      const promises: Promise<void>[] = [];
+      
+      // Load first cover card
+      if (deck.coverCardId) {
+        promises.push(
+          getCardById(deck.coverCardId)
+            .then(card => {
+              if (card) {
+                coverCardMap.set(deck._id, card);
+              }
+            })
+            .catch(error => {
+              console.error(`Failed to load cover card 1 for deck ${deck._id}:`, error);
+            })
+        );
+      }
+      
+      // Load second cover card
+      if (deck.coverCardId2) {
+        promises.push(
+          getCardById(deck.coverCardId2)
+            .then(card => {
+              if (card) {
+                coverCardMap2.set(deck._id, card);
+              }
+            })
+            .catch(error => {
+              console.error(`Failed to load cover card 2 for deck ${deck._id}:`, error);
+            })
+        );
+      }
+      
+      await Promise.all(promises);
+    });
     
     await Promise.all(coverCardPromises);
     setDeckCoverCards(coverCardMap);
+    setDeckCoverCards2(coverCardMap2);
     
     setLoading(false);
   };
@@ -224,25 +252,27 @@ function DecksContent() {
 
   const DeckCard = ({ deck }: { deck: Deck }) => {
     const coverCard = deckCoverCards.get(deck._id);
+    const coverCard2 = deckCoverCards2.get(deck._id);
     
     return (
       <Card
         className="group relative h-[420px] overflow-hidden border-border transition-all hover:border-primary hover:shadow-xl hover:shadow-primary/20"
       >
         {/* Background Image */}
-        {coverCard?.imageUrl ? (
-          <div className="absolute inset-0">
-            <Image
-              src={coverCard.imageUrl}
-              alt={deck.name}
-              fill
-              className="object-cover object-top brightness-110 saturate-110 transition-transform duration-500 group-hover:scale-110"
-              sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            />
+        {coverCard?.imageUrl || coverCard2?.imageUrl ? (
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute inset-0 transition-transform duration-500 group-hover:scale-110">
+              <HybridCoverCard
+                coverImage1={coverCard?.imageUrl || null}
+                coverImage2={coverCard2?.imageUrl || null}
+                alt={deck.name}
+                className="brightness-110 saturate-110"
+              />
+            </div>
             {/* Dark overlay gradient - lighter for more vibrant colors */}
-            <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/50 to-black/80" />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/50 to-black/80 pointer-events-none" />
             {/* Accent gradient overlay */}
-            <div className={`absolute inset-0 bg-gradient-to-br ${deck.gradient} opacity-30 mix-blend-overlay`} />
+            <div className={`absolute inset-0 bg-gradient-to-br ${deck.gradient} opacity-30 mix-blend-overlay pointer-events-none`} />
           </div>
         ) : (
           <div className="absolute inset-0 bg-gradient-to-b from-gray-900 to-black" />
