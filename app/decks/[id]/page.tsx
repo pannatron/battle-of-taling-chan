@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Eye, Heart, TrendingUp } from "lucide-react";
+import { ArrowLeft, Eye, Heart, TrendingUp, Pencil } from "lucide-react";
 import { getDeckById, getCardById, incrementDeckViews } from "@/lib/api";
 import { Deck } from "@/types/deck";
 import { Card as CardType } from "@/types/card";
@@ -16,6 +16,7 @@ export default function DeckDetailPage() {
   const router = useRouter();
   const [deck, setDeck] = useState<Deck | null>(null);
   const [cards, setCards] = useState<CardType[]>([]);
+  const [lifeCards, setLifeCards] = useState<CardType[]>([]);
   const [sideDeckCards, setSideDeckCards] = useState<CardType[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -39,6 +40,13 @@ export default function DeckDetailPage() {
       const cardPromises = deckData.cardIds.map(id => getCardById(id));
       const loadedCards = await Promise.all(cardPromises);
       setCards(loadedCards.filter(c => c !== null) as CardType[]);
+      
+      // Load life cards
+      if (deckData.lifeCardIds && deckData.lifeCardIds.length > 0) {
+        const lifeCardPromises = deckData.lifeCardIds.map(id => getCardById(id));
+        const loadedLifeCards = await Promise.all(lifeCardPromises);
+        setLifeCards(loadedLifeCards.filter(c => c !== null) as CardType[]);
+      }
       
       // Load side deck cards
       if (deckData.sideDeckIds && deckData.sideDeckIds.length > 0) {
@@ -67,7 +75,13 @@ export default function DeckDetailPage() {
   };
 
   const groupedCards = groupCards(cards);
+  const groupedLifeCards = groupCards(lifeCards);
   const groupedSideDeckCards = groupCards(sideDeckCards);
+
+  const handleEditDeck = () => {
+    // Navigate to deck builder with query parameter to load this deck in edit mode
+    router.push(`/deck-builder?loadDeckId=${params.id}&edit=true`);
+  };
 
   if (loading) {
     return (
@@ -106,15 +120,24 @@ export default function DeckDetailPage() {
         </div>
 
         <div className="container relative mx-auto px-4 md:px-6">
-          {/* Back Button */}
-          <Button
-            onClick={() => router.push('/decks')}
-            variant="outline"
-            className="mb-8 gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Decks
-          </Button>
+          {/* Back and Edit Buttons */}
+          <div className="mb-8 flex items-center justify-between gap-4">
+            <Button
+              onClick={() => router.push('/decks')}
+              variant="outline"
+              className="gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Decks
+            </Button>
+            <Button
+              onClick={handleEditDeck}
+              className="gap-2"
+            >
+              <Pencil className="h-4 w-4" />
+              Edit Deck
+            </Button>
+          </div>
 
           {/* Deck Header */}
           <Card className="mb-8 overflow-hidden border-border bg-card/50 backdrop-blur-sm">
@@ -155,6 +178,46 @@ export default function DeckDetailPage() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Life Cards */}
+          {groupedLifeCards.length > 0 && (
+            <div className="mb-8">
+              <h2 className="mb-4 text-2xl font-bold text-foreground">
+                Life Cards ({lifeCards.length} cards)
+              </h2>
+              <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                {groupedLifeCards.map((card) => (
+                  <Card key={card._id} className="overflow-hidden border-border bg-card/50 backdrop-blur-sm">
+                    <CardContent className="p-2">
+                      <div className="relative aspect-[2.5/3.5] overflow-hidden rounded-md bg-muted">
+                        {card.imageUrl ? (
+                          <Image
+                            src={card.imageUrl}
+                            alt={card.name}
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
+                          />
+                        ) : (
+                          <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
+                            No Image
+                          </div>
+                        )}
+                        {card.quantity > 1 && (
+                          <div className="absolute bottom-2 right-2 rounded-full bg-black/80 px-2 py-1 text-xs font-bold text-white">
+                            x{card.quantity}
+                          </div>
+                        )}
+                      </div>
+                      <p className="mt-2 line-clamp-2 text-xs font-medium text-foreground">
+                        {card.name}
+                      </p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Main Deck */}
           <div className="mb-8">

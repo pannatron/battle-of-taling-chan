@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Card as CardType } from '@/types/card';
-import { searchCards, getDistinctCardValues, createDeck, getAllCards, getDeckById, getCardById } from '@/lib/api';
+import { searchCards, getDistinctCardValues, createDeck, updateDeck, getAllCards, getDeckById, getCardById } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
 import { isOnlyOneCard } from '@/lib/deckCardUtils';
@@ -35,6 +35,10 @@ export function useDeckBuilder() {
   const [deckArchetype, setDeckArchetype] = useState('');
   const [deckDescription, setDeckDescription] = useState('');
   const [coverCardId, setCoverCardId] = useState<string>('');
+  
+  // Edit mode state
+  const [editingDeckId, setEditingDeckId] = useState<string | null>(null);
+  const [originalUserId, setOriginalUserId] = useState<string | null>(null);
 
   // Filter options
   const [types, setTypes] = useState<string[]>([]);
@@ -136,6 +140,9 @@ export function useDeckBuilder() {
       return;
     }
 
+    // Check if editing and user owns the deck
+    const isEditMode = editingDeckId && originalUserId === user.id;
+
     setSaving(true);
     const cardIds: string[] = [];
     selectedCards
@@ -167,7 +174,7 @@ export function useDeckBuilder() {
     // Get author name from user
     const authorName = user.fullName || user.username || user.emailAddresses[0]?.emailAddress.split('@')[0] || 'Anonymous';
 
-    const deck = {
+    const deckData = {
       name: deckName,
       author: authorName,
       archetype: deckArchetype || 'Other',
@@ -176,21 +183,32 @@ export function useDeckBuilder() {
       sideDeckIds,
       lifeCardIds,
       coverCardId: coverCardId && coverCardId !== 'none' ? coverCardId : undefined,
-      wins: 0,
-      views: 0,
-      likes: 0,
-      gradient: 'from-blue-500 to-purple-600',
       userId: user.id,
     };
 
-    const result = await createDeck(deck);
+    let result;
+    if (isEditMode) {
+      // Update existing deck
+      result = await updateDeck(editingDeckId, deckData);
+    } else {
+      // Create new deck
+      const newDeck = {
+        ...deckData,
+        wins: 0,
+        views: 0,
+        likes: 0,
+        gradient: 'from-blue-500 to-purple-600',
+      };
+      result = await createDeck(newDeck);
+    }
+    
     setSaving(false);
 
     if (result) {
-      alert('สร้างเด็คสำเร็จ!');
+      alert(isEditMode ? 'แก้ไขเด็คสำเร็จ!' : 'สร้างเด็คสำเร็จ!');
       router.push('/decks?tab=my');
     } else {
-      alert('เกิดข้อผิดพลาดในการสร้างเด็ค');
+      alert(isEditMode ? 'เกิดข้อผิดพลาดในการแก้ไขเด็ค' : 'เกิดข้อผิดพลาดในการสร้างเด็ค');
     }
   };
 
@@ -225,8 +243,9 @@ export function useDeckBuilder() {
   };
 
   const getMaxDeckSize = () => {
-    const onlyOneCount = getOnlyOneCardCount();
-    return onlyOneCount > 0 ? 49 : 50;
+    // Deck always has a maximum of 50 cards total
+    // (either 50 regular cards OR 1 Only One + 49 regular cards)
+    return 50;
   };
 
   const isMainDeckFull = () => {
@@ -239,7 +258,7 @@ export function useDeckBuilder() {
     return getDeckSinCardWarnings(selectedCards, allCards);
   };
 
-  const loadDeckById = async (deckId: string): Promise<boolean> => {
+  const loadDeckById = async (deckId: string, isEditMode: boolean = false): Promise<boolean> => {
     try {
       setLoading(true);
       const deck = await getDeckById(deckId);
@@ -322,11 +341,20 @@ export function useDeckBuilder() {
       const loadedCards = Array.from(deckCardsMap.values());
       setSelectedCards(loadedCards);
 
-      // Set deck metadata
-      setDeckName(deck.name + ' (Copy)');
+      // Set deck metadata - only add (Copy) if not in edit mode
+      setDeckName(isEditMode ? deck.name : deck.name + ' (Copy)');
       setDeckArchetype(deck.archetype);
       setDeckDescription(deck.description || '');
       setCoverCardId(deck.coverCardId || '');
+      
+      // Set edit mode state
+      if (isEditMode) {
+        setEditingDeckId(deck._id);
+        setOriginalUserId(deck.userId || null);
+      } else {
+        setEditingDeckId(null);
+        setOriginalUserId(null);
+      }
 
       setLoading(false);
       return true;
@@ -383,5 +411,7 @@ export function useDeckBuilder() {
     allCards,
     getSinCardWarnings,
     loadDeckById,
+    editingDeckId,
+    originalUserId,
   };
 }

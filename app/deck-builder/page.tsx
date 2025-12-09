@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Card as CardType } from '@/types/card';
 import { useDeckBuilder } from '@/hooks/useDeckBuilder';
 import { addCardToDeck, removeCardFromDeck, isOnlyOneCard } from '@/lib/deckCardUtils';
@@ -18,6 +19,7 @@ import { DeckCodeImporter } from '@/components/deck-builder/DeckCodeImporter';
 const ITEMS_PER_PAGE = 80;
 
 export default function DeckBuilderPage() {
+  const searchParams = useSearchParams();
   const deckBuilder = useDeckBuilder();
   const { toast } = useToast();
   const [visualizationMode, setVisualizationMode] = useState<'compact' | 'grid'>('compact');
@@ -26,6 +28,15 @@ export default function DeckBuilderPage() {
   const [showDeckLoader, setShowDeckLoader] = useState(false);
   const [showCodeImporter, setShowCodeImporter] = useState(false);
   const [loadingDeck, setLoadingDeck] = useState(false);
+
+  // Auto-load deck from URL parameter
+  useEffect(() => {
+    const loadDeckId = searchParams.get('loadDeckId');
+    const editMode = searchParams.get('edit') === 'true';
+    if (loadDeckId) {
+      handleLoadDeck(loadDeckId, editMode);
+    }
+  }, [searchParams]);
 
   // Reset to page 1 when search results change
   useMemo(() => {
@@ -107,16 +118,16 @@ export default function DeckBuilderPage() {
     }
   };
 
-  const handleLoadDeck = async (deckId: string) => {
+  const handleLoadDeck = async (deckId: string, isEditMode: boolean = false) => {
     setLoadingDeck(true);
-    const success = await deckBuilder.loadDeckById(deckId);
+    const success = await deckBuilder.loadDeckById(deckId, isEditMode);
     setLoadingDeck(false);
     
     if (success) {
       setShowDeckLoader(false);
       toast({
         title: 'สำเร็จ!',
-        description: 'โหลดเด็คเข้าสู่ Deck Builder เรียบร้อยแล้ว',
+        description: isEditMode ? 'โหลดเด็คเพื่อแก้ไขเรียบร้อยแล้ว' : 'โหลดเด็คเข้าสู่ Deck Builder เรียบร้อยแล้ว',
       });
     } else {
       toast({
